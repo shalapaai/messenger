@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Messenger.Shared.Kernel\Messenger.Shared.Kernel.csproj" />
+    <!-- Зависит от Messages только для обработки доменных событий -->
+    <ProjectReference Include="..\..\Messages\Messenger.Modules.Messages\Messenger.Modules.Messages.csproj" />
+  </ItemGroup>
+
+</Project>
