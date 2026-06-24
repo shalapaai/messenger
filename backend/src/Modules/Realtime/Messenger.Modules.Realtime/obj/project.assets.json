@@ -39,10 +39,14 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0"
         },
         "compile": {
-          "lib/net6.0/MediatR.dll": {}
+          "lib/net6.0/MediatR.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net6.0/MediatR.dll": {}
+          "lib/net6.0/MediatR.dll": {
+            "related": ".xml"
+          }
         }
       },
       "MediatR.Contracts/2.0.1": {
@@ -65,19 +69,27 @@
           "Microsoft.NET.StringTools": "17.6.3"
         },
         "compile": {
-          "lib/net6.0/MessagePack.dll": {}
+          "lib/net6.0/MessagePack.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net6.0/MessagePack.dll": {}
+          "lib/net6.0/MessagePack.dll": {
+            "related": ".xml"
+          }
         }
       },
       "MessagePack.Annotations/2.5.187": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/MessagePack.Annotations.dll": {}
+          "lib/netstandard2.0/MessagePack.Annotations.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/netstandard2.0/MessagePack.Annotations.dll": {}
+          "lib/netstandard2.0/MessagePack.Annotations.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Microsoft.AspNetCore.Authentication.Abstractions/2.3.0": {
@@ -421,10 +433,14 @@
           "StackExchange.Redis": "2.7.27"
         },
         "compile": {
-          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {}
+          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {}
+          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {
+            "related": ".xml"
+          }
         },
         "frameworkReferences": [
           "Microsoft.AspNetCore.App"
@@ -789,11 +805,13 @@
       "Microsoft.NET.StringTools/17.6.3": {
         "type": "package",
         "compile": {
-          "ref/net7.0/_._": {}
+          "ref/net7.0/_._": {
+            "related": ".xml"
+          }
         },
         "runtime": {
           "lib/net7.0/Microsoft.NET.StringTools.dll": {
-            "related": ".pdb"
+            "related": ".pdb;.xml"
           }
         }
       },
@@ -850,10 +868,14 @@
           "System.IO.Pipelines": "5.0.1"
         },
         "compile": {
-          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {}
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {}
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "related": ".xml"
+          }
         }
       },
       "StackExchange.Redis/2.7.27": {
@@ -863,10 +885,14 @@
           "Pipelines.Sockets.Unofficial": "2.2.8"
         },
         "compile": {
-          "lib/net6.0/StackExchange.Redis.dll": {}
+          "lib/net6.0/StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net6.0/StackExchange.Redis.dll": {}
+          "lib/net6.0/StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
         }
       },
       "System.Buffers/4.6.0": {
@@ -922,10 +948,14 @@
       "System.Text.Encodings.Web/8.0.0": {
         "type": "package",
         "compile": {
-          "lib/net8.0/System.Text.Encodings.Web.dll": {}
+          "lib/net8.0/System.Text.Encodings.Web.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/System.Text.Encodings.Web.dll": {}
+          "lib/net8.0/System.Text.Encodings.Web.dll": {
+            "related": ".xml"
+          }
         },
         "build": {
           "buildTransitive/net6.0/_._": {}
@@ -974,15 +1004,17 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "MediatR": "12.4.1",
-          "Microsoft.AspNetCore.Http.Abstractions": "2.3.0"
+          "MediatR": "12.4.1"
         },
         "compile": {
           "bin/placeholder/Messenger.Shared.Kernel.dll": {}
         },
         "runtime": {
           "bin/placeholder/Messenger.Shared.Kernel.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
       }
     }
   },
@@ -1068,8 +1100,11 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net472/MessagePack.dll",
+        "lib/net472/MessagePack.xml",
         "lib/net6.0/MessagePack.dll",
+        "lib/net6.0/MessagePack.xml",
         "lib/netstandard2.0/MessagePack.dll",
+        "lib/netstandard2.0/MessagePack.xml",
         "messagepack.2.5.187.nupkg.sha512",
         "messagepack.nuspec"
       ]
@@ -1082,6 +1117,7 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/netstandard2.0/MessagePack.Annotations.dll",
+        "lib/netstandard2.0/MessagePack.Annotations.xml",
         "messagepack.annotations.2.5.187.nupkg.sha512",
         "messagepack.annotations.nuspec"
       ]
@@ -1330,6 +1366,7 @@
         "Icon.png",
         "THIRD-PARTY-NOTICES.TXT",
         "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+        "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.xml",
         "microsoft.aspnetcore.signalr.stackexchangeredis.9.0.5.nupkg.sha512",
         "microsoft.aspnetcore.signalr.stackexchangeredis.nuspec"
       ]
@@ -1870,16 +1907,22 @@
         "README.md",
         "lib/net472/Microsoft.NET.StringTools.dll",
         "lib/net472/Microsoft.NET.StringTools.pdb",
+        "lib/net472/Microsoft.NET.StringTools.xml",
         "lib/net7.0/Microsoft.NET.StringTools.dll",
         "lib/net7.0/Microsoft.NET.StringTools.pdb",
+        "lib/net7.0/Microsoft.NET.StringTools.xml",
         "lib/netstandard2.0/Microsoft.NET.StringTools.dll",
         "lib/netstandard2.0/Microsoft.NET.StringTools.pdb",
+        "lib/netstandard2.0/Microsoft.NET.StringTools.xml",
         "microsoft.net.stringtools.17.6.3.nupkg.sha512",
         "microsoft.net.stringtools.nuspec",
         "notices/THIRDPARTYNOTICES.txt",
         "ref/net472/Microsoft.NET.StringTools.dll",
+        "ref/net472/Microsoft.NET.StringTools.xml",
         "ref/net7.0/Microsoft.NET.StringTools.dll",
-        "ref/netstandard2.0/Microsoft.NET.StringTools.dll"
+        "ref/net7.0/Microsoft.NET.StringTools.xml",
+        "ref/netstandard2.0/Microsoft.NET.StringTools.dll",
+        "ref/netstandard2.0/Microsoft.NET.StringTools.xml"
       ]
     },
     "Newtonsoft.Json/11.0.2": {
@@ -1952,11 +1995,17 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net461/Pipelines.Sockets.Unofficial.dll",
+        "lib/net461/Pipelines.Sockets.Unofficial.xml",
         "lib/net472/Pipelines.Sockets.Unofficial.dll",
+        "lib/net472/Pipelines.Sockets.Unofficial.xml",
         "lib/net5.0/Pipelines.Sockets.Unofficial.dll",
+        "lib/net5.0/Pipelines.Sockets.Unofficial.xml",
         "lib/netcoreapp3.1/Pipelines.Sockets.Unofficial.dll",
+        "lib/netcoreapp3.1/Pipelines.Sockets.Unofficial.xml",
         "lib/netstandard2.0/Pipelines.Sockets.Unofficial.dll",
+        "lib/netstandard2.0/Pipelines.Sockets.Unofficial.xml",
         "lib/netstandard2.1/Pipelines.Sockets.Unofficial.dll",
+        "lib/netstandard2.1/Pipelines.Sockets.Unofficial.xml",
         "pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
         "pipelines.sockets.unofficial.nuspec"
       ]
@@ -1969,10 +2018,15 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net461/StackExchange.Redis.dll",
+        "lib/net461/StackExchange.Redis.xml",
         "lib/net472/StackExchange.Redis.dll",
+        "lib/net472/StackExchange.Redis.xml",
         "lib/net6.0/StackExchange.Redis.dll",
+        "lib/net6.0/StackExchange.Redis.xml",
         "lib/netcoreapp3.1/StackExchange.Redis.dll",
+        "lib/netcoreapp3.1/StackExchange.Redis.xml",
         "lib/netstandard2.0/StackExchange.Redis.dll",
+        "lib/netstandard2.0/StackExchange.Redis.xml",
         "stackexchange.redis.2.7.27.nupkg.sha512",
         "stackexchange.redis.nuspec"
       ]

@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS restore
 WORKDIR /src
 
 # Копируем только project-файлы для оптимального кэширования слоёв
-COPY backend/Messenger.sln ./
+COPY backend/Messenger.slnx ./
 COPY backend/src/Api/Messenger.Api/Messenger.Api.csproj                                               src/Api/Messenger.Api/
 COPY backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj               src/Modules/Shared/Messenger.Shared.Kernel/
 COPY backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj                   src/Modules/Auth/Messenger.Modules.Auth/
@@ -47,6 +47,10 @@ CMD ["dotnet", "watch", "run", "--project", "src/Api/Messenger.Api/Messenger.Api
 # ── Stage 4: Runtime (production) ────────────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS runtime
 WORKDIR /app
+
+# ICU — нужна для локализации (CultureInfo) на Alpine
+RUN apk add --no-cache icu-libs icu-data-full
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 # Безопасность: non-root пользователь
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

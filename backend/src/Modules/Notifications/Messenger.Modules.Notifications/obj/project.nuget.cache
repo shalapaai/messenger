@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "ygN3A0+Ibwo=",
+  "dgSpecHash": "IrmtMNX/lPU=",
   "success": true,
   "projectFilePath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
   "expectedPackageFiles": [
@@ -14,8 +14,6 @@
     "/home/shalapaai/.nuget/packages/google.apis.core/1.68.0/google.apis.core.1.68.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/mediatr/12.4.1/mediatr.12.4.1.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512",
-    "/home/shalapaai/.nuget/packages/microsoft.aspnetcore.http.abstractions/2.3.0/microsoft.aspnetcore.http.abstractions.2.3.0.nupkg.sha512",
-    "/home/shalapaai/.nuget/packages/microsoft.aspnetcore.http.features/2.3.0/microsoft.aspnetcore.http.features.2.3.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/microsoft.bcl.asyncinterfaces/6.0.0/microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/microsoft.entityframeworkcore/9.0.5/microsoft.entityframeworkcore.9.0.5.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/microsoft.entityframeworkcore.abstractions/9.0.5/microsoft.entityframeworkcore.abstractions.9.0.5.nupkg.sha512",
@@ -36,7 +34,6 @@
     "/home/shalapaai/.nuget/packages/system.codedom/7.0.0/system.codedom.7.0.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/system.collections.immutable/8.0.0/system.collections.immutable.8.0.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/system.management/7.0.2/system.management.7.0.2.nupkg.sha512",
-    "/home/shalapaai/.nuget/packages/system.text.encodings.web/8.0.0/system.text.encodings.web.8.0.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/microsoft.netcore.app.ref/9.0.17/microsoft.netcore.app.ref.9.0.17.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.17/microsoft.aspnetcore.app.ref.9.0.17.nupkg.sha512"
   ],

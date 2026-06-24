@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/app/src/Api/Messenger.Api/Messenger.Api.csproj": {}
+    "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/Messenger.Api.csproj": {}
   },
   "projects": {
-    "/app/src/Api/Messenger.Api/Messenger.Api.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/Messenger.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Api/Messenger.Api/Messenger.Api.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/Messenger.Api.csproj",
         "projectName": "Messenger.Api",
-        "projectPath": "/app/src/Api/Messenger.Api/Messenger.Api.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Api/Messenger.Api/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/Messenger.Api.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -26,29 +26,29 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj": {
-                "projectPath": "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj"
               },
-              "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj": {
-                "projectPath": "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj"
               },
-              "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj": {
-                "projectPath": "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj"
               },
-              "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
-                "projectPath": "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj"
               },
-              "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
-                "projectPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
               },
-              "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
-                "projectPath": "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj"
               },
-              "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj": {
-                "projectPath": "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj"
               },
-              "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj": {
-                "projectPath": "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj"
               }
             }
           }
@@ -64,7 +64,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -122,6 +122,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -130,21 +144,21 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj",
         "projectName": "Messenger.Modules.Auth",
-        "projectPath": "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Auth/Messenger.Modules.Auth/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -156,11 +170,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
-                "projectPath": "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj"
               },
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -176,7 +190,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -222,26 +236,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj",
         "projectName": "Messenger.Modules.Chats",
-        "projectPath": "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Chats/Messenger.Modules.Chats/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -253,11 +277,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
-                "projectPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
               },
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -273,7 +297,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -307,26 +331,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj",
         "projectName": "Messenger.Modules.Files",
-        "projectPath": "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Files/Messenger.Modules.Files/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -338,8 +372,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -355,7 +389,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -393,26 +427,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj",
         "projectName": "Messenger.Modules.Localization",
-        "projectPath": "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Localization/Messenger.Modules.Localization/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -424,8 +468,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -441,7 +485,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -457,26 +501,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj",
         "projectName": "Messenger.Modules.Messages",
-        "projectPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -488,8 +542,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -505,7 +559,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -539,26 +593,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
         "projectName": "Messenger.Modules.Notifications",
-        "projectPath": "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Notifications/Messenger.Modules.Notifications/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -570,11 +634,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
-                "projectPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
               },
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -590,7 +654,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -616,26 +680,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj",
         "projectName": "Messenger.Modules.Realtime",
-        "projectPath": "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Realtime/Messenger.Modules.Realtime/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -647,11 +721,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
-                "projectPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
               },
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -667,7 +741,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -697,26 +771,36 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj",
         "projectName": "Messenger.Shared.Kernel",
-        "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -741,7 +825,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -750,10 +834,6 @@
             "MediatR": {
               "target": "Package",
               "version": "[12.4.1, )"
-            },
-            "Microsoft.AspNetCore.Http.Abstractions": {
-              "target": "Package",
-              "version": "[2.3.0, )"
             }
           },
           "imports": [
@@ -767,26 +847,39 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj",
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj",
         "projectName": "Messenger.Modules.Users",
-        "projectPath": "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj",
-        "packagesPath": "/root/.nuget/packages/",
-        "outputPath": "/app/src/Modules/Users/Messenger.Modules.Users/obj/",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/root/.nuget/NuGet/NuGet.Config"
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -798,8 +891,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
-                "projectPath": "/app/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
               }
             }
           }
@@ -815,7 +908,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -849,12 +942,22 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

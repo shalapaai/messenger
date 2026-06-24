@@ -9,10 +9,14 @@
           "Npgsql": "8.0.3"
         },
         "compile": {
-          "lib/net8.0/HealthChecks.NpgSql.dll": {}
+          "lib/net8.0/HealthChecks.NpgSql.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/HealthChecks.NpgSql.dll": {}
+          "lib/net8.0/HealthChecks.NpgSql.dll": {
+            "related": ".xml"
+          }
         }
       },
       "AspNetCore.HealthChecks.Redis/9.0.0": {
@@ -22,22 +26,26 @@
           "StackExchange.Redis": "2.7.4"
         },
         "compile": {
-          "lib/net8.0/HealthChecks.Redis.dll": {}
+          "lib/net8.0/HealthChecks.Redis.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/HealthChecks.Redis.dll": {}
+          "lib/net8.0/HealthChecks.Redis.dll": {
+            "related": ".xml"
+          }
         }
       },
       "AWSSDK.Core/3.7.402.83": {
         "type": "package",
         "compile": {
           "lib/net8.0/AWSSDK.Core.dll": {
-            "related": ".pdb"
+            "related": ".pdb;.xml"
           }
         },
         "runtime": {
           "lib/net8.0/AWSSDK.Core.dll": {
-            "related": ".pdb"
+            "related": ".pdb;.xml"
           }
         }
       },
@@ -48,12 +56,12 @@
         },
         "compile": {
           "lib/net8.0/AWSSDK.S3.dll": {
-            "related": ".pdb"
+            "related": ".pdb;.xml"
           }
         },
         "runtime": {
           "lib/net8.0/AWSSDK.S3.dll": {
-            "related": ".pdb"
+            "related": ".pdb;.xml"
           }
         }
       },
@@ -240,19 +248,27 @@
           "Microsoft.NET.StringTools": "17.6.3"
         },
         "compile": {
-          "lib/net6.0/MessagePack.dll": {}
+          "lib/net6.0/MessagePack.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net6.0/MessagePack.dll": {}
+          "lib/net6.0/MessagePack.dll": {
+            "related": ".xml"
+          }
         }
       },
       "MessagePack.Annotations/2.5.187": {
         "type": "package",
         "compile": {
-          "lib/netstandard2.0/MessagePack.Annotations.dll": {}
+          "lib/netstandard2.0/MessagePack.Annotations.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/netstandard2.0/MessagePack.Annotations.dll": {}
+          "lib/netstandard2.0/MessagePack.Annotations.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Microsoft.AspNetCore.Authentication.Abstractions/2.3.0": {
@@ -615,10 +631,14 @@
           "StackExchange.Redis": "2.7.27"
         },
         "compile": {
-          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {}
+          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {}
+          "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll": {
+            "related": ".xml"
+          }
         },
         "frameworkReferences": [
           "Microsoft.AspNetCore.App"
@@ -900,19 +920,27 @@
           "Microsoft.Extensions.Options": "8.0.2"
         },
         "compile": {
-          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll": {}
+          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll": {}
+          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions/8.0.11": {
         "type": "package",
         "compile": {
-          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll": {}
+          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll": {}
+          "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Microsoft.Extensions.FileProviders.Abstractions/9.0.0": {
@@ -1033,10 +1061,14 @@
       "Microsoft.Extensions.Primitives/9.0.5": {
         "type": "package",
         "compile": {
-          "lib/net9.0/Microsoft.Extensions.Primitives.dll": {}
+          "lib/net9.0/Microsoft.Extensions.Primitives.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net9.0/Microsoft.Extensions.Primitives.dll": {}
+          "lib/net9.0/Microsoft.Extensions.Primitives.dll": {
+            "related": ".xml"
+          }
         },
         "build": {
           "buildTransitive/net8.0/_._": {}
@@ -1157,11 +1189,13 @@
       "Microsoft.NET.StringTools/17.6.3": {
         "type": "package",
         "compile": {
-          "ref/net7.0/_._": {}
+          "ref/net7.0/_._": {
+            "related": ".xml"
+          }
         },
         "runtime": {
           "lib/net7.0/Microsoft.NET.StringTools.dll": {
-            "related": ".pdb"
+            "related": ".pdb;.xml"
           }
         }
       },
@@ -1197,10 +1231,14 @@
           "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
         },
         "compile": {
-          "lib/net8.0/Npgsql.dll": {}
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/Npgsql.dll": {}
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL/9.0.4": {
@@ -1211,10 +1249,14 @@
           "Npgsql": "9.0.3"
         },
         "compile": {
-          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {}
+          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {}
+          "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Pipelines.Sockets.Unofficial/2.2.8": {
@@ -1223,10 +1265,14 @@
           "System.IO.Pipelines": "5.0.1"
         },
         "compile": {
-          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {}
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {}
+          "lib/net5.0/Pipelines.Sockets.Unofficial.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Serilog/4.2.0": {
@@ -1425,10 +1471,14 @@
           "Pipelines.Sockets.Unofficial": "2.2.8"
         },
         "compile": {
-          "lib/net8.0/StackExchange.Redis.dll": {}
+          "lib/net8.0/StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net8.0/StackExchange.Redis.dll": {}
+          "lib/net8.0/StackExchange.Redis.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Swashbuckle.AspNetCore/8.1.1": {
@@ -1800,15 +1850,17 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v9.0",
         "dependencies": {
-          "MediatR": "12.4.1",
-          "Microsoft.AspNetCore.Http.Abstractions": "2.3.0"
+          "MediatR": "12.4.1"
         },
         "compile": {
           "bin/placeholder/Messenger.Shared.Kernel.dll": {}
         },
         "runtime": {
           "bin/placeholder/Messenger.Shared.Kernel.dll": {}
-        }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
       }
     }
   },
@@ -1825,7 +1877,9 @@
         "aspnetcore.healthchecks.npgsql.nuspec",
         "icon.png",
         "lib/net8.0/HealthChecks.NpgSql.dll",
-        "lib/netstandard2.0/HealthChecks.NpgSql.dll"
+        "lib/net8.0/HealthChecks.NpgSql.xml",
+        "lib/netstandard2.0/HealthChecks.NpgSql.dll",
+        "lib/netstandard2.0/HealthChecks.NpgSql.xml"
       ]
     },
     "AspNetCore.HealthChecks.Redis/9.0.0": {
@@ -1839,7 +1893,9 @@
         "aspnetcore.healthchecks.redis.nuspec",
         "icon.png",
         "lib/net8.0/HealthChecks.Redis.dll",
-        "lib/netstandard2.0/HealthChecks.Redis.dll"
+        "lib/net8.0/HealthChecks.Redis.xml",
+        "lib/netstandard2.0/HealthChecks.Redis.dll",
+        "lib/netstandard2.0/HealthChecks.Redis.xml"
       ]
     },
     "AWSSDK.Core/3.7.402.83": {
@@ -1855,14 +1911,19 @@
         "images/AWSLogo.png",
         "lib/net35/AWSSDK.Core.dll",
         "lib/net35/AWSSDK.Core.pdb",
+        "lib/net35/AWSSDK.Core.xml",
         "lib/net45/AWSSDK.Core.dll",
         "lib/net45/AWSSDK.Core.pdb",
+        "lib/net45/AWSSDK.Core.xml",
         "lib/net8.0/AWSSDK.Core.dll",
         "lib/net8.0/AWSSDK.Core.pdb",
+        "lib/net8.0/AWSSDK.Core.xml",
         "lib/netcoreapp3.1/AWSSDK.Core.dll",
         "lib/netcoreapp3.1/AWSSDK.Core.pdb",
+        "lib/netcoreapp3.1/AWSSDK.Core.xml",
         "lib/netstandard2.0/AWSSDK.Core.dll",
         "lib/netstandard2.0/AWSSDK.Core.pdb",
+        "lib/netstandard2.0/AWSSDK.Core.xml",
         "tools/account-management.ps1"
       ]
     },
@@ -1881,14 +1942,19 @@
         "images/AWSLogo.png",
         "lib/net35/AWSSDK.S3.dll",
         "lib/net35/AWSSDK.S3.pdb",
+        "lib/net35/AWSSDK.S3.xml",
         "lib/net45/AWSSDK.S3.dll",
         "lib/net45/AWSSDK.S3.pdb",
+        "lib/net45/AWSSDK.S3.xml",
         "lib/net8.0/AWSSDK.S3.dll",
         "lib/net8.0/AWSSDK.S3.pdb",
+        "lib/net8.0/AWSSDK.S3.xml",
         "lib/netcoreapp3.1/AWSSDK.S3.dll",
         "lib/netcoreapp3.1/AWSSDK.S3.pdb",
+        "lib/netcoreapp3.1/AWSSDK.S3.xml",
         "lib/netstandard2.0/AWSSDK.S3.dll",
         "lib/netstandard2.0/AWSSDK.S3.pdb",
+        "lib/netstandard2.0/AWSSDK.S3.xml",
         "tools/install.ps1",
         "tools/uninstall.ps1"
       ]
@@ -2127,8 +2193,11 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net472/MessagePack.dll",
+        "lib/net472/MessagePack.xml",
         "lib/net6.0/MessagePack.dll",
+        "lib/net6.0/MessagePack.xml",
         "lib/netstandard2.0/MessagePack.dll",
+        "lib/netstandard2.0/MessagePack.xml",
         "messagepack.2.5.187.nupkg.sha512",
         "messagepack.nuspec"
       ]
@@ -2141,6 +2210,7 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/netstandard2.0/MessagePack.Annotations.dll",
+        "lib/netstandard2.0/MessagePack.Annotations.xml",
         "messagepack.annotations.2.5.187.nupkg.sha512",
         "messagepack.annotations.nuspec"
       ]
@@ -2405,6 +2475,7 @@
         "Icon.png",
         "THIRD-PARTY-NOTICES.TXT",
         "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.dll",
+        "lib/net9.0/Microsoft.AspNetCore.SignalR.StackExchangeRedis.xml",
         "microsoft.aspnetcore.signalr.stackexchangeredis.9.0.5.nupkg.sha512",
         "microsoft.aspnetcore.signalr.stackexchangeredis.nuspec"
       ]
@@ -2995,8 +3066,11 @@
         "Icon.png",
         "THIRD-PARTY-NOTICES.TXT",
         "lib/net462/Microsoft.Extensions.Diagnostics.HealthChecks.dll",
+        "lib/net462/Microsoft.Extensions.Diagnostics.HealthChecks.xml",
         "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll",
+        "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll",
+        "lib/netstandard2.0/Microsoft.Extensions.Diagnostics.HealthChecks.xml",
         "microsoft.extensions.diagnostics.healthchecks.8.0.11.nupkg.sha512",
         "microsoft.extensions.diagnostics.healthchecks.nuspec"
       ]
@@ -3011,8 +3085,11 @@
         "Icon.png",
         "THIRD-PARTY-NOTICES.TXT",
         "lib/net462/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll",
+        "lib/net462/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.xml",
         "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll",
+        "lib/net8.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll",
+        "lib/netstandard2.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.xml",
         "microsoft.extensions.diagnostics.healthchecks.abstractions.8.0.11.nupkg.sha512",
         "microsoft.extensions.diagnostics.healthchecks.abstractions.nuspec"
       ]
@@ -3434,16 +3511,22 @@
         "README.md",
         "lib/net472/Microsoft.NET.StringTools.dll",
         "lib/net472/Microsoft.NET.StringTools.pdb",
+        "lib/net472/Microsoft.NET.StringTools.xml",
         "lib/net7.0/Microsoft.NET.StringTools.dll",
         "lib/net7.0/Microsoft.NET.StringTools.pdb",
+        "lib/net7.0/Microsoft.NET.StringTools.xml",
         "lib/netstandard2.0/Microsoft.NET.StringTools.dll",
         "lib/netstandard2.0/Microsoft.NET.StringTools.pdb",
+        "lib/netstandard2.0/Microsoft.NET.StringTools.xml",
         "microsoft.net.stringtools.17.6.3.nupkg.sha512",
         "microsoft.net.stringtools.nuspec",
         "notices/THIRDPARTYNOTICES.txt",
         "ref/net472/Microsoft.NET.StringTools.dll",
+        "ref/net472/Microsoft.NET.StringTools.xml",
         "ref/net7.0/Microsoft.NET.StringTools.dll",
-        "ref/netstandard2.0/Microsoft.NET.StringTools.dll"
+        "ref/net7.0/Microsoft.NET.StringTools.xml",
+        "ref/netstandard2.0/Microsoft.NET.StringTools.dll",
+        "ref/netstandard2.0/Microsoft.NET.StringTools.xml"
       ]
     },
     "Microsoft.OpenApi/1.6.23": {
@@ -3531,11 +3614,17 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net461/Pipelines.Sockets.Unofficial.dll",
+        "lib/net461/Pipelines.Sockets.Unofficial.xml",
         "lib/net472/Pipelines.Sockets.Unofficial.dll",
+        "lib/net472/Pipelines.Sockets.Unofficial.xml",
         "lib/net5.0/Pipelines.Sockets.Unofficial.dll",
+        "lib/net5.0/Pipelines.Sockets.Unofficial.xml",
         "lib/netcoreapp3.1/Pipelines.Sockets.Unofficial.dll",
+        "lib/netcoreapp3.1/Pipelines.Sockets.Unofficial.xml",
         "lib/netstandard2.0/Pipelines.Sockets.Unofficial.dll",
+        "lib/netstandard2.0/Pipelines.Sockets.Unofficial.xml",
         "lib/netstandard2.1/Pipelines.Sockets.Unofficial.dll",
+        "lib/netstandard2.1/Pipelines.Sockets.Unofficial.xml",
         "pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
         "pipelines.sockets.unofficial.nuspec"
       ]
@@ -3801,11 +3890,17 @@
         ".nupkg.metadata",
         ".signature.p7s",
         "lib/net461/StackExchange.Redis.dll",
+        "lib/net461/StackExchange.Redis.xml",
         "lib/net472/StackExchange.Redis.dll",
+        "lib/net472/StackExchange.Redis.xml",
         "lib/net6.0/StackExchange.Redis.dll",
+        "lib/net6.0/StackExchange.Redis.xml",
         "lib/net8.0/StackExchange.Redis.dll",
+        "lib/net8.0/StackExchange.Redis.xml",
         "lib/netcoreapp3.1/StackExchange.Redis.dll",
+        "lib/netcoreapp3.1/StackExchange.Redis.xml",
         "lib/netstandard2.0/StackExchange.Redis.dll",
+        "lib/netstandard2.0/StackExchange.Redis.xml",
         "stackexchange.redis.2.8.31.nupkg.sha512",
         "stackexchange.redis.nuspec"
       ]
@@ -4258,19 +4353,19 @@
     ]
   },
   "packageFolders": {
-    "/root/.nuget/packages/": {}
+    "/home/shalapaai/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/app/src/Api/Messenger.Api/Messenger.Api.csproj",
+      "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/Messenger.Api.csproj",
       "projectName": "Messenger.Api",
-      "projectPath": "/app/src/Api/Messenger.Api/Messenger.Api.csproj",
-      "packagesPath": "/root/.nuget/packages/",
-      "outputPath": "/app/src/Api/Messenger.Api/obj/",
+      "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/Messenger.Api.csproj",
+      "packagesPath": "/home/shalapaai/.nuget/packages/",
+      "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Api/Messenger.Api/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/root/.nuget/NuGet/NuGet.Config"
+        "/home/shalapaai/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -4282,29 +4377,29 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj": {
-              "projectPath": "/app/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj"
             },
-            "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj": {
-              "projectPath": "/app/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj"
             },
-            "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj": {
-              "projectPath": "/app/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj"
             },
-            "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
-              "projectPath": "/app/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj"
             },
-            "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
-              "projectPath": "/app/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
             },
-            "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
-              "projectPath": "/app/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj"
             },
-            "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj": {
-              "projectPath": "/app/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj"
             },
-            "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj": {
-              "projectPath": "/app/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj"
+            "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj": {
+              "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj"
             }
           }
         }
@@ -4320,7 +4415,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net9.0": {
@@ -4378,6 +4473,20 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[9.0.17, 9.0.17]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.linux-x64",
+            "version": "[9.0.17, 9.0.17]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[9.0.17, 9.0.17]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"
@@ -4386,7 +4495,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.315/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
