@@ -1,0 +1,112 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import styles from './RegisterForm.module.css'
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function RegisterForm() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [repeatPassword, setRepeatPassword] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!email.trim() || !password.trim() || !repeatPassword.trim()) {
+      setError('Заполните все поля')
+      return
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Введите электронную почту в правильном формате')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Пароль должен быть не короче 6 символов')
+      return
+    }
+
+    if (password !== repeatPassword) {
+      setError('Пароли не совпадают')
+      return
+    }
+
+    setError('')
+    setIsLoading(true)
+
+    console.log('Register form submitted:', {
+      email,
+      password,
+    })
+
+    setIsLoading(false)
+  }
+
+  return (
+    <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Регистрация</h2>
+        <p className={styles.subtitle}>
+          Создайте аккаунт, чтобы начать пользоваться мессенджером.
+        </p>
+      </div>
+
+      <label className={styles.field}>
+        <span className={styles.label}>Электронная почта</span>
+        <input
+          className={styles.input}
+          type="email"
+          name="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Введите email"
+          autoComplete="email"
+        />
+      </label>
+
+      <label className={styles.field}>
+        <span className={styles.label}>Пароль</span>
+        <input
+          className={styles.input}
+          type="password"
+          name="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Придумайте пароль"
+          autoComplete="new-password"
+        />
+      </label>
+
+      <label className={styles.field}>
+        <span className={styles.label}>Повторите пароль</span>
+        <input
+          className={styles.input}
+          type="password"
+          name="repeatPassword"
+          value={repeatPassword}
+          onChange={(event) => setRepeatPassword(event.target.value)}
+          placeholder="Повторите пароль"
+          autoComplete="new-password"
+        />
+      </label>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      <button className={styles.button} type="submit" disabled={isLoading}>
+        {isLoading ? 'Создаём аккаунт...' : 'Зарегистрироваться'}
+      </button>
+
+      <p className={styles.footerText}>
+        Уже есть аккаунт? <Link to="/login">Войти</Link>
+      </p>
+    </form>
+  )
+}
+
+export default RegisterForm
