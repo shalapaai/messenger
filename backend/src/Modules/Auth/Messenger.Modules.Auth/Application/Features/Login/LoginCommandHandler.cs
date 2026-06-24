@@ -3,13 +3,15 @@ namespace Messenger.Modules.Auth.Application.Features.Login;
 using Messenger.Modules.Auth.Application.Abstractions;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
+using Microsoft.Extensions.Configuration;
 
 public sealed class LoginCommandHandler(
     IUserAuthRepository userRepository,
     IPasswordHasher passwordHasher,
     IJwtTokenService jwtTokenService,
     IRefreshTokenRepository refreshTokenRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IConfiguration configuration)
     : ICommandHandler<LoginCommand, TokenPairDto>
 {
     public async Task<Result<TokenPairDto>> Handle(LoginCommand command, CancellationToken ct)
@@ -19,10 +21,11 @@ public sealed class LoginCommandHandler(
         if (user is null || !passwordHasher.Verify(command.Password, user.PasswordHash))
             return Result.Failure<TokenPairDto>(Error.Unauthorized("Invalid email or password"));
 
-        var accessToken = jwtTokenService.GenerateAccessToken(user.Id, user.Email);
+        var accessToken       = jwtTokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshTokenValue = jwtTokenService.GenerateRefreshToken();
+        var expirationDays    = configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays", 7);
 
-        var refreshToken = Domain.RefreshToken.Create(user.Id, refreshTokenValue, expirationDays: 30);
+        var refreshToken = Domain.RefreshToken.Create(user.Id, refreshTokenValue, expirationDays);
         refreshTokenRepository.Add(refreshToken);
         await unitOfWork.SaveChangesAsync(ct);
 

@@ -9,22 +9,24 @@ public sealed class RegisterCommandHandler(
     IUserAuthRepository userRepository,
     IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork)
-    : ICommandHandler<RegisterCommand>
+    : ICommandHandler<RegisterCommand, UserAuthDto>
 {
-    public async Task<Result> Handle(RegisterCommand command, CancellationToken ct)
+    public async Task<Result<UserAuthDto>> Handle(RegisterCommand command, CancellationToken ct)
     {
         var emailExists = await userRepository.ExistsByEmailAsync(command.Email, ct);
         if (emailExists)
-            return Result.Failure(Error.Conflict("Auth.EmailAlreadyExists"));
+            return Result.Failure<UserAuthDto>(Error.Conflict("Auth.EmailAlreadyExists"));
 
         var passwordHash = passwordHasher.Hash(command.Password);
         var userResult   = UserAuth.Create(command.Email, passwordHash);
 
         if (userResult.IsFailure)
-            return Result.Failure(userResult.Error);
+            return Result.Failure<UserAuthDto>(userResult.Error);
 
-        userRepository.Add(userResult.Value!);
+        var user = userResult.Value!;
+        userRepository.Add(user);
         await unitOfWork.SaveChangesAsync(ct);
-        return Result.Success();
+
+        return Result.Success(new UserAuthDto(user.Id, user.Email, user.CreatedAt));
     }
 }
