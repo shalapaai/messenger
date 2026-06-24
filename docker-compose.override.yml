@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: messenger_dev
       POSTGRES_DB:       messenger
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   redis:
     command: >
@@ -19,7 +19,7 @@ services:
         --requirepass redis_dev
         --loglevel debug
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
   # В dev API запускается с hot reload через dotnet watch
   api:
@@ -52,7 +52,7 @@ services:
   # pgAdmin в dev — без volume (чистый каждый раз)
   pgadmin:
     environment:
-      PGADMIN_DEFAULT_EMAIL:    admin@messenger.local
+      PGADMIN_DEFAULT_EMAIL:    admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
 
 volumes:

@@ -129,8 +129,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Health checks для Docker HEALTHCHECK и load balancer
 builder.Services.AddHealthChecks()
-    .AddNpgsql(builder.Configuration.GetConnectionString("MessengerDb")!, name: "postgres")
-    .AddRedis(redisConnectionString, name: "redis");
+    .AddNpgSql(builder.Configuration.GetConnectionString("MessengerDb")!, "SELECT 1;", name: "postgres")
+    .AddRedis(redisConnectionString, "redis");
 
 var app = builder.Build();
 
@@ -151,8 +151,8 @@ app.UseSerilogRequestLogging(opts =>
 {
     opts.EnrichDiagnosticContext = (diag, ctx) =>
     {
-        diag.Set("RequestHost", ctx.Request.Host.Value);
-        diag.Set("UserAgent", ctx.Request.Headers.UserAgent);
+        diag.Set("RequestHost", ctx.Request.Host.Value ?? string.Empty);
+        diag.Set("UserAgent", ctx.Request.Headers.UserAgent.ToString());
     };
 });
 app.UseLocalizationModule();     // культура из Accept-Language / ?lang=

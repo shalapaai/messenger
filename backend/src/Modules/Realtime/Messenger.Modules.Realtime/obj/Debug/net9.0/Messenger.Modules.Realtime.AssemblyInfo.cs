@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Messenger.Modules.Realtime")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ae503888358b88f652215931aa1be7103f878186")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+678246f4490c8641fe02eec256de67cd960d1e09")]
 [assembly: System.Reflection.AssemblyProductAttribute("Messenger.Modules.Realtime")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Messenger.Modules.Realtime")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
