@@ -1,0 +1,5 @@
+/app/src/Modules/Shared/Messenger.Shared.Kernel/obj/Debug/net9.0/Messenger.Shared.Kernel.csproj.AssemblyReference.cache
+/app/src/Modules/Shared/Messenger.Shared.Kernel/obj/Debug/net9.0/Messenger.Shared.Kernel.GeneratedMSBuildEditorConfig.editorconfig
+/app/src/Modules/Shared/Messenger.Shared.Kernel/obj/Debug/net9.0/Messenger.Shared.Kernel.AssemblyInfoInputs.cache
+/app/src/Modules/Shared/Messenger.Shared.Kernel/obj/Debug/net9.0/Messenger.Shared.Kernel.AssemblyInfo.cs
+/app/src/Modules/Shared/Messenger.Shared.Kernel/obj/Debug/net9.0/Messenger.Shared.Kernel.csproj.CoreCompileInputs.cache
