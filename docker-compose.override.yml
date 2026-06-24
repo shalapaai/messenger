@@ -41,6 +41,9 @@ services:
       PGADMIN_DEFAULT_EMAIL:    admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
 
+  # Frontend в dev не запускается через Docker — используй: cd frontend && npm run dev
+  # Vite proxy (/api, /hubs) автоматически перенаправляет на http://localhost:8080
+
 volumes:
   nuget_cache:
     driver: local
