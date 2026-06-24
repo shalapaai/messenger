@@ -1,0 +1,16 @@
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/bin/Debug/net9.0/Messenger.Modules.Files.deps.json
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/bin/Debug/net9.0/Messenger.Modules.Files.dll
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/bin/Debug/net9.0/Messenger.Modules.Files.pdb
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/bin/Debug/net9.0/Messenger.Shared.Kernel.dll
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/bin/Debug/net9.0/Messenger.Shared.Kernel.pdb
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.csproj.AssemblyReference.cache
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.GeneratedMSBuildEditorConfig.editorconfig
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.AssemblyInfoInputs.cache
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.AssemblyInfo.cs
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.csproj.CoreCompileInputs.cache
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.sourcelink.json
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenge.88AD0FAC.Up2Date
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.dll
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/refint/Messenger.Modules.Files.dll
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/Messenger.Modules.Files.pdb
+/home/shalapaai/Documents/messenger/backend/src/Modules/Files/Messenger.Modules.Files/obj/Debug/net9.0/ref/Messenger.Modules.Files.dll

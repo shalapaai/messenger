@@ -1,0 +1,40 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# IDE
+.vs/
+.vscode/
+**/*.user
+**/*.suo
+**/.idea/
+**/*.DotSettings
+
+# Secrets
+.env
+**/*.pfx
+**/*.key
+**/*.pem
+
+# Tests (не нужны в prod image)
+tests/
+**/*Tests*/
+**/*Spec*/
+
+# Docs
+**/*.md
+docs/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Logs
+logs/
+**/*.log
+
+# OS
+.DS_Store
+Thumbs.db

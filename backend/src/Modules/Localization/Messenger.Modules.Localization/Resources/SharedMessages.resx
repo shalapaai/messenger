@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter</value></resheader>
+
+  <!-- Auth -->
+  <data name="Auth.InvalidCredentials" xml:space="preserve">
+    <value>Invalid email or password</value>
+  </data>
+  <data name="Auth.EmailAlreadyExists" xml:space="preserve">
+    <value>An account with this email already exists</value>
+  </data>
+  <data name="Auth.TokenExpired" xml:space="preserve">
+    <value>Your session has expired. Please log in again</value>
+  </data>
+
+  <!-- Messages -->
+  <data name="Message.ContentEmpty" xml:space="preserve">
+    <value>Message content cannot be empty</value>
+  </data>
+  <data name="Message.ContentTooLong" xml:space="preserve">
+    <value>Message cannot exceed 4096 characters</value>
+  </data>
+  <data name="Message.NotFound" xml:space="preserve">
+    <value>Message not found</value>
+  </data>
+  <data name="Message.EditForbidden" xml:space="preserve">
+    <value>You can only edit your own messages</value>
+  </data>
+
+  <!-- Files -->
+  <data name="File.TypeNotAllowed" xml:space="preserve">
+    <value>This file type is not allowed</value>
+  </data>
+  <data name="File.TooLarge" xml:space="preserve">
+    <value>File size exceeds the maximum allowed limit</value>
+  </data>
+
+  <!-- Chats -->
+  <data name="Chat.NotFound" xml:space="preserve">
+    <value>Chat not found</value>
+  </data>
+  <data name="Chat.AccessDenied" xml:space="preserve">
+    <value>You are not a member of this chat</value>
+  </data>
+</root>

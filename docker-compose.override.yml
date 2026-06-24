@@ -1,0 +1,46 @@
+# Dev overrides. Applied automatically on: docker compose up
+# Strategy:
+#   - Infrastructure (postgres, redis, pgadmin) runs in Docker
+#   - API runs in Docker from compiled image (no source volume mount)
+#   - For hot reload: run API locally via `dotnet watch` (see README)
+
+services:
+
+  postgres:
+    environment:
+      POSTGRES_USER:     messenger
+      POSTGRES_PASSWORD: messenger_dev
+      POSTGRES_DB:       messenger
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    command: >
+      redis-server
+        --appendonly yes
+        --requirepass redis_dev
+        --loglevel debug
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT:             Development
+      ASPNETCORE_HTTP_PORTS:              "8080"
+      ASPNETCORE_URLS:                    "http://+:8080"
+      ConnectionStrings__MessengerDb:     "Host=postgres;Port=5432;Database=messenger;Username=messenger;Password=messenger_dev;Include Error Detail=true"
+      Redis__ConnectionString:            "redis:6379,password=redis_dev,abortConnect=false"
+      Jwt__SecretKey:                     "dev-secret-key-minimum-256-bits-long-replace-in-prod"
+      FileStorage__Type:                  Local
+      FileStorage__Local__BasePath:       /app/uploads
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  pgadmin:
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+volumes:
+  nuget_cache:
+    driver: local

@@ -1,0 +1,34 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Api/">
+    <Project Path="src/Api/Messenger.Api/Messenger.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Auth/">
+    <Project Path="src/Modules/Auth/Messenger.Modules.Auth/Messenger.Modules.Auth.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Chats/">
+    <Project Path="src/Modules/Chats/Messenger.Modules.Chats/Messenger.Modules.Chats.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Files/">
+    <Project Path="src/Modules/Files/Messenger.Modules.Files/Messenger.Modules.Files.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Localization/">
+    <Project Path="src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Messages/">
+    <Project Path="src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Realtime/">
+    <Project Path="src/Modules/Realtime/Messenger.Modules.Realtime/Messenger.Modules.Realtime.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Shared/">
+    <Project Path="src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Users/">
+    <Project Path="src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,240 @@
+2026-06-24 10:41:25.940 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2026-06-24 10:41:25.971 +00:00 [WRN] Microsoft.AspNetCore.DataProtection.Repositories.FileSystemXmlRepository: Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be persisted outside of the container. Protected data will be unavailable when container is destroyed. For more information go to https://aka.ms/aspnet/dataprotectionwarning
+2026-06-24 10:41:25.991 +00:00 [WRN] Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager: No XML encryptor configured. Key {2c8b0d61-06fc-4381-b0df-68734276001d} may be persisted to storage in unencrypted form.
+2026-06-24 10:41:26.006 +00:00 [WRN] Microsoft.AspNetCore.Hosting.Diagnostics: Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://+:8080'.
+2026-06-24 10:41:26.114 +00:00 [INF] Microsoft.Hosting.Lifetime: Now listening on: http://[::]:8080
+2026-06-24 10:41:26.114 +00:00 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2026-06-24 10:41:26.114 +00:00 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Development
+2026-06-24 10:41:26.114 +00:00 [INF] Microsoft.Hosting.Lifetime: Content root path: /app/src/Api/Messenger.Api
+2026-06-24 10:41:26.115 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2026-06-24 10:45:15.230 +00:00 [WRN] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware: Failed to determine the https port for redirect.
+2026-06-24 10:45:15.257 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health checks
+2026-06-24 10:45:15.259 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check npgsql
+2026-06-24 10:45:15.260 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check redis
+2026-06-24 10:45:15.278 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check redis with status "Healthy" completed after 14.7387ms with message 'null'
+2026-06-24 10:45:15.406 +00:00 [ERR] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check npgsql with status "Unhealthy" completed after 146.4615ms with message '42601: syntax error at or near "postgres"
+
+POSITION: 1'
+Npgsql.PostgresException (0x80004005): 42601: syntax error at or near "postgres"
+
+POSITION: 1
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteScalar(Boolean async, CancellationToken cancellationToken)
+   at HealthChecks.NpgSql.NpgSqlHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken) in /home/runner/work/AspNetCore.Diagnostics.HealthChecks/AspNetCore.Diagnostics.HealthChecks/src/HealthChecks.NpgSql/NpgSqlHealthCheck.cs:line 35
+   at HealthChecks.NpgSql.NpgSqlHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken) in /home/runner/work/AspNetCore.Diagnostics.HealthChecks/AspNetCore.Diagnostics.HealthChecks/src/HealthChecks.NpgSql/NpgSqlHealthCheck.cs:line 37
+  Exception data:
+    Severity: ERROR
+    SqlState: 42601
+    MessageText: syntax error at or near "postgres"
+    Position: 1
+    File: scan.l
+    Line: 1244
+    Routine: scanner_yyerror
+2026-06-24 10:45:15.419 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check processing with combined status "Unhealthy" completed after 159.7505ms
+2026-06-24 10:45:15.424 +00:00 [ERR] Serilog.AspNetCore.RequestLoggingMiddleware: HTTP GET /health responded 503 in 189.7492 ms
+2026-06-24 10:46:05.914 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health checks
+2026-06-24 10:46:05.914 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check npgsql
+2026-06-24 10:46:05.914 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check redis
+2026-06-24 10:46:05.915 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check redis with status "Healthy" completed after 0.8467ms with message 'null'
+2026-06-24 10:46:05.918 +00:00 [ERR] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check npgsql with status "Unhealthy" completed after 3.4072ms with message '42601: syntax error at or near "postgres"
+
+POSITION: 1'
+Npgsql.PostgresException (0x80004005): 42601: syntax error at or near "postgres"
+
+POSITION: 1
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteScalar(Boolean async, CancellationToken cancellationToken)
+   at HealthChecks.NpgSql.NpgSqlHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken) in /home/runner/work/AspNetCore.Diagnostics.HealthChecks/AspNetCore.Diagnostics.HealthChecks/src/HealthChecks.NpgSql/NpgSqlHealthCheck.cs:line 35
+   at HealthChecks.NpgSql.NpgSqlHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken) in /home/runner/work/AspNetCore.Diagnostics.HealthChecks/AspNetCore.Diagnostics.HealthChecks/src/HealthChecks.NpgSql/NpgSqlHealthCheck.cs:line 37
+  Exception data:
+    Severity: ERROR
+    SqlState: 42601
+    MessageText: syntax error at or near "postgres"
+    Position: 1
+    File: scan.l
+    Line: 1244
+    Routine: scanner_yyerror
+2026-06-24 10:46:05.920 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check processing with combined status "Unhealthy" completed after 6.4392ms
+2026-06-24 10:46:05.921 +00:00 [ERR] Serilog.AspNetCore.RequestLoggingMiddleware: HTTP GET /health responded 503 in 11.2549 ms
+2026-06-24 10:46:06.011 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health checks
+2026-06-24 10:46:06.011 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check redis
+2026-06-24 10:46:06.011 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check npgsql
+2026-06-24 10:46:06.013 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check redis with status "Healthy" completed after 2.2486ms with message 'null'
+2026-06-24 10:46:06.013 +00:00 [ERR] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check npgsql with status "Unhealthy" completed after 1.5179ms with message '42601: syntax error at or near "postgres"
+
+POSITION: 1'
+Npgsql.PostgresException (0x80004005): 42601: syntax error at or near "postgres"
+
+POSITION: 1
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteScalar(Boolean async, CancellationToken cancellationToken)
+   at HealthChecks.NpgSql.NpgSqlHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken) in /home/runner/work/AspNetCore.Diagnostics.HealthChecks/AspNetCore.Diagnostics.HealthChecks/src/HealthChecks.NpgSql/NpgSqlHealthCheck.cs:line 35
+   at HealthChecks.NpgSql.NpgSqlHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken) in /home/runner/work/AspNetCore.Diagnostics.HealthChecks/AspNetCore.Diagnostics.HealthChecks/src/HealthChecks.NpgSql/NpgSqlHealthCheck.cs:line 37
+  Exception data:
+    Severity: ERROR
+    SqlState: 42601
+    MessageText: syntax error at or near "postgres"
+    Position: 1
+    File: scan.l
+    Line: 1244
+    Routine: scanner_yyerror
+2026-06-24 10:46:06.015 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check processing with combined status "Unhealthy" completed after 4.3439ms
+2026-06-24 10:46:06.015 +00:00 [ERR] Serilog.AspNetCore.RequestLoggingMiddleware: HTTP GET /health responded 503 in 6.5023 ms
+2026-06-24 10:46:38.218 +00:00 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2026-06-24 10:46:38.219 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2026-06-24 10:46:38.233 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped
+2026-06-24 10:46:41.913 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting starting
+2026-06-24 10:46:41.952 +00:00 [WRN] Microsoft.AspNetCore.DataProtection.Repositories.FileSystemXmlRepository: Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be persisted outside of the container. Protected data will be unavailable when container is destroyed. For more information go to https://aka.ms/aspnet/dataprotectionwarning
+2026-06-24 10:46:41.981 +00:00 [WRN] Microsoft.AspNetCore.Hosting.Diagnostics: Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://+:8080'.
+2026-06-24 10:46:42.079 +00:00 [INF] Microsoft.Hosting.Lifetime: Now listening on: http://[::]:8080
+2026-06-24 10:46:42.079 +00:00 [INF] Microsoft.Hosting.Lifetime: Application started. Press Ctrl+C to shut down.
+2026-06-24 10:46:42.079 +00:00 [INF] Microsoft.Hosting.Lifetime: Hosting environment: Development
+2026-06-24 10:46:42.079 +00:00 [INF] Microsoft.Hosting.Lifetime: Content root path: /app/src/Api/Messenger.Api
+2026-06-24 10:46:42.080 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting started
+2026-06-24 10:47:21.343 +00:00 [WRN] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware: Failed to determine the https port for redirect.
+2026-06-24 10:47:21.365 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health checks
+2026-06-24 10:47:21.367 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check redis
+2026-06-24 10:47:21.367 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Running health check postgres
+2026-06-24 10:47:21.381 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check redis with status "Healthy" completed after 11.8414ms with message 'null'
+2026-06-24 10:47:21.513 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check postgres with status "Healthy" completed after 146.2845ms with message 'null'
+2026-06-24 10:47:21.517 +00:00 [DBG] Microsoft.Extensions.Diagnostics.HealthChecks.DefaultHealthCheckService: Health check processing with combined status "Healthy" completed after 149.9035ms
+2026-06-24 10:47:21.523 +00:00 [INF] Serilog.AspNetCore.RequestLoggingMiddleware: HTTP GET /health responded 200 in 175.5983 ms
+2026-06-24 10:49:03.081 +00:00 [ERR] Microsoft.EntityFrameworkCore.Database.Command: Failed executing DbCommand (20ms) [Parameters=[@__ToLowerInvariant_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u."Id", u."CreatedAt", u."Email", u."IsEmailVerified", u."PasswordHash"
+FROM auth.users AS u
+WHERE u."Email" = @__ToLowerInvariant_0
+LIMIT 1
+2026-06-24 10:49:03.096 +00:00 [ERR] Microsoft.EntityFrameworkCore.Query: An exception occurred while iterating over the results of a query for context type 'Messenger.Modules.Auth.Infrastructure.AuthDbContext'.
+Npgsql.PostgresException (0x80004005): 42P01: relation "auth.users" does not exist
+
+POSITION: 85
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P01
+    MessageText: relation "auth.users" does not exist
+    Position: 85
+    File: parse_relation.c
+    Line: 1428
+    Routine: parserOpenTable
+Npgsql.PostgresException (0x80004005): 42P01: relation "auth.users" does not exist
+
+POSITION: 85
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P01
+    MessageText: relation "auth.users" does not exist
+    Position: 85
+    File: parse_relation.c
+    Line: 1428
+    Routine: parserOpenTable
+2026-06-24 10:49:03.103 +00:00 [ERR] Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware: An unhandled exception has occurred while executing the request.
+Npgsql.PostgresException (0x80004005): 42P01: relation "auth.users" does not exist
+
+POSITION: 85
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Messenger.Modules.Auth.Infrastructure.Repositories.UserAuthRepository.GetByEmailAsync(String email, CancellationToken ct)
+   at Messenger.Modules.Auth.Application.Features.Login.LoginCommandHandler.Handle(LoginCommand command, CancellationToken ct)
+   at Messenger.Modules.Auth.Presentation.AuthEndpoints.Login(LoginCommand command, ISender sender, IStringLocalizer`1 localizer, CancellationToken ct)
+   at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+   at Microsoft.AspNetCore.Http.RequestDelegateFactory.<>c__DisplayClass101_2.<<HandleRequestBodyAndCompileRequestDelegateForJson>b__2>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.<Invoke>g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P01
+    MessageText: relation "auth.users" does not exist
+    Position: 85
+    File: parse_relation.c
+    Line: 1428
+    Routine: parserOpenTable
+2026-06-24 10:49:03.108 +00:00 [ERR] Messenger.Api.Middleware.GlobalExceptionHandler: Unhandled exception: 42P01: relation "auth.users" does not exist
+
+POSITION: 85
+Npgsql.PostgresException (0x80004005): 42P01: relation "auth.users" does not exist
+
+POSITION: 85
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.InitializeReaderAsync(AsyncEnumerator enumerator, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Messenger.Modules.Auth.Infrastructure.Repositories.UserAuthRepository.GetByEmailAsync(String email, CancellationToken ct)
+   at Messenger.Modules.Auth.Application.Features.Login.LoginCommandHandler.Handle(LoginCommand command, CancellationToken ct)
+   at Messenger.Modules.Auth.Presentation.AuthEndpoints.Login(LoginCommand command, ISender sender, IStringLocalizer`1 localizer, CancellationToken ct)
+   at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+   at Microsoft.AspNetCore.Http.RequestDelegateFactory.<>c__DisplayClass101_2.<<HandleRequestBodyAndCompileRequestDelegateForJson>b__2>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.<Invoke>g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+  Exception data:
+    Severity: ERROR
+    SqlState: 42P01
+    MessageText: relation "auth.users" does not exist
+    Position: 85
+    File: parse_relation.c
+    Line: 1428
+    Routine: parserOpenTable
+2026-06-24 10:49:03.117 +00:00 [ERR] Serilog.AspNetCore.RequestLoggingMiddleware: HTTP POST /api/auth/login responded 500 in 730.5725 ms
+2026-06-24 10:56:03.934 +00:00 [INF] Microsoft.Hosting.Lifetime: Application is shutting down...
+2026-06-24 10:56:03.934 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopping
+2026-06-24 10:56:03.942 +00:00 [DBG] Microsoft.Extensions.Hosting.Internal.Host: Hosting stopped
