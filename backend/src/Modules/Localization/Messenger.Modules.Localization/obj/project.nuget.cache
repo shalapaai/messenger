@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "ea3wA0Wf3D4=",
+  "dgSpecHash": "ibyM8pSibx0=",
   "success": true,
   "projectFilePath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Localization/Messenger.Modules.Localization/Messenger.Modules.Localization.csproj",
   "expectedPackageFiles": [
+    "/home/shalapaai/.nuget/packages/fluentvalidation/11.11.0/fluentvalidation.11.11.0.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/mediatr/12.4.1/mediatr.12.4.1.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512",
     "/home/shalapaai/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",

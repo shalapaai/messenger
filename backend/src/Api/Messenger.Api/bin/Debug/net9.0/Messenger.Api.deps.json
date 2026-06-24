@@ -872,6 +872,7 @@
       },
       "Messenger.Shared.Kernel/1.0.0": {
         "dependencies": {
+          "FluentValidation": "11.11.0",
           "MediatR": "12.4.1"
         },
         "runtime": {

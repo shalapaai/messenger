@@ -1,11 +1,13 @@
 namespace Messenger.Modules.Auth;
 
 using FluentValidation;
+using MediatR;
 using Messenger.Modules.Auth.Application.Abstractions;
 using Messenger.Modules.Auth.Infrastructure;
 using Messenger.Modules.Auth.Infrastructure.Repositories;
 using Messenger.Modules.Auth.Presentation;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Behaviors;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,8 +29,19 @@ public sealed class AuthModule : IModuleInstaller
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AuthModule).Assembly));
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(typeof(AuthModule).Assembly);
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
+        });
         services.AddValidatorsFromAssembly(typeof(AuthModule).Assembly);
+    }
+
+    public async Task MigrateAsync(IServiceProvider services, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+        await db.Database.MigrateAsync(ct);
     }
 }
 

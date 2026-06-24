@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Messenger.Modules.Localization")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+367a8f4ffd47be7bf9b1ca9c40e1f9e5223690c6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7ef487b300a103e4e6e45c10ea7b03247af94856")]
 [assembly: System.Reflection.AssemblyProductAttribute("Messenger.Modules.Localization")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Messenger.Modules.Localization")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

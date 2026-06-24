@@ -104,7 +104,7 @@ builder.Services.AddSwaggerGen(opts =>
         Scheme       = "bearer",
         BearerFormat = "JWT",
         In           = ParameterLocation.Header,
-        Description  = "JWT токен. Пример: Bearer {token}"
+        Description  = "Вставьте access token (без префикса Bearer)"
     });
     opts.AddSecurityRequirement(new OpenApiSecurityRequirement
     {{
@@ -114,6 +114,8 @@ builder.Services.AddSwaggerGen(opts =>
         },
         []
     }});
+    // Снимает замок с AllowAnonymous-эндпойнтов (login, register, refresh, logout)
+    opts.OperationFilter<Messenger.Api.Middleware.AnonymousOperationFilter>();
 });
 
 builder.Services.AddCors(opts =>
@@ -133,6 +135,10 @@ builder.Services.AddHealthChecks()
     .AddRedis(redisConnectionString, "redis");
 
 var app = builder.Build();
+
+// ── Migrations ────────────────────────────────────────────────────────────────
+foreach (var module in modules)
+    await module.MigrateAsync(app.Services);
 
 // ── Middleware Pipeline ───────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
