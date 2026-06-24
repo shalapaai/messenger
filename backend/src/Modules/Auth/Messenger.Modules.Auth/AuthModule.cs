@@ -3,6 +3,7 @@ namespace Messenger.Modules.Auth;
 using FluentValidation;
 using Messenger.Modules.Auth.Application.Abstractions;
 using Messenger.Modules.Auth.Infrastructure;
+using Messenger.Modules.Auth.Infrastructure.Repositories;
 using Messenger.Modules.Auth.Presentation;
 using Messenger.Shared.Kernel.Abstractions;
 using Microsoft.AspNetCore.Routing;
@@ -16,14 +17,13 @@ public sealed class AuthModule : IModuleInstaller
     {
         var connectionString = configuration.GetConnectionString("MessengerDb")!;
 
-        services.AddDbContext<Infrastructure.AuthDbContext>(options =>
+        services.AddDbContext<AuthDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>
                 npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "auth")));
 
-        services.AddScoped<Application.Abstractions.IUnitOfWork>(
-            sp => sp.GetRequiredService<Infrastructure.AuthDbContext>());
-        services.AddScoped<IUserAuthRepository, Infrastructure.Repositories.UserAuthRepository>();
-        services.AddScoped<IRefreshTokenRepository, Infrastructure.Repositories.RefreshTokenRepository>();
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AuthDbContext>());
+        services.AddScoped<IUserAuthRepository, UserAuthRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 

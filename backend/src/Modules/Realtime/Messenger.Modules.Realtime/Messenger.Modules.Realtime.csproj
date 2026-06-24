@@ -10,11 +10,11 @@
   <ItemGroup>
     <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="9.0.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Messenger.Shared.Kernel\Messenger.Shared.Kernel.csproj" />
-    <!-- Зависит от Messages только для обработки доменных событий -->
     <ProjectReference Include="..\..\Messages\Messenger.Modules.Messages\Messenger.Modules.Messages.csproj" />
   </ItemGroup>
 

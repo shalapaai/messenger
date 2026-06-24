@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Messenger.Shared.Kernel\Messenger.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Localization\Messenger.Modules.Localization\Messenger.Modules.Localization.csproj" />
   </ItemGroup>
 
 </Project>

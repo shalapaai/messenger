@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter</value></resheader>
+
+  <!-- Auth -->
+  <data name="Auth.InvalidCredentials" xml:space="preserve">
+    <value>Неверный email или пароль</value>
+  </data>
+  <data name="Auth.EmailAlreadyExists" xml:space="preserve">
+    <value>Аккаунт с таким email уже существует</value>
+  </data>
+  <data name="Auth.TokenExpired" xml:space="preserve">
+    <value>Сессия истекла. Пожалуйста, войдите снова</value>
+  </data>
+
+  <!-- Messages -->
+  <data name="Message.ContentEmpty" xml:space="preserve">
+    <value>Сообщение не может быть пустым</value>
+  </data>
+  <data name="Message.ContentTooLong" xml:space="preserve">
+    <value>Сообщение не может превышать 4096 символов</value>
+  </data>
+  <data name="Message.NotFound" xml:space="preserve">
+    <value>Сообщение не найдено</value>
+  </data>
+  <data name="Message.EditForbidden" xml:space="preserve">
+    <value>Редактировать можно только свои сообщения</value>
+  </data>
+
+  <!-- Files -->
+  <data name="File.TypeNotAllowed" xml:space="preserve">
+    <value>Данный тип файла не разрешён</value>
+  </data>
+  <data name="File.TooLarge" xml:space="preserve">
+    <value>Размер файла превышает максимально допустимый</value>
+  </data>
+
+  <!-- Chats -->
+  <data name="Chat.NotFound" xml:space="preserve">
+    <value>Чат не найден</value>
+  </data>
+  <data name="Chat.AccessDenied" xml:space="preserve">
+    <value>Вы не являетесь участником этого чата</value>
+  </data>
+</root>

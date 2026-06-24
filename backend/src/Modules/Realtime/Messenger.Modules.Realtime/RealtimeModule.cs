@@ -11,12 +11,9 @@ public sealed class RealtimeModule : IModuleInstaller
 {
     public void Install(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSignalR(options =>
-        {
-            options.EnableDetailedErrors = false;
-            options.MaximumReceiveMessageSize = 32 * 1024; // 32 KB
-        });
-
+        // SignalR + Redis backplane регистрируется в Program.cs после всех модулей
+        // потому что требует AddSignalR().AddStackExchangeRedis() в одной цепочке.
+        // Здесь регистрируем только MediatR-хэндлеры доменных событий.
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(RealtimeModule).Assembly));
     }
 }
@@ -25,7 +22,7 @@ public static class RealtimeModuleExtensions
 {
     public static IEndpointRouteBuilder MapRealtimeModule(this IEndpointRouteBuilder app)
     {
-        app.MapHub<MessengerHub>("/hubs/messenger");
+        app.MapHub<ChatHub>("/hubs/messenger");
         return app;
     }
 }

@@ -1,0 +1,267 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {}
+  },
+  "projects": {
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj",
+        "projectName": "Messenger.Modules.Messages",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "FluentValidation.DependencyInjectionExtensions": {
+              "target": "Package",
+              "version": "[11.11.0, )"
+            },
+            "MediatR": {
+              "target": "Package",
+              "version": "[12.4.1, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.5, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
+        "projectName": "Messenger.Modules.Notifications",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/Messenger.Modules.Notifications.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Notifications/Messenger.Modules.Notifications/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Messages/Messenger.Modules.Messages/Messenger.Modules.Messages.csproj"
+              },
+              "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+                "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "FirebaseAdmin": {
+              "target": "Package",
+              "version": "[3.1.0, )"
+            },
+            "MediatR": {
+              "target": "Package",
+              "version": "[12.4.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj",
+        "projectName": "Messenger.Shared.Kernel",
+        "projectPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/Messenger.Shared.Kernel.csproj",
+        "packagesPath": "/home/shalapaai/.nuget/packages/",
+        "outputPath": "/home/shalapaai/Documents/messenger/backend/src/Modules/Shared/Messenger.Shared.Kernel/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/shalapaai/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "MediatR": {
+              "target": "Package",
+              "version": "[12.4.1, )"
+            },
+            "Microsoft.AspNetCore.Http.Abstractions": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[9.0.17, 9.0.17]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.109/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

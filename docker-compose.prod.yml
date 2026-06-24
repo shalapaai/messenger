@@ -1,0 +1,68 @@
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Production: без pgAdmin, с лимитами ресурсов, read-only контейнеры
+
+services:
+
+  postgres:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          memory: 512M
+    environment:
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    # pgAdmin отключён в prod
+    healthcheck:
+      start_period: 60s
+
+  redis:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    command: >
+      redis-server
+        --appendonly yes
+        --appendfsync everysec
+        --requirepass ${REDIS_PASSWORD}
+        --maxmemory 400mb
+        --maxmemory-policy allkeys-lru
+        --bind 0.0.0.0
+        --protected-mode yes
+        --loglevel notice
+    # Не пробрасываем порт Redis наружу в prod
+    ports: !reset []
+
+  api:
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    # healthcheck для load balancer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # pgAdmin полностью убран в prod
+  pgadmin:
+    deploy:
+      replicas: 0

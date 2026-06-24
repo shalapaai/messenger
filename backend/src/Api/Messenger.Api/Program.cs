@@ -1,7 +1,9 @@
 using System.Text;
+using Messenger.Api.Middleware;
 using Messenger.Modules.Auth;
 using Messenger.Modules.Chats;
 using Messenger.Modules.Files;
+using Messenger.Modules.Localization;
 using Messenger.Modules.Messages;
 using Messenger.Modules.Notifications;
 using Messenger.Modules.Realtime;
@@ -11,49 +13,67 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Logging ──────────────────────────────────────────────────────────────────
+// ── Logging ───────────────────────────────────────────────────────────────────
 builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
 
-// ── Modules (Composition Root) ───────────────────────────────────────────────
-// Каждый модуль сам регистрирует свои зависимости, DbContext, MediatR-хэндлеры
+// ── Redis ─────────────────────────────────────────────────────────────────────
+var redisConnectionString = builder.Configuration["Redis:ConnectionString"]!;
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisConnectionString));
+
+// ── Modules ───────────────────────────────────────────────────────────────────
 IModuleInstaller[] modules =
 [
+    new LocalizationModule(),
     new AuthModule(),
     new UsersModule(),
     new ChatsModule(),
     new MessagesModule(),
+    new FilesModule(),
     new NotificationsModule(),
-    new RealtimeModule(),
-    new FilesModule()
+    new RealtimeModule()
 ];
 
 foreach (var module in modules)
     module.Install(builder.Services, builder.Configuration);
 
-// ── Authentication & Authorization ───────────────────────────────────────────
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!);
+// SignalR backplane → Redis (горизонтальное масштабирование)
+builder.Services.AddSignalR(opts =>
+{
+    opts.EnableDetailedErrors         = builder.Environment.IsDevelopment();
+    opts.MaximumReceiveMessageSize    = 32 * 1024;
+    opts.ClientTimeoutInterval        = TimeSpan.FromSeconds(60);
+    opts.KeepAliveInterval            = TimeSpan.FromSeconds(15);
+}).AddStackExchangeRedis(redisConnectionString, opts =>
+{
+    opts.Configuration.ChannelPrefix = RedisChannel.Literal("messenger");
+});
+
+// ── Authentication ────────────────────────────────────────────────────────────
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var secretKey  = Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!);
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddJwtBearer(opts =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        opts.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey         = new SymmetricSecurityKey(secretKey),
             ValidateIssuer           = true,
-            ValidIssuer              = jwtSettings["Issuer"],
+            ValidIssuer              = jwtSection["Issuer"],
             ValidateAudience         = true,
-            ValidAudience            = jwtSettings["Audience"],
+            ValidAudience            = jwtSection["Audience"],
             ValidateLifetime         = true,
             ClockSkew                = TimeSpan.Zero
         };
-        // SignalR передаёт токен через query string
-        options.Events = new JwtBearerEvents
+        // SignalR передаёт токен через query string для WebSocket upgrade
+        opts.Events = new JwtBearerEvents
         {
             OnMessageReceived = ctx =>
             {
@@ -67,41 +87,50 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// ── API Infrastructure ────────────────────────────────────────────────────────
+// ── API ───────────────────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddSwaggerGen(opts =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Messenger API", Version = "v1" });
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    opts.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title       = "Messenger API",
+        Version     = "v1",
+        Description = "Real-time messenger backend"
+    });
+    opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name         = "Authorization",
         Type         = SecuritySchemeType.Http,
         Scheme       = "bearer",
         BearerFormat = "JWT",
-        In           = ParameterLocation.Header
+        In           = ParameterLocation.Header,
+        Description  = "JWT токен. Пример: Bearer {token}"
     });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+    opts.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {{
+        new OpenApiSecurityScheme
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            []
-        }
-    });
+            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+        },
+        []
+    }});
 });
 
-builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<Messenger.Api.Middleware.GlobalExceptionHandler>();
+builder.Services.AddCors(opts =>
+    opts.AddDefaultPolicy(policy =>
+        policy
+            .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? ["*"])
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials())); // Обязательно для SignalR + авторизованные запросы
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
-builder.Services.AddCors(options =>
-    options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials())); // AllowCredentials нужен для SignalR
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// Health checks для Docker HEALTHCHECK и load balancer
+builder.Services.AddHealthChecks()
+    .AddNpgsql(builder.Configuration.GetConnectionString("MessengerDb")!, name: "postgres")
+    .AddRedis(redisConnectionString, name: "redis");
 
 var app = builder.Build();
 
@@ -109,26 +138,40 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(opts =>
+    {
+        opts.SwaggerEndpoint("/swagger/v1/swagger.json", "Messenger API v1");
+        opts.DisplayRequestDuration();
+    });
 }
 
 app.UseHttpsRedirection();
 app.UseCors();
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(opts =>
+{
+    opts.EnrichDiagnosticContext = (diag, ctx) =>
+    {
+        diag.Set("RequestHost", ctx.Request.Host.Value);
+        diag.Set("UserAgent", ctx.Request.Headers.UserAgent);
+    };
+});
+app.UseLocalizationModule();     // культура из Accept-Language / ?lang=
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseExceptionHandler();
 
-// ── Module Endpoints ──────────────────────────────────────────────────────────
+// ── Endpoints ─────────────────────────────────────────────────────────────────
+app.MapHealthChecks("/health");
+
 app.MapAuthModule();
 app.MapUsersModule();
 app.MapChatsModule();
 app.MapMessagesModule();
-app.MapNotificationsModule();
 app.MapFilesModule();
-app.MapRealtimeModule(); // /hubs/messenger
+app.MapNotificationsModule();
+app.MapRealtimeModule();         // /hubs/messenger
 
 app.Run();
 
-// Для интеграционных тестов
+// Экспортируем для интеграционных тестов
 public partial class Program;

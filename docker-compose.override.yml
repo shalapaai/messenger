@@ -1,0 +1,60 @@
+# Overrides для локальной разработки. Применяется автоматически при docker compose up.
+# Стратегия: инфраструктура в Docker, API запускается локально через dotnet watch.
+# Для запуска API в Docker: docker compose up api --build
+
+services:
+
+  postgres:
+    environment:
+      POSTGRES_USER:     messenger
+      POSTGRES_PASSWORD: messenger_dev
+      POSTGRES_DB:       messenger
+    ports:
+      - "5432:5432"
+
+  redis:
+    command: >
+      redis-server
+        --appendonly yes
+        --requirepass redis_dev
+        --loglevel debug
+    ports:
+      - "6379:6379"
+
+  # В dev API запускается с hot reload через dotnet watch
+  api:
+    build:
+      target: development
+    environment:
+      ASPNETCORE_ENVIRONMENT:             Development
+      ASPNETCORE_HTTP_PORTS:              "8080"
+      ASPNETCORE_URLS:                    "http://+:8080"
+      ConnectionStrings__MessengerDb:     "Host=postgres;Port=5432;Database=messenger;Username=messenger;Password=messenger_dev;Include Error Detail=true"
+      Redis__ConnectionString:            "redis:6379,password=redis_dev,abortConnect=false"
+      Jwt__SecretKey:                     "dev-secret-key-minimum-256-bits-long-replace-in-prod"
+      FileStorage__Type:                  Local
+      FileStorage__Local__BasePath:       /app/uploads
+      DOTNET_USE_POLLING_FILE_WATCHER:    "true"
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT:  "true"
+    volumes:
+      # Source code mount для hot reload
+      - ./backend:/app:delegated
+      # NuGet cache
+      - nuget_cache:/root/.nuget/packages
+    command: >
+      dotnet watch run
+        --project src/Api/Messenger.Api/Messenger.Api.csproj
+        --no-hot-reload
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+
+  # pgAdmin в dev — без volume (чистый каждый раз)
+  pgadmin:
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    admin@messenger.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+volumes:
+  nuget_cache:
+    driver: local
