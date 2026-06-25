@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import styles from './RegisterForm.module.css'
+import { Link, useNavigate } from 'react-router-dom'
+import { register } from '../api/authApi'
+import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
+import styles from './RegisterForm.module.css'
 
 function RegisterForm() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!email.trim() || !password.trim() || !repeatPassword.trim()) {
@@ -24,8 +27,8 @@ function RegisterForm() {
       return
     }
 
-    if (password.length < 6) {
-      setError('Пароль должен быть не короче 6 символов')
+    if (password.length < 8) {
+      setError('Пароль должен быть не короче 8 символов')
       return
     }
 
@@ -37,12 +40,19 @@ function RegisterForm() {
     setError('')
     setIsLoading(true)
 
-    console.log('Register form submitted:', {
-      email,
-      password,
-    })
+    try {
+      const tokens = await register({
+        email: email.trim(),
+        password,
+      })
 
-    setIsLoading(false)
+      saveAuthTokens(tokens)
+      navigate('/chats')
+    } catch {
+      setError('Не удалось зарегистрироваться. Возможно, эта почта уже используется')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

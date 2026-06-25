@@ -1,8 +1,18 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { register } from '../api/authApi'
+import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import RegisterForm from './RegisterForm'
+
+vi.mock('../api/authApi', () => ({
+  register: vi.fn(),
+}))
+
+vi.mock('../../../shared/lib/auth/authTokens', () => ({
+  saveAuthTokens: vi.fn(),
+}))
 
 function renderRegisterForm() {
   return render(
@@ -13,6 +23,10 @@ function renderRegisterForm() {
 }
 
 describe('RegisterForm', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders email and password fields', () => {
     renderRegisterForm()
 
@@ -30,6 +44,7 @@ describe('RegisterForm', () => {
     await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
 
     expect(screen.getByText('Заполните все поля')).toBeInTheDocument()
+    expect(register).not.toHaveBeenCalled()
   })
 
   it('shows error when email is invalid', async () => {
@@ -43,6 +58,7 @@ describe('RegisterForm', () => {
     await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
 
     expect(screen.getByText('Введите электронную почту в правильном формате')).toBeInTheDocument()
+    expect(register).not.toHaveBeenCalled()
   })
 
   it('shows error when password is too short', async () => {
@@ -51,11 +67,12 @@ describe('RegisterForm', () => {
     renderRegisterForm()
 
     await user.type(screen.getByLabelText('Электронная почта'), 'test@mail.ru')
-    await user.type(screen.getByLabelText('Пароль'), '123')
-    await user.type(screen.getByLabelText('Повторите пароль'), '123')
+    await user.type(screen.getByLabelText('Пароль'), '1234567')
+    await user.type(screen.getByLabelText('Повторите пароль'), '1234567')
     await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
 
-    expect(screen.getByText('Пароль должен быть не короче 6 символов')).toBeInTheDocument()
+    expect(screen.getByText('Пароль должен быть не короче 8 символов')).toBeInTheDocument()
+    expect(register).not.toHaveBeenCalled()
   })
 
   it('shows error when passwords do not match', async () => {
@@ -69,11 +86,16 @@ describe('RegisterForm', () => {
     await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
 
     expect(screen.getByText('Пароли не совпадают')).toBeInTheDocument()
+    expect(register).not.toHaveBeenCalled()
   })
 
   it('submits form when data is valid', async () => {
     const user = userEvent.setup()
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    vi.mocked(register).mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    })
 
     renderRegisterForm()
 
@@ -82,11 +104,35 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText('Повторите пароль'), 'password123')
     await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
 
-    expect(consoleSpy).toHaveBeenCalledWith('Register form submitted:', {
-      email: 'test@mail.ru',
-      password: 'password123',
+    await waitFor(() => {
+      expect(register).toHaveBeenCalledWith({
+        email: 'test@mail.ru',
+        password: 'password123',
+      })
     })
 
-    consoleSpy.mockRestore()
+    expect(saveAuthTokens).toHaveBeenCalledWith({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    })
+  })
+
+  it('shows error when register request fails', async () => {
+    const user = userEvent.setup()
+
+    vi.mocked(register).mockRejectedValue(new Error('Register failed'))
+
+    renderRegisterForm()
+
+    await user.type(screen.getByLabelText('Электронная почта'), 'test@mail.ru')
+    await user.type(screen.getByLabelText('Пароль'), 'password123')
+    await user.type(screen.getByLabelText('Повторите пароль'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
+
+    expect(
+      await screen.findByText('Не удалось зарегистрироваться. Возможно, эта почта уже используется'),
+    ).toBeInTheDocument()
+
+    expect(saveAuthTokens).not.toHaveBeenCalled()
   })
 })
