@@ -4,12 +4,12 @@ using Messenger.Shared.Kernel.Abstractions;
 
 public sealed record CreateUserProfileCommand(
     Guid   AuthUserId,
-    string Username,
+    string Email,
     string DisplayName) : ICommand<UserProfileDto>;
 
 public sealed record UserProfileDto(
     Guid      UserId,
-    string    Username,
+    string    Email,
     string    DisplayName,
     string?   Status,
     string?   AvatarUrl,

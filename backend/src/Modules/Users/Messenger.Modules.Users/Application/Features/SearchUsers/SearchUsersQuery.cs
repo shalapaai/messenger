@@ -11,6 +11,6 @@ public sealed record SearchUsersQuery(
 
 public sealed record UserSearchResultDto(
     Guid    UserId,
-    string  Username,
+    string  Email,
     string  DisplayName,
     string? AvatarUrl);

@@ -13,8 +13,8 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
     public async Task<bool> ExistsByAuthUserIdAsync(Guid authUserId, CancellationToken ct = default) =>
         await dbContext.UserProfiles.AnyAsync(p => p.AuthUserId == authUserId, ct);
 
-    public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default) =>
-        await dbContext.UserProfiles.AnyAsync(p => p.Username == username.ToLowerInvariant(), ct);
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default) =>
+        await dbContext.UserProfiles.AnyAsync(p => p.Email == email.ToLowerInvariant(), ct);
 
     public async Task<PagedList<UserProfile>> SearchAsync(
         string query, Guid excludeUserId, int page, int pageSize, CancellationToken ct = default)
@@ -22,12 +22,12 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
         var q = query.ToLowerInvariant();
         var baseQuery = dbContext.UserProfiles
             .Where(p => p.AuthUserId != excludeUserId &&
-                        (EF.Functions.ILike(p.Username, $"%{q}%") ||
+                        (EF.Functions.ILike(p.Email, $"%{q}%") ||
                          EF.Functions.ILike(p.DisplayName, $"%{q}%")));
 
         var total = await baseQuery.CountAsync(ct);
         var items = await baseQuery
-            .OrderBy(p => p.Username)
+            .OrderBy(p => p.Email)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

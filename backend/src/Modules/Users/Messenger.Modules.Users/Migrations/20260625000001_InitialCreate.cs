@@ -20,7 +20,7 @@ namespace Messenger.Modules.Users.Migrations
                 {
                     Id          = table.Column<Guid>(type: "uuid", nullable: false),
                     AuthUserId  = table.Column<Guid>(type: "uuid", nullable: false),
-                    Username    = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    Email       = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     DisplayName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Status      = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     AvatarUrl   = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
@@ -40,10 +40,10 @@ namespace Messenger.Modules.Users.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_user_profiles_username",
+                name: "ix_user_profiles_email",
                 schema: "users",
                 table: "user_profiles",
-                column: "Username",
+                column: "Email",
                 unique: true);
         }
 

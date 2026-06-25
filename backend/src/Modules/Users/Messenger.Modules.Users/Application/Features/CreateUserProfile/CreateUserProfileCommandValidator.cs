@@ -6,10 +6,10 @@ public sealed class CreateUserProfileCommandValidator : AbstractValidator<Create
 {
     public CreateUserProfileCommandValidator()
     {
-        RuleFor(x => x.Username)
-            .NotEmpty().WithMessage("Username is required")
-            .Matches(@"^[a-zA-Z0-9_]{3,30}$")
-            .WithMessage("Username must be 3–30 characters: letters, digits, or underscores");
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required")
+            .EmailAddress().WithMessage("Email is not valid")
+            .MaximumLength(255).WithMessage("Email must not exceed 255 characters");
 
         RuleFor(x => x.DisplayName)
             .NotEmpty().WithMessage("Display name is required")

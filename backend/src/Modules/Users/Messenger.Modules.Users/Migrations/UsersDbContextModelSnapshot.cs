@@ -32,10 +32,10 @@ namespace Messenger.Modules.Users.Migrations
                     b.Property<Guid>("AuthUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Username")
+                    b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -62,9 +62,9 @@ namespace Messenger.Modules.Users.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_user_profiles_auth_user_id");
 
-                    b.HasIndex("Username")
+                    b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_user_profiles_username");
+                        .HasDatabaseName("ix_user_profiles_email");
 
                     b.ToTable("user_profiles", "users");
                 });

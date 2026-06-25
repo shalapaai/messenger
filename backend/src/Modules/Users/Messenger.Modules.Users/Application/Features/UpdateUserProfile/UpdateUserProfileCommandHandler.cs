@@ -15,19 +15,12 @@ public sealed class UpdateUserProfileCommandHandler(
         if (profile is null)
             return Result.Failure<UpdatedProfileDto>(Error.NotFound("UserProfile"));
 
-        if (command.Username is not null &&
-            !string.Equals(command.Username, profile.Username, StringComparison.OrdinalIgnoreCase))
-        {
-            if (await repository.ExistsByUsernameAsync(command.Username, ct))
-                return Result.Failure<UpdatedProfileDto>(Error.Conflict("Users.UsernameTaken"));
-        }
-
-        profile.Update(command.Username, command.DisplayName, command.Status);
+        profile.Update(command.DisplayName, command.Status);
         repository.Update(profile);
         await unitOfWork.SaveChangesAsync(ct);
 
         return Result.Success(new UpdatedProfileDto(
-            profile.AuthUserId, profile.Username, profile.DisplayName,
+            profile.AuthUserId, profile.Email, profile.DisplayName,
             profile.Status, profile.AvatarUrl, profile.CreatedAt, profile.UpdatedAt));
     }
 }

@@ -15,8 +15,7 @@ public sealed class GetMeQueryHandler(IUserProfileRepository repository)
 
         return Result.Success(new MeDto(
             profile.AuthUserId,
-            query.Email,
-            profile.Username,
+            profile.Email,
             profile.DisplayName,
             profile.Status,
             profile.AvatarUrl,

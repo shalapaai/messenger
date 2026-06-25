@@ -7,7 +7,6 @@ using Messenger.Modules.Users.Application.Features.SearchUsers;
 using Messenger.Modules.Users.Application.Features.UpdateUserProfile;
 using Messenger.Modules.Users.Application.Features.UploadAvatar;
 using Messenger.Shared.Kernel.Extensions;
-using Messenger.Shared.Kernel.Pagination;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -35,8 +34,7 @@ public static class UsersEndpoints
             .WithName("UpdateUserProfile")
             .WithSummary("Обновить профиль")
             .Produces<UpdatedProfileDto>()
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/me/avatar", UploadAvatar)
             .WithName("UploadUserAvatar")
@@ -48,7 +46,7 @@ public static class UsersEndpoints
 
         group.MapGet("/search", SearchUsers)
             .WithName("SearchUsers")
-            .WithSummary("Поиск пользователей по username / displayName")
+            .WithSummary("Поиск пользователей по email / displayName")
             .Produces<SearchResultDto>()
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
@@ -61,7 +59,7 @@ public static class UsersEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var command = new CreateUserProfileCommand(ctx.GetUserId(), request.Username, request.DisplayName);
+        var command = new CreateUserProfileCommand(ctx.GetUserId(), ctx.GetUserEmail(), request.DisplayName);
         var result  = await sender.Send(command, ct);
         return result.IsSuccess
             ? Results.Created($"/api/users/{result.Value!.UserId}", result.Value)
@@ -70,7 +68,7 @@ public static class UsersEndpoints
 
     private static async Task<IResult> GetMe(ISender sender, HttpContext ctx, CancellationToken ct)
     {
-        var result = await sender.Send(new GetMeQuery(ctx.GetUserId(), ctx.GetUserEmail()), ct);
+        var result = await sender.Send(new GetMeQuery(ctx.GetUserId()), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
     }
 
@@ -80,9 +78,8 @@ public static class UsersEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var command = new UpdateUserProfileCommand(
-            ctx.GetUserId(), request.Username, request.DisplayName, request.Status);
-        var result = await sender.Send(command, ct);
+        var command = new UpdateUserProfileCommand(ctx.GetUserId(), request.DisplayName, request.Status);
+        var result  = await sender.Send(command, ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
     }
 
@@ -120,8 +117,8 @@ public static class UsersEndpoints
     }
 }
 
-public sealed record CreateUserProfileRequest(string Username, string DisplayName);
-public sealed record UpdateUserProfileRequest(string? Username, string? DisplayName, string? Status);
+public sealed record CreateUserProfileRequest(string DisplayName);
+public sealed record UpdateUserProfileRequest(string? DisplayName, string? Status);
 public sealed record AvatarUrlDto(string AvatarUrl);
 public sealed record SearchResultDto(
     IReadOnlyList<UserSearchResultDto> Items,

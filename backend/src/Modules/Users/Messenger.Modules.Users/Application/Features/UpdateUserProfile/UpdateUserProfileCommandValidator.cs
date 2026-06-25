@@ -6,11 +6,6 @@ public sealed class UpdateUserProfileCommandValidator : AbstractValidator<Update
 {
     public UpdateUserProfileCommandValidator()
     {
-        When(x => x.Username is not null, () =>
-            RuleFor(x => x.Username!)
-                .Matches(@"^[a-zA-Z0-9_]{3,30}$")
-                .WithMessage("Username must be 3–30 characters: letters, digits, or underscores"));
-
         When(x => x.DisplayName is not null, () =>
             RuleFor(x => x.DisplayName!)
                 .NotEmpty().WithMessage("Display name must not be empty")

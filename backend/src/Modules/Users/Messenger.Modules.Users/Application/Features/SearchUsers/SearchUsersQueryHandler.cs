@@ -16,7 +16,7 @@ public sealed class SearchUsersQueryHandler(IUserProfileRepository repository)
         var paged = await repository.SearchAsync(query.Query, query.RequesterId, query.Page, pageSize, ct);
 
         var items = paged.Items
-            .Select(p => new UserSearchResultDto(p.AuthUserId, p.Username, p.DisplayName, p.AvatarUrl))
+            .Select(p => new UserSearchResultDto(p.AuthUserId, p.Email, p.DisplayName, p.AvatarUrl))
             .ToList();
 
         return Result.Success(new PagedList<UserSearchResultDto>(
