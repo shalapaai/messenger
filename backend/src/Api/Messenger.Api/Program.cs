@@ -106,16 +106,8 @@ builder.Services.AddSwaggerGen(opts =>
         In           = ParameterLocation.Header,
         Description  = "Вставьте access token (без префикса Bearer)"
     });
-    opts.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {{
-        new OpenApiSecurityScheme
-        {
-            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-        },
-        []
-    }});
-    // Снимает замок с AllowAnonymous-эндпойнтов (login, register, refresh, logout)
-    opts.OperationFilter<Messenger.Api.Middleware.AnonymousOperationFilter>();
+    // Замок добавляется только на защищённые эндпойнты; анонимные (login/register/...) открыты
+    opts.OperationFilter<Messenger.Api.Middleware.SecurityOperationFilter>();
 });
 
 builder.Services.AddCors(opts =>
@@ -137,8 +129,13 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 // ── Migrations ────────────────────────────────────────────────────────────────
-foreach (var module in modules)
-    await module.MigrateAsync(app.Services);
+// Skipped in the "Testing" environment — AuthApiFactory runs them explicitly
+// after the test server starts, so the test DB connection string is in effect.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    foreach (var module in modules)
+        await module.MigrateAsync(app.Services);
+}
 
 // ── Middleware Pipeline ───────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())

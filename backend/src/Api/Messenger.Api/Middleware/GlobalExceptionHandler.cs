@@ -28,6 +28,18 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             return true;
         }
 
+        if (exception is UnauthorizedAccessException)
+        {
+            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await ctx.Response.WriteAsJsonAsync(new
+            {
+                title  = "Unauthorized",
+                status = StatusCodes.Status401Unauthorized
+            }, ct);
+
+            return true;
+        }
+
         logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
 
         var problem = new ProblemDetails
