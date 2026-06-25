@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\" && grep -n \"MapGet\\\\|MapPost\\\\|MapPut\\\\|MapDelete\\\\|MapPatch\\\\|RequireAuthorization\\\\|AllowAnonymous\\\\|Authorize\\\\b\" {} | head -20')",
+      "Bash(dotnet test *)",
+      "Bash(make test-integration *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git ls-tree *)",
+      "Bash(git commit -m ' *)",
+      "Bash(grep -E '\\(^|/\\)\\(\\\\.\\(env|vs|idea\\)|bin/|obj/|\\\\.user$|\\\\.suo$|TestResults/|\\\\.trx$|\\\\.log$|DataProtection-Keys/\\)')"
+    ]
+  }
+}

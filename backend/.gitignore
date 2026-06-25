@@ -27,7 +27,7 @@ coverage/
 
 # Logs
 logs/
-*.log
+.log
 
 # dotnet tool manifests (keep .config/dotnet-tools.json)
 
