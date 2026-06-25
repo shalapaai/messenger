@@ -58,7 +58,7 @@ public static class AuthEndpoints
         ISender sender,
         CancellationToken ct)
     {
-        var command = new RegisterCommand(request.Email, request.Password, request.DisplayName);
+        var command = new RegisterCommand(request.Email, request.Password);
         var result  = await sender.Send(command, ct);
 
         return result.IsSuccess
@@ -106,6 +106,6 @@ public static class AuthEndpoints
     }
 }
 
-public sealed record RegisterRequest(string Email, string Password, string DisplayName);
+public sealed record RegisterRequest(string Email, string Password);
 public sealed record RefreshTokenRequest(string Token);
 public sealed record LogoutRequest(string RefreshToken);

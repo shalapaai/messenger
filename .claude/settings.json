@@ -8,7 +8,14 @@
       "Bash(git add *)",
       "Bash(git ls-tree *)",
       "Bash(git commit -m ' *)",
-      "Bash(grep -E '\\(^|/\\)\\(\\\\.\\(env|vs|idea\\)|bin/|obj/|\\\\.user$|\\\\.suo$|TestResults/|\\\\.trx$|\\\\.log$|DataProtection-Keys/\\)')"
+      "Bash(grep -E '\\(^|/\\)\\(\\\\.\\(env|vs|idea\\)|bin/|obj/|\\\\.user$|\\\\.suo$|TestResults/|\\\\.trx$|\\\\.log$|DataProtection-Keys/\\)')",
+      "Bash(git checkout *)",
+      "Bash(git merge backend-auth --no-ff -m ' *)",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\" && cat \"{}\"')"
     ]
   }
 }
