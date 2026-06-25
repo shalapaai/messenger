@@ -1,0 +1,33 @@
+# Build output
+bin/
+obj/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Rider / VS / VS Code
+.idea/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+
+# Logs
+logs/
+*.log
+
+# dotnet tool manifests (keep .config/dotnet-tools.json)
+
+# ASP.NET Data Protection keys (generated at runtime)
+DataProtection-Keys/
