@@ -13,7 +13,7 @@ public sealed record CreateDirectChatCommand(Guid CurrentUserId, Guid OtherUserI
 
 public sealed class CreateDirectChatCommandHandler(
     IChatRepository chatRepository,
-    IUnitOfWork     unitOfWork)
+    IUnitOfWork unitOfWork)
     : ICommandHandler<CreateDirectChatCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateDirectChatCommand command, CancellationToken ct)

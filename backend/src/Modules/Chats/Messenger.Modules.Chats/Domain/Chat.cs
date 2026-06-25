@@ -24,16 +24,16 @@ public sealed class ChatMember
 
     internal ChatMember(ChatId chatId, Guid userId, ChatMemberRole role)
     {
-        ChatId   = chatId;
-        UserId   = userId;
-        Role     = role;
+        ChatId = chatId;
+        UserId = userId;
+        Role = role;
         JoinedAt = DateTime.UtcNow;
     }
 
-    public ChatId         ChatId   { get; private set; } = default!;
-    public Guid           UserId   { get; private set; }
-    public ChatMemberRole Role     { get; private set; }
-    public DateTime       JoinedAt { get; private set; }
+    public ChatId ChatId { get; private set; } = default!;
+    public Guid UserId { get; private set; }
+    public ChatMemberRole Role { get; private set; }
+    public DateTime JoinedAt { get; private set; }
 }
 
 public sealed class Chat : AggregateRoot<ChatId>
@@ -44,15 +44,15 @@ public sealed class Chat : AggregateRoot<ChatId>
 
     private Chat(ChatId id, ChatType type, string? name) : base(id)
     {
-        Type      = type;
-        Name      = name;
+        Type = type;
+        Name = name;
         CreatedAt = DateTime.UtcNow;
     }
 
-    public ChatType  Type      { get; private set; }
-    public string?   Name      { get; private set; }
-    public string?   AvatarUrl { get; private set; }
-    public DateTime  CreatedAt { get; private set; }
+    public ChatType Type { get; private set; }
+    public string? Name { get; private set; }
+    public string? AvatarUrl { get; private set; }
+    public DateTime CreatedAt { get; private set; }
 
     public IReadOnlyList<ChatMember> Members => _members.AsReadOnly();
 

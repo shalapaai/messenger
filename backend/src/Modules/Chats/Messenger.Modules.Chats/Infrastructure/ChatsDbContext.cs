@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options)
     : DbContext(options), IUnitOfWork
 {
-    public DbSet<Chat>       Chats   => Set<Chat>();
+    public DbSet<Chat> Chats => Set<Chat>();
     public DbSet<ChatMember> Members => Set<ChatMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

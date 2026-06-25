@@ -18,14 +18,16 @@ public static class ChatsEndpoints
         group.MapPost("/direct", CreateDirectChat)
             .WithName("CreateDirectChat")
             .WithSummary("Создание / получение существующего чата с юзером")
-            .WithDescription("")
+            .WithDescription("Создаёт личный чат между текущим пользователем и указанным. " +
+                             "Если чат уже существует — возвращает его ID без создания дубликата (идемпотентная операция).")
             .Produces<Guid>(StatusCodes.Status200OK)
             .ProducesValidationProblem();
 
         group.MapPost("/group", CreateGroupChat)
             .WithName("CreateGroupChat")
             .WithSummary("Создание группового чата")
-            .WithDescription("")
+            .WithDescription("Создаёт новый групповой чат с заданным именем. " +
+                             "Текущий пользователь становится владельцем (Owner), переданные участники добавляются с ролью Member.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
