@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // API_TARGET используется в Docker (http://api:8080).
@@ -7,6 +7,7 @@ const apiTarget = process.env.API_TARGET ?? 'http://localhost:8080'
 
 export default defineConfig({
   plugins: [react()],
+
   server: {
     host: true,
     port: 5173,
@@ -21,5 +22,11 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    globals: true,
   },
 })
