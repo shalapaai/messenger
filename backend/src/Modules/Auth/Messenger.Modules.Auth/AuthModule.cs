@@ -18,7 +18,6 @@ public sealed class AuthModule : IModuleInstaller
     public void Install(IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("MessengerDb")!;
-
         services.AddDbContext<AuthDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>
                 npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "auth")));
