@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import styles from './LoginForm.module.css'
+import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../api/authApi'
+import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
+import styles from './LoginForm.module.css'
 
 function LoginForm() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!email.trim() || !password.trim()) {
@@ -26,12 +29,19 @@ function LoginForm() {
     setError('')
     setIsLoading(true)
 
-    console.log('Email form submitted:', {
-      email,
-      password,
-    })
+    try {
+      const tokens = await login({
+        email: email.trim(),
+        password,
+      })
 
-    setIsLoading(false)
+      saveAuthTokens(tokens)
+      navigate('/chats')
+    } catch {
+      setError('Не удалось войти. Проверьте почту и пароль')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

@@ -1,8 +1,18 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { login } from '../api/authApi'
+import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import LoginForm from './LoginForm'
+
+vi.mock('../api/authApi', () => ({
+  login: vi.fn(),
+}))
+
+vi.mock('../../../shared/lib/auth/authTokens', () => ({
+  saveAuthTokens: vi.fn(),
+}))
 
 function renderLoginForm() {
   return render(
@@ -13,6 +23,10 @@ function renderLoginForm() {
 }
 
 describe('LoginForm', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders email and password fields', () => {
     renderLoginForm()
 
@@ -29,6 +43,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Войти' }))
 
     expect(screen.getByText('Заполните электронную почту и пароль')).toBeInTheDocument()
+    expect(login).not.toHaveBeenCalled()
   })
 
   it('shows error when email is invalid', async () => {
@@ -41,11 +56,16 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Войти' }))
 
     expect(screen.getByText('Введите электронную почту в правильном формате')).toBeInTheDocument()
+    expect(login).not.toHaveBeenCalled()
   })
 
   it('submits form when email and password are valid', async () => {
     const user = userEvent.setup()
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    vi.mocked(login).mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    })
 
     renderLoginForm()
 
@@ -53,11 +73,34 @@ describe('LoginForm', () => {
     await user.type(screen.getByLabelText('Пароль'), 'password123')
     await user.click(screen.getByRole('button', { name: 'Войти' }))
 
-    expect(consoleSpy).toHaveBeenCalledWith('Email form submitted:', {
-      email: 'test@mail.ru',
-      password: 'password123',
+    await waitFor(() => {
+      expect(login).toHaveBeenCalledWith({
+        email: 'test@mail.ru',
+        password: 'password123',
+      })
     })
 
-    consoleSpy.mockRestore()
+    expect(saveAuthTokens).toHaveBeenCalledWith({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    })
+  })
+
+  it('shows error when login request fails', async () => {
+    const user = userEvent.setup()
+
+    vi.mocked(login).mockRejectedValue(new Error('Login failed'))
+
+    renderLoginForm()
+
+    await user.type(screen.getByLabelText('Электронная почта'), 'test@mail.ru')
+    await user.type(screen.getByLabelText('Пароль'), 'wrong-password')
+    await user.click(screen.getByRole('button', { name: 'Войти' }))
+
+    expect(
+      await screen.findByText('Не удалось войти. Проверьте почту и пароль'),
+    ).toBeInTheDocument()
+
+    expect(saveAuthTokens).not.toHaveBeenCalled()
   })
 })
