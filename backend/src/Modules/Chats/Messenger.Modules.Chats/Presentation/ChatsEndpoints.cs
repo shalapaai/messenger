@@ -17,8 +17,16 @@ public static class ChatsEndpoints
 
         group.MapPost("/direct", CreateDirectChat)
             .WithName("CreateDirectChat")
-            .WithSummary("Create or get existing direct chat with a user")
+            .WithSummary("Создание / получение существующего чата с юзером")
+            .WithDescription("")
             .Produces<Guid>(StatusCodes.Status200OK)
+            .ProducesValidationProblem();
+
+        group.MapPost("/group", CreateGroupChat)
+            .WithName("CreateGroupChat")
+            .WithSummary("Создание группового чата")
+            .WithDescription("")
+            .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
         return app;
@@ -38,6 +46,21 @@ public static class ChatsEndpoints
             ? Results.Ok(result.Value)
             : result.Error.ToHttpResult();
     }
+    private static async Task<IResult> CreateGroupChat(
+        CreateGroupChatRequest request,
+        HttpContext            httpContext,
+        ISender                sender,
+        CancellationToken      ct)
+    {
+        var creatorId = httpContext.GetUserId();
+        var command   = new CreateGroupChatCommand(creatorId, request.Name, request.MemberIds ?? []);
+        var result    = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.Created($"/api/chats/{result.Value}", result.Value)
+            : result.Error.ToHttpResult();
+    }
 }
 
 public sealed record CreateDirectChatRequest(Guid OtherUserId);
+public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds);

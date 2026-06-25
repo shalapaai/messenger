@@ -1,6 +1,7 @@
 namespace Messenger.Modules.Chats.Domain;
 
 using Messenger.Shared.Kernel.Primitives;
+using Messenger.Shared.Kernel.Results;
 
 // ── Value types ───────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ public sealed class ChatMember
 {
     private ChatMember() { } // EF Core
 
-    internal ChatMember(Guid chatId, Guid userId, ChatMemberRole role)
+    internal ChatMember(ChatId chatId, Guid userId, ChatMemberRole role)
     {
         ChatId   = chatId;
         UserId   = userId;
@@ -29,7 +30,7 @@ public sealed class ChatMember
         JoinedAt = DateTime.UtcNow;
     }
 
-    public Guid           ChatId   { get; private set; }
+    public ChatId         ChatId   { get; private set; } = default!;
     public Guid           UserId   { get; private set; }
     public ChatMemberRole Role     { get; private set; }
     public DateTime       JoinedAt { get; private set; }
@@ -58,10 +59,19 @@ public sealed class Chat : AggregateRoot<ChatId>
     public static Chat CreateDirect() =>
         new(ChatId.New(), ChatType.Direct, null);
 
+    public static Result<Chat> CreateGroup(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return Result.Failure<Chat>(Error.Validation("Name", "Group chat name cannot be empty"));
+        if (name.Length > 100)
+            return Result.Failure<Chat>(Error.Validation("Name", "Group chat name exceeds 100 characters"));
+        return Result.Success(new Chat(ChatId.New(), ChatType.Group, name.Trim()));
+    }
+
     public void AddMember(Guid userId, ChatMemberRole role = ChatMemberRole.Member)
     {
         if (_members.All(m => m.UserId != userId))
-            _members.Add(new ChatMember(Id.Value, userId, role));
+            _members.Add(new ChatMember(Id, userId, role));
     }
 }
 

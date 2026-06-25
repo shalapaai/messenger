@@ -35,7 +35,10 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options)
         modelBuilder.Entity<ChatMember>(b =>
         {
             b.HasKey(m => new { m.ChatId, m.UserId });
-            b.Property(m => m.ChatId).HasColumnName("chat_id").IsRequired();
+            b.Property(m => m.ChatId)
+                .HasColumnName("chat_id")
+                .HasConversion(id => id.Value, value => ChatId.From(value))
+                .IsRequired();
             b.Property(m => m.UserId).HasColumnName("user_id").IsRequired();
             b.Property(m => m.Role)
                 .HasColumnName("role")
