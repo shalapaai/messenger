@@ -2,10 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import styles from './LoginForm.module.css'
-
-function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
+import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
