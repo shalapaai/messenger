@@ -39,7 +39,7 @@ public static class UsersEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/me/avatar", UploadAvatar)
-            .WithName("UploadAvatar")
+            .WithName("UploadUserAvatar")
             .WithSummary("Загрузить аватар (multipart/form-data, max 5 MB)")
             .Produces<AvatarUrlDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
