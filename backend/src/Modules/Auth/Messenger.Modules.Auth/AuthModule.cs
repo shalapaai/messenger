@@ -40,7 +40,7 @@ public sealed class AuthModule : IModuleInstaller
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-        await db.Database.MigrateAsync(ct);
+        await db.Database.EnsureCreatedAsync(ct);
     }
 }
 
