@@ -1,3 +1,5 @@
+.env
+
 # Build output
 bin/
 obj/
