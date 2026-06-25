@@ -86,7 +86,56 @@ make shell-api      # sh в контейнере API
 
 make migrate        # применить EF Core миграции
 make migrate-add MODULE=Messages NAME=AddColumn  # новая миграция
+
+make test           # все тесты в Docker
+make test-unit      # только unit-тесты
+make test-integration  # только integration-тесты
 ```
+
+---
+
+## Тесты
+
+### Unit-тесты (без инфраструктуры)
+
+Тестируют доменные сущности, CQRS-хэндлеры, валидаторы и JWT-сервис в изоляции (NSubstitute-моки).
+
+```bash
+make test-unit
+```
+
+Или напрямую в Docker:
+
+```bash
+docker run --rm \
+  -v $(pwd)/backend:/app \
+  -w /app \
+  mcr.microsoft.com/dotnet/sdk:9.0-alpine \
+  dotnet test tests/Messenger.Modules.Auth.UnitTests
+```
+
+### Integration-тесты (Testcontainers)
+
+Поднимают реальные PostgreSQL и Redis в Docker, запускают `WebApplicationFactory<Program>` и гоняют HTTP-запросы к API.
+
+```bash
+make test-integration
+```
+
+> Требует: Docker с доступом к `/var/run/docker.sock`.
+
+### Все тесты
+
+```bash
+make test
+```
+
+### Покрытие
+
+| Проект | Что тестируется |
+|---|---|
+| `Messenger.Modules.Auth.UnitTests` | Domain (UserAuth, RefreshToken), Validators (Register, Login, RefreshToken, Logout), Handlers (Register, Login, Refresh, Logout), JwtTokenService |
+| `Messenger.Api.IntegrationTests` | POST /auth/register, POST /auth/login, POST /auth/refresh, POST /auth/logout (включая ротацию токенов) |
 
 ---
 

@@ -1,7 +1,7 @@
 .PHONY: up up-backend up-frontend up-infra up-build down down-clean \
         logs logs-api logs-frontend ps restart build build-backend build-frontend \
         migrate migrate-add shell-db shell-redis shell-api shell-frontend \
-        env health clean-images help
+        env health clean-images test test-unit test-integration help
 
 # ── Docker Compose ────────────────────────────────────────────────────────────
 up:                 ## Запустить всё: infra + backend + frontend
@@ -75,6 +75,33 @@ shell-api:          ## sh в контейнере API
 
 shell-frontend:     ## sh в контейнере фронтенда
 	docker compose exec frontend sh
+
+# ── Тесты ────────────────────────────────────────────────────────────────────
+test:               ## Все тесты (unit + integration) в Docker
+	docker run --rm \
+		-v $(PWD)/backend:/app \
+		-w /app \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-e DOTNET_CLI_HOME=/tmp/dotnet \
+		mcr.microsoft.com/dotnet/sdk:9.0-alpine \
+		dotnet test --logger "console;verbosity=normal"
+
+test-unit:          ## Только unit-тесты (без Docker-инфраструктуры)
+	docker run --rm \
+		-v $(PWD)/backend:/app \
+		-w /app \
+		-e DOTNET_CLI_HOME=/tmp/dotnet \
+		mcr.microsoft.com/dotnet/sdk:9.0-alpine \
+		dotnet test tests/Messenger.Modules.Auth.UnitTests --logger "console;verbosity=normal"
+
+test-integration:   ## Только integration-тесты (поднимает БД через Testcontainers)
+	docker run --rm \
+		-v $(PWD)/backend:/app \
+		-w /app \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-e DOTNET_CLI_HOME=/tmp/dotnet \
+		mcr.microsoft.com/dotnet/sdk:9.0-alpine \
+		dotnet test tests/Messenger.Api.IntegrationTests --logger "console;verbosity=normal"
 
 # ── Утилиты ───────────────────────────────────────────────────────────────────
 env:                ## Создать .env из .env.example

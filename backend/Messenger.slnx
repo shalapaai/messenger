@@ -31,4 +31,8 @@
   <Folder Name="/src/Modules/Users/">
     <Project Path="src/Modules/Users/Messenger.Modules.Users/Messenger.Modules.Users.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Messenger.Api.IntegrationTests/Messenger.Api.IntegrationTests.csproj" />
+    <Project Path="tests/Messenger.Modules.Auth.UnitTests/Messenger.Modules.Auth.UnitTests.csproj" />
+  </Folder>
 </Solution>
