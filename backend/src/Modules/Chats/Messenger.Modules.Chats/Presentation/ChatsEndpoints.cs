@@ -2,6 +2,7 @@ namespace Messenger.Modules.Chats.Presentation;
 
 using MediatR;
 using Messenger.Modules.Chats.Application;
+using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +22,14 @@ public static class ChatsEndpoints
             .WithSummary("Список чатов текущего пользователя")
             .WithDescription("Возвращает все чаты пользователя с последним сообщением в каждом, отсортированные по дате последнего сообщения.")
             .Produces<List<ChatSummaryDto>>(StatusCodes.Status200OK);
+
+        group.MapGet("/{id:guid}", GetChatById)
+            .WithName("GetChatById")
+            .WithSummary("Информация о чате")
+            .WithDescription("Возвращает детальную информацию о чате и список его участников. Доступно только участникам чата.")
+            .Produces<ChatDetailDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/direct", CreateDirectChat)
             .WithName("CreateDirectChat")
@@ -48,6 +57,20 @@ public static class ChatsEndpoints
     {
         var currentUserId = httpContext.GetUserId();
         var result = await sender.Send(new GetChatsQuery(currentUserId), ct);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> GetChatById(
+        Guid              id,
+        HttpContext        httpContext,
+        ISender            sender,
+        CancellationToken  ct)
+    {
+        var currentUserId = httpContext.GetUserId();
+        var result = await sender.Send(new GetChatByIdQuery(id, currentUserId), ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
