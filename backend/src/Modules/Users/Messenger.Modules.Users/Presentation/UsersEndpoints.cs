@@ -20,6 +20,12 @@ public static class UsersEndpoints
         group.MapPost("/", CreateProfile)
             .WithName("CreateUserProfile")
             .WithSummary("Создать профиль пользователя")
+            .WithDescription(
+                "Создаёт профиль для авторизованного пользователя. " +
+                "Email берётся из JWT-токена. " +
+                "Поле `login` — опциональный уникальный логин в формате `@login` (3–30 символов: буквы, цифры, _); " +
+                "передаётся без @, возвращается с @. " +
+                "409 — профиль уже существует, email или login заняты.")
             .Produces<UserProfileDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
@@ -27,19 +33,25 @@ public static class UsersEndpoints
         group.MapGet("/me", GetMe)
             .WithName("GetMe")
             .WithSummary("Получить свой профиль")
+            .WithDescription("Возвращает полный профиль текущего пользователя. Поле `login` содержит @ или null, если логин не задан.")
             .Produces<MeDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPatch("/me", UpdateProfile)
             .WithName("UpdateUserProfile")
             .WithSummary("Обновить профиль")
+            .WithDescription(
+                "Частичное обновление: передавайте только изменяемые поля. " +
+                "`login` — передаётся без @, возвращается с @; " +
+                "409 если логин уже занят другим пользователем.")
             .Produces<UpdatedProfileDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/me/avatar", UploadAvatar)
             .WithName("UploadUserAvatar")
-            .WithSummary("Загрузить аватар (multipart/form-data, max 5 MB)")
+            .WithSummary("Загрузить аватар")
+            .WithDescription("Принимает `multipart/form-data`, поле `file`. Максимальный размер — 5 МБ. Поддерживаются JPEG, PNG, WebP.")
             .Produces<AvatarUrlDto>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -47,7 +59,12 @@ public static class UsersEndpoints
 
         group.MapGet("/search", SearchUsers)
             .WithName("SearchUsers")
-            .WithSummary("Поиск пользователей по email / displayName")
+            .WithSummary("Поиск пользователей")
+            .WithDescription(
+                "Поиск по email, displayName и login. " +
+                "Если `q` начинается с `@` — поиск только по полю login (например, `@anna`). " +
+                "Поддерживает пагинацию: `page` (default 1), `pageSize` (default 20, max 50). " +
+                "Текущий пользователь исключается из результатов.")
             .Produces<SearchResultDto>()
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
