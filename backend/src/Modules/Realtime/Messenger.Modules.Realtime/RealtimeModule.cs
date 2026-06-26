@@ -22,7 +22,7 @@ public static class RealtimeModuleExtensions
 {
     public static IEndpointRouteBuilder MapRealtimeModule(this IEndpointRouteBuilder app)
     {
-        app.MapHub<ChatHub>("/hubs/messenger");
+        app.MapHub<MessengerHub>("/hubs/messenger");
         return app;
     }
 }
