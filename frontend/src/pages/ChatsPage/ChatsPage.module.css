@@ -130,6 +130,11 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+.navItemLogout:hover {
+  background: #fff0f2;
+  color: #e0556e;
+}
+
 .sidebarUser {
   margin-top: auto;
   display: flex;
@@ -488,6 +493,10 @@
   position: relative;
   font-size: 20px;
   line-height: 1;
+}
+
+.bottomNavItemLogout:hover {
+  color: #e0556e;
 }
 
 .bottomBadge {
