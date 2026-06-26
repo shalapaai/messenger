@@ -1,0 +1,135 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 32px;
+
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 32%),
+    #f8fafc;
+}
+
+.blobPrimary,
+.blobSecondary,
+.blobAccent {
+  position: absolute;
+  z-index: 0;
+
+  border-radius: 50%;
+  filter: blur(36px);
+
+  pointer-events: none;
+}
+
+.blobPrimary {
+  top: 10%;
+  right: 8%;
+
+  width: 280px;
+  height: 280px;
+
+  background: rgba(37, 99, 235, 0.22);
+  animation: floatPrimary 9s ease-in-out infinite;
+}
+
+.blobSecondary {
+  bottom: 9%;
+  left: 7%;
+
+  width: 300px;
+  height: 300px;
+
+  background: rgba(14, 165, 233, 0.18);
+  animation: floatSecondary 11s ease-in-out infinite;
+}
+
+.blobAccent {
+  top: 48%;
+  left: 48%;
+
+  width: 180px;
+  height: 180px;
+
+  background: rgba(99, 102, 241, 0.14);
+  animation: floatAccent 13s ease-in-out infinite;
+}
+
+.page > main {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes floatPrimary {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-24px, 18px, 0) scale(1.06);
+  }
+}
+
+@keyframes floatSecondary {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(22px, -20px, 0) scale(1.08);
+  }
+}
+
+@keyframes floatAccent {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(16px, 22px, 0) scale(1.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .blobPrimary,
+  .blobSecondary,
+  .blobAccent {
+    opacity: 0.45;
+    filter: blur(42px);
+  }
+
+  .blobPrimary {
+    width: 210px;
+    height: 210px;
+  }
+
+  .blobSecondary {
+    width: 230px;
+    height: 230px;
+  }
+
+  .blobAccent {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blobPrimary,
+  .blobSecondary,
+  .blobAccent {
+    animation: none;
+  }
+}

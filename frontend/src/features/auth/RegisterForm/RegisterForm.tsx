@@ -47,9 +47,11 @@ function RegisterForm() {
       })
 
       saveAuthTokens(tokens)
-      navigate('/chats')
+      navigate('/profile/setup')
     } catch {
-      setError('Не удалось зарегистрироваться. Возможно, эта почта уже используется')
+      setError(
+        'Не удалось зарегистрироваться. Возможно, эта почта уже используется',
+      )
     } finally {
       setIsLoading(false)
     }
