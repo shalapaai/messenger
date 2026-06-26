@@ -355,12 +355,29 @@
   visibility: hidden;
 }
 
+.msgAvatarClickable {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.msgAvatarClickable:hover {
+  opacity: 0.78;
+}
+
 .senderName {
   font-size: 12px;
   font-weight: 700;
   padding-left: 42px; /* 32px avatar + 10px gap */
   margin-bottom: 3px;
   margin-top: 12px;
+}
+
+.senderNameClickable {
+  cursor: pointer;
+}
+
+.senderNameClickable:hover {
+  text-decoration: underline;
 }
 
 .bubble {
@@ -666,6 +683,16 @@
 
 .memberRow:last-child {
   border-bottom: none;
+}
+
+.memberRowClickable {
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.12s;
+}
+
+.memberRowClickable:hover {
+  background: #f5f6fa;
 }
 
 .memberAvatarWrap {
