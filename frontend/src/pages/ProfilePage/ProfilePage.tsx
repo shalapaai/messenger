@@ -121,7 +121,7 @@ export function ProfilePage() {
                 <div className={s.pageLabel}>ПРОФИЛЬ</div>
                 <h1 className={s.pageTitle}>Мой аккаунт</h1>
               </div>
-              <button className={s.editBtn} onClick={() => alert('Редактирование профиля')}>
+              <button className={s.editBtn} onClick={() => navigate('/profile/setup')}>
                 <span>✎</span> Изменить профиль
               </button>
             </div>
