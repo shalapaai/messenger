@@ -4,6 +4,7 @@ using MediatR;
 using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Application.Features.AddChatMember;
 using Messenger.Modules.Chats.Application.Features.RemoveChatMember;
+using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Shared.Kernel.Extensions;
@@ -46,6 +47,15 @@ public static class ChatsEndpoints
             .WithName("RemoveChatMember")
             .WithSummary("Удалить участника / выйти из группы")
             .WithDescription("Удаляет участника из группового чата. Любой участник может выйти сам. Удалить другого может только Admin или Owner. Owner не может быть удалён.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{id:guid}", UpdateChat)
+            .WithName("UpdateChat")
+            .WithSummary("Обновить название / аватарку группы")
+            .WithDescription("Обновляет название и/или аватарку группового чата. Доступно только Admin и Owner. Передавай только те поля которые хочешь изменить.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -113,6 +123,22 @@ public static class ChatsEndpoints
             : result.Error.ToHttpResult();
     }
 
+    private static async Task<IResult> UpdateChat(
+        Guid              id,
+        UpdateChatRequest request,
+        HttpContext        httpContext,
+        ISender           sender,
+        CancellationToken ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var command = new UpdateChatCommand(id, requesterId, request.Name, request.AvatarUrl);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
     private static async Task<IResult> RemoveChatMember(
         Guid              id,
         Guid              userId,
@@ -159,6 +185,7 @@ public static class ChatsEndpoints
     }
 }
 
+public sealed record UpdateChatRequest(string? Name, string? AvatarUrl);
 public sealed record AddChatMemberRequest(Guid UserId);
 public sealed record CreateDirectChatRequest(Guid OtherUserId);
 public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds);

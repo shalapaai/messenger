@@ -74,6 +74,30 @@ public sealed class Chat : AggregateRoot<ChatId>
             _members.Add(new ChatMember(Id, userId, role));
     }
 
+    public Result UpdateInfo(Guid requesterId, string? name, string? avatarUrl)
+    {
+        var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
+        if (requester is null)
+            return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        if (requester.Role == ChatMemberRole.Member)
+            return Result.Failure(Error.Forbidden("Only admins can update chat info"));
+
+        if (name is not null)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return Result.Failure(Error.Validation("Name", "Group chat name cannot be empty"));
+            if (name.Length > 100)
+                return Result.Failure(Error.Validation("Name", "Group chat name exceeds 100 characters"));
+            Name = name.Trim();
+        }
+
+        if (avatarUrl is not null)
+            AvatarUrl = avatarUrl;
+
+        return Result.Success();
+    }
+
     public Result RemoveMember(Guid requesterId, Guid userId)
     {
         var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
