@@ -25,4 +25,23 @@ internal sealed class MessagesModuleApi(
 
         return Result.Success();
     }
+
+    public async Task<Result<Dictionary<Guid, LastMessageDto>>> GetLastMessagesByChatIdsAsync(
+        IReadOnlyList<Guid> chatIds, CancellationToken ct = default)
+    {
+        if (chatIds.Count == 0)
+            return Result.Success(new Dictionary<Guid, LastMessageDto>());
+
+        var messages = await dbContext.Messages
+            .Where(m => chatIds.Contains(m.ChatId) && m.Status != MessageStatus.Deleted)
+            .GroupBy(m => m.ChatId)
+            .Select(g => g.OrderByDescending(m => m.SentAt).First())
+            .ToListAsync(ct);
+
+        var dict = messages.ToDictionary(
+            m => m.ChatId,
+            m => new LastMessageDto(m.Id.Value, m.SenderId, m.Content, m.SentAt));
+
+        return Result.Success(dict);
+    }
 }
