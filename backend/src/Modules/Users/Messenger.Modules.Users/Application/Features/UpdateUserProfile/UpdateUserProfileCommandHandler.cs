@@ -15,12 +15,21 @@ public sealed class UpdateUserProfileCommandHandler(
         if (profile is null)
             return Result.Failure<UpdatedProfileDto>(Error.NotFound("UserProfile"));
 
+        if (command.Login is not null)
+        {
+            var normalised = command.Login.ToLowerInvariant();
+            if (await repository.ExistsByLoginAsync(normalised, profile.Id, ct))
+                return Result.Failure<UpdatedProfileDto>(Error.Conflict("Users.LoginAlreadyTaken"));
+            profile.SetLogin(normalised);
+        }
+
         profile.Update(command.DisplayName, command.Status);
         repository.Update(profile);
         await unitOfWork.SaveChangesAsync(ct);
 
         return Result.Success(new UpdatedProfileDto(
             profile.AuthUserId, profile.Email, profile.DisplayName,
+            profile.Login is not null ? $"@{profile.Login}" : null,
             profile.Status, profile.AvatarUrl, profile.CreatedAt, profile.UpdatedAt));
     }
 }

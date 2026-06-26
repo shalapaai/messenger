@@ -14,5 +14,10 @@ public sealed class UpdateUserProfileCommandValidator : AbstractValidator<Update
         When(x => x.Status is not null, () =>
             RuleFor(x => x.Status!)
                 .MaximumLength(200).WithMessage("Status must not exceed 200 characters"));
+
+        When(x => x.Login is not null, () =>
+            RuleFor(x => x.Login!)
+                .Matches(@"^[a-zA-Z0-9_]{3,30}$")
+                .WithMessage("Login must be 3–30 characters and contain only letters, digits, or underscores"));
     }
 }

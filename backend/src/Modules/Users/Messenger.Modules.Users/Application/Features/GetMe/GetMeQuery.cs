@@ -8,6 +8,7 @@ public sealed record MeDto(
     Guid      UserId,
     string    Email,
     string    DisplayName,
+    string?   Login,
     string?   Status,
     string?   AvatarUrl,
     DateTime  CreatedAt,

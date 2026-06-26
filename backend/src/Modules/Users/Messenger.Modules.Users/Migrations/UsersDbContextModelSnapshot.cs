@@ -42,6 +42,10 @@ namespace Messenger.Modules.Users.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Login")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("Status")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -65,6 +69,11 @@ namespace Messenger.Modules.Users.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_user_profiles_email");
+
+                    b.HasIndex("Login")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_profiles_login")
+                        .HasFilter("\"Login\" IS NOT NULL");
 
                     b.ToTable("user_profiles", "users");
                 });
