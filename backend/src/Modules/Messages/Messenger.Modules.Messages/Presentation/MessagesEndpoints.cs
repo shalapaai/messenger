@@ -5,7 +5,6 @@ using Messenger.Modules.Messages.Application.Features.EditMessage;
 using Messenger.Modules.Messages.Application.Features.GetMessages;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
 using Messenger.Shared.Kernel.Extensions;
-using Messenger.Shared.Kernel.Pagination;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -25,7 +24,9 @@ public static class MessagesEndpoints
 
         group.MapGet("/", GetMessages)
             .WithName("GetMessages")
-            .Produces<PagedList<MessageDto>>();
+            .WithSummary("История сообщений чата")
+            .WithDescription("Возвращает сообщения чата с cursor-пагинацией. Передай nextCursor из предыдущего ответа как before для загрузки следующей страницы.")
+            .Produces<MessagesPageDto>();
 
         group.MapPatch("/{messageId:guid}", EditMessage)
             .WithName("EditMessage")
@@ -52,13 +53,13 @@ public static class MessagesEndpoints
     }
 
     private static async Task<IResult> GetMessages(
-        Guid chatId,
-        ISender sender,
+        Guid              chatId,
+        ISender           sender,
         CancellationToken ct,
-        int page = 1,
-        int pageSize = 50)
+        Guid?             before = null,
+        int               limit  = 50)
     {
-        var result = await sender.Send(new GetMessagesQuery(chatId, page, pageSize), ct);
+        var result = await sender.Send(new GetMessagesQuery(chatId, before, limit), ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
