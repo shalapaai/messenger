@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import s from './ChatPage.module.css'
+import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
 
 interface Message {
   id: number
@@ -94,6 +95,11 @@ export function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  function handleLogout() {
+    clearAuthTokens()
+    navigate('/login')
+  }
+
   useEffect(() => {
     setMessages(getInitialMessages(id))
   }, [id])
@@ -166,6 +172,10 @@ export function ChatPage() {
               </button>
             ))}
           </nav>
+          <button className={`${s.navItem} ${s.navItemLogout}`} onClick={handleLogout}>
+              <span className={s.navGlyph}>↩</span>
+              <span>Выйти</span>
+            </button>
           <div className={s.sidebarUser}>
             <div className={s.sidebarUserAvatar}>АС</div>
             <div style={{ minWidth: 0 }}>
@@ -263,6 +273,10 @@ export function ChatPage() {
             <span>{item.label}</span>
           </button>
         ))}
+        <button className={`${s.bottomNavItem} ${s.bottomNavItemLogout}`} onClick={handleLogout}>
+          <span className={s.bottomGlyph}>↩</span>
+          <span>Выйти</span>
+        </button>
       </nav>
     </div>
   )

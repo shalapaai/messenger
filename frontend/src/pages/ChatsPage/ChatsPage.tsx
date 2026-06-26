@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import s from './ChatsPage.module.css'
+import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
 
 interface Chat {
   id: number
@@ -36,6 +37,11 @@ export function ChatsPage() {
   const { pathname } = useLocation()
   const [filter, setFilter]   = useState<Filter>('all')
   const [query,  setQuery]    = useState('')
+
+  function handleLogout() {
+    clearAuthTokens()
+    navigate('/login')
+  }
 
   const counts = {
     all:    CHATS.length,
@@ -79,6 +85,10 @@ export function ChatsPage() {
               </button>
             ))}
           </nav>
+          <button className={`${s.navItem} ${s.navItemLogout}`} onClick={handleLogout}>
+              <span className={s.navGlyph}>↩</span>
+              <span>Выйти</span>
+            </button>
           <div className={s.sidebarUser}>
             <div className={s.sidebarUserAvatar}>АС</div>
             <div style={{ minWidth: 0 }}>
@@ -182,6 +192,10 @@ export function ChatsPage() {
             <span>{item.label}</span>
           </button>
         ))}
+        <button className={`${s.bottomNavItem} ${s.bottomNavItemLogout}`} onClick={handleLogout}>
+          <span className={s.bottomGlyph}>↩</span>
+          <span>Выйти</span>
+        </button>
       </nav>
     </div>
   )
