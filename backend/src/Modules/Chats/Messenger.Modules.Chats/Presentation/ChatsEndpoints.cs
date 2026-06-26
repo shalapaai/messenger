@@ -2,6 +2,7 @@ namespace Messenger.Modules.Chats.Presentation;
 
 using MediatR;
 using Messenger.Modules.Chats.Application;
+using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +15,12 @@ public static class ChatsEndpoints
         var group = app.MapGroup("/api/chats")
             .WithTags("Chats")
             .RequireAuthorization();
+
+        group.MapGet("", GetChats)
+            .WithName("GetChats")
+            .WithSummary("Список чатов текущего пользователя")
+            .WithDescription("Возвращает все чаты пользователя с последним сообщением в каждом, отсортированные по дате последнего сообщения.")
+            .Produces<List<ChatSummaryDto>>(StatusCodes.Status200OK);
 
         group.MapPost("/direct", CreateDirectChat)
             .WithName("CreateDirectChat")
@@ -32,6 +39,19 @@ public static class ChatsEndpoints
             .ProducesValidationProblem();
 
         return app;
+    }
+
+    private static async Task<IResult> GetChats(
+        HttpContext       httpContext,
+        ISender           sender,
+        CancellationToken ct)
+    {
+        var currentUserId = httpContext.GetUserId();
+        var result = await sender.Send(new GetChatsQuery(currentUserId), ct);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : result.Error.ToHttpResult();
     }
 
     private static async Task<IResult> CreateDirectChat(

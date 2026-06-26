@@ -81,5 +81,6 @@ public interface IChatRepository
 {
     Task<Chat?> GetByIdAsync(ChatId id, CancellationToken ct = default);
     Task<Guid?> FindDirectChatIdAsync(Guid userId1, Guid userId2, CancellationToken ct = default);
+    Task<List<Chat>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
     void Add(Chat chat);
 }
