@@ -356,14 +356,11 @@
   text-align: right;
 }
 
-/* ── STATUS PICKER ───────────────────────────────────────────── */
-.statusWrapper {
+/* ── STATUS BADGE (static) ───────────────────────────────────── */
+.statusBadge {
   position: absolute;
   top: 76px;
   right: 34px;
-}
-
-.statusBadge {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -371,91 +368,18 @@
   border: 1px solid #eceef4;
   border-radius: 20px;
   padding: 7px 14px 7px 10px;
-  font-family: inherit;
   font-size: 14px;
   font-weight: 700;
   color: #141b2e;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
   white-space: nowrap;
-}
-
-.statusBadge:hover {
-  background: #eceef4;
 }
 
 .statusDot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
+  background: #22b07d;
   flex-shrink: 0;
-  transition: background 0.2s;
-}
-
-.statusChevron {
-  font-size: 16px;
-  line-height: 1;
-  color: #8a93a6;
-  display: inline-block;
-  transform: rotate(90deg);
-  transition: transform 0.18s;
-  margin-left: 2px;
-}
-
-.statusChevronOpen {
-  transform: rotate(-90deg);
-}
-
-.statusDropdown {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  background: #fff;
-  border: 1px solid #eceef4;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(20, 27, 46, 0.12);
-  padding: 6px;
-  min-width: 200px;
-  z-index: 100;
-  animation: dropIn 0.15s ease;
-}
-
-@keyframes dropIn {
-  from { opacity: 0; transform: translateY(-6px) }
-  to   { opacity: 1; transform: translateY(0) }
-}
-
-.statusOption {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: #56607a;
-  cursor: pointer;
-  transition: background 0.12s;
-  text-align: left;
-}
-
-.statusOption:hover {
-  background: #f5f6fa;
-}
-
-.statusOptionActive {
-  color: #141b2e;
-}
-
-.statusCheck {
-  margin-left: auto;
-  font-size: 13px;
-  color: #2c5bf0;
-  font-weight: 800;
 }
 
 /* ── BOTTOM NAV (mobile only) ────────────────────────────────── */
@@ -571,14 +495,9 @@
     padding: 4px 20px;
   }
 
-  .statusWrapper {
+  .statusBadge {
     top: 60px;
     right: 20px;
-  }
-
-  .statusDropdown {
-    right: 0;
-    left: auto;
   }
 
   .bottomNav {

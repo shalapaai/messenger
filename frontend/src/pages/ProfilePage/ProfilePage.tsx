@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import s from './ProfilePage.module.css'
 
@@ -13,62 +12,10 @@ const STUB_USER = {
   phone: '+7 905 •• •• 12',
 }
 
-const STATUS_OPTIONS = [
-  { id: 'online',  label: 'В сети',           dot: '#22b07d' },
-  { id: 'busy',    label: 'Занята',            dot: '#ef4444' },
-  { id: 'dnd',     label: 'Не беспокоить',     dot: '#8b5cf6' },
-  { id: 'away',    label: 'Нет на месте',      dot: '#f59e0b' },
-]
-
 const NAV_ITEMS = [
   { id: 'chats',   label: 'Чаты',    glyph: '💬', badge: '12', path: '/chats'   },
   { id: 'profile', label: 'Профиль', glyph: '👤', badge: '',   path: '/profile' },
 ]
-
-function StatusPicker() {
-  const [statusId, setStatusId] = useState('online')
-  const [open, setOpen] = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
-
-  const current = STATUS_OPTIONS.find(o => o.id === statusId)!
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  return (
-    <div className={s.statusWrapper} ref={wrapRef}>
-      <button className={s.statusBadge} onClick={() => setOpen(v => !v)}>
-        <span className={s.statusDot} style={{ background: current.dot }} />
-        {current.label}
-        <span className={`${s.statusChevron} ${open ? s.statusChevronOpen : ''}`}>›</span>
-      </button>
-
-      {open && (
-        <div className={s.statusDropdown}>
-          {STATUS_OPTIONS.map(opt => (
-            <button
-              key={opt.id}
-              className={`${s.statusOption} ${opt.id === statusId ? s.statusOptionActive : ''}`}
-              onClick={() => { setStatusId(opt.id); setOpen(false) }}
-            >
-              <span className={s.statusDot} style={{ background: opt.dot }} />
-              {opt.label}
-              {opt.id === statusId && <span className={s.statusCheck}>✓</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -130,7 +77,10 @@ export function ProfilePage() {
             <div className={s.profileCard}>
               <div className={s.cover} />
               <div className={s.cardBody}>
-                <StatusPicker />
+                <div className={s.statusBadge}>
+                  <span className={s.statusDot} />
+                  В сети
+                </div>
                 <div className={s.avatar}>{user.initials}</div>
                 <div className={s.nameSection}>
                   <h2 className={s.fullName}>{user.fullName}</h2>
