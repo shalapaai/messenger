@@ -20,8 +20,12 @@ public sealed class AddChatMemberCommandHandler(
         if (chat.Type != ChatType.Group)
             return Result.Failure(Error.Validation("ChatType", "Cannot add members to a direct chat"));
 
-        if (chat.Members.All(m => m.UserId != command.RequesterId))
+        var requester = chat.Members.FirstOrDefault(m => m.UserId == command.RequesterId);
+        if (requester is null)
             return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        if (requester.Role == ChatMemberRole.Member)
+            return Result.Failure(Error.Forbidden("Only admins can add members"));
 
         chat.AddMember(command.UserId);
 

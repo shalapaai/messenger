@@ -34,6 +34,13 @@ public sealed class ChatsModule : IModuleInstaller
         });
         services.AddValidatorsFromAssembly(typeof(ChatsModule).Assembly);
     }
+
+    public async Task MigrateAsync(IServiceProvider services, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatsDbContext>();
+        await db.Database.EnsureCreatedAsync(ct);
+    }
 }
 
 public static class ChatsModuleExtensions

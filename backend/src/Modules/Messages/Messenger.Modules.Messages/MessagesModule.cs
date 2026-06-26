@@ -30,6 +30,13 @@ public sealed class MessagesModule : IModuleInstaller
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(MessagesModule).Assembly));
         services.AddValidatorsFromAssembly(typeof(MessagesModule).Assembly);
     }
+
+    public async Task MigrateAsync(IServiceProvider services, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<MessagesDbContext>();
+        await db.Database.EnsureCreatedAsync(ct);
+    }
 }
 
 public static class MessagesModuleExtensions

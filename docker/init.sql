@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS messages.messages (
     "ChatId"           UUID         NOT NULL,
     "SenderId"         UUID         NOT NULL,
     "Content"          VARCHAR(4096) NOT NULL,
+    "FileUrl"          VARCHAR(2048),
     "Status"           VARCHAR(20)  NOT NULL,       -- string-enum: Sent/Delivered/Read/Deleted
     "SentAt"           TIMESTAMPTZ  NOT NULL,
     "EditedAt"         TIMESTAMPTZ,

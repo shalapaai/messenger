@@ -22,6 +22,7 @@ public sealed class Message : AggregateRoot<MessageId>
     public Guid ChatId { get; private set; }
     public Guid SenderId { get; private set; }
     public string Content { get; private set; } = string.Empty;
+    public string? FileUrl { get; private set; }
     public MessageStatus Status { get; private set; }
     public DateTime SentAt { get; private set; }
     public DateTime? EditedAt { get; private set; }
@@ -38,6 +39,17 @@ public sealed class Message : AggregateRoot<MessageId>
 
         var message = new Message(MessageId.New(), chatId, senderId, content.Trim(), replyToMessageId);
         message.RaiseDomainEvent(new MessageSentDomainEvent(message.Id.Value, chatId, senderId, content));
+        return Result.Success(message);
+    }
+
+    public static Result<Message> CreateFile(Guid chatId, Guid senderId, string fileUrl, string? caption = null)
+    {
+        if (string.IsNullOrWhiteSpace(fileUrl))
+            return Result.Failure<Message>(Error.Validation("FileUrl", "File URL cannot be empty"));
+
+        var message = new Message(MessageId.New(), chatId, senderId, caption?.Trim() ?? string.Empty, null);
+        message.FileUrl = fileUrl;
+        message.RaiseDomainEvent(new MessageSentDomainEvent(message.Id.Value, chatId, senderId, caption ?? string.Empty));
         return Result.Success(message);
     }
 

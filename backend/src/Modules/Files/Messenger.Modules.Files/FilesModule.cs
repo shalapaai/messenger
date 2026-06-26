@@ -2,6 +2,7 @@ namespace Messenger.Modules.Files;
 
 using FluentValidation;
 using Messenger.Modules.Files.Application;
+using Messenger.Modules.Files.Application.Contracts;
 using Messenger.Modules.Files.Application.Abstractions;
 using Messenger.Modules.Files.Domain;
 using Messenger.Modules.Files.Infrastructure;
@@ -43,8 +44,17 @@ public sealed class FilesModule : IModuleInstaller
             services.AddScoped<IFileStorage, LocalFileStorage>();
         }
 
+        services.AddScoped<IFilesModule, FilesModuleApi>();
+
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(FilesModule).Assembly));
         services.AddValidatorsFromAssembly(typeof(FilesModule).Assembly);
+    }
+
+    public async Task MigrateAsync(IServiceProvider services, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<FilesDbContext>();
+        await db.Database.EnsureCreatedAsync(ct);
     }
 }
 

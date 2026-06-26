@@ -22,6 +22,7 @@ public sealed class GetMessagesQueryHandler(IMessageRepository messageRepository
                 m.ChatId,
                 m.SenderId,
                 m.Content,
+                m.FileUrl,
                 m.Status.ToString().ToLower(),
                 m.SentAt,
                 m.EditedAt,
