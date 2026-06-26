@@ -2,6 +2,7 @@ namespace Messenger.Modules.Chats.Presentation;
 
 using MediatR;
 using Messenger.Modules.Chats.Application;
+using Messenger.Modules.Chats.Application.Features.AddChatMember;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Shared.Kernel.Extensions;
@@ -28,6 +29,15 @@ public static class ChatsEndpoints
             .WithSummary("Информация о чате")
             .WithDescription("Возвращает детальную информацию о чате и список его участников. Доступно только участникам чата.")
             .Produces<ChatDetailDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/members", AddChatMember)
+            .WithName("AddChatMember")
+            .WithSummary("Добавить участника в групповой чат")
+            .WithDescription("Добавляет пользователя в групповой чат. Доступно только участникам чата. Для личных чатов недоступно.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -77,6 +87,22 @@ public static class ChatsEndpoints
             : result.Error.ToHttpResult();
     }
 
+    private static async Task<IResult> AddChatMember(
+        Guid                   id,
+        AddChatMemberRequest   request,
+        HttpContext            httpContext,
+        ISender                sender,
+        CancellationToken      ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var command = new AddChatMemberCommand(id, requesterId, request.UserId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
     private static async Task<IResult> CreateDirectChat(
         CreateDirectChatRequest request,
         HttpContext httpContext,
@@ -107,5 +133,6 @@ public static class ChatsEndpoints
     }
 }
 
+public sealed record AddChatMemberRequest(Guid UserId);
 public sealed record CreateDirectChatRequest(Guid OtherUserId);
 public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds);
