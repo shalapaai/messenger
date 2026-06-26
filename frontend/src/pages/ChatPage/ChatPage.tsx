@@ -65,6 +65,42 @@ const CHAT_META: Record<string, { name: string; initials: string; color: string;
   '7': { name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', online: true,  group: false },
 }
 
+interface GroupMember {
+  name: string
+  initials: string
+  color: string
+  role: 'Администратор' | 'Участник'
+  online: boolean
+}
+
+const GROUP_MEMBERS: Record<string, GroupMember[]> = {
+  '2': [
+    { name: 'Катя Андреева',    initials: 'КА', color: '#E0556E', role: 'Администратор', online: true  },
+    { name: 'Слава Виноградов', initials: 'СВ', color: '#22B07D', role: 'Участник',       online: false },
+    { name: 'Михаил Иванов',    initials: 'МИ', color: '#F0902C', role: 'Участник',       online: true  },
+    { name: 'Анна Соколова',    initials: 'АС', color: '#2C5BF0', role: 'Участник',       online: true  },
+  ],
+  '4': [
+    { name: 'Денис Петров',    initials: 'ДП', color: '#2C5BF0', role: 'Администратор', online: false },
+    { name: 'Ирина Смирнова',  initials: 'ИС', color: '#7A5BF0', role: 'Участник',       online: true  },
+    { name: 'Алексей Фёдоров', initials: 'АФ', color: '#22B07D', role: 'Участник',       online: false },
+    { name: 'Анна Соколова',   initials: 'АС', color: '#2C5BF0', role: 'Участник',       online: true  },
+  ],
+  '6': [
+    { name: 'Ольга Козлова',  initials: 'ОК', color: '#2CA6C9', role: 'Администратор', online: false },
+    { name: 'Виктор Попов',   initials: 'ВП', color: '#E0556E', role: 'Участник',       online: false },
+    { name: 'Настя Лебедева', initials: 'НЛ', color: '#F0902C', role: 'Участник',       online: true  },
+    { name: 'Анна Соколова',  initials: 'АС', color: '#2C5BF0', role: 'Участник',       online: true  },
+  ],
+}
+
+const USER_PROFILES: Record<string, { phone: string; email: string; department: string }> = {
+  '1': { phone: '+7 912 345-67-89', email: 'mikhail.orlov@travelline.ru',   department: 'Дизайн'     },
+  '3': { phone: '+7 916 234-56-78', email: 'elena.vlasova@travelline.ru',   department: 'Разработка' },
+  '5': { phone: '+7 903 456-78-90', email: 'artem.kuznetsov@travelline.ru', department: 'Аналитика'  },
+  '7': { phone: '+7 925 567-89-01', email: 'sofya.belova@travelline.ru',    department: 'Маркетинг'  },
+}
+
 const NAV_ITEMS = [
   { id: 'chats',   label: 'Чаты',    glyph: '💬', badge: '12', path: '/chats'   },
   { id: 'profile', label: 'Профиль', glyph: '👤', badge: '',   path: '/profile' },
@@ -92,6 +128,7 @@ export function ChatPage() {
 
   const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(id))
   const [text, setText] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -107,6 +144,13 @@ export function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (!modalOpen) return
+    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') setModalOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [modalOpen])
 
   function send() {
     const trimmed = text.trim()
@@ -191,21 +235,23 @@ export function ChatPage() {
         <div className={s.chatView}>
           <div className={s.chatHeader}>
             <button className={s.backBtn} onClick={() => navigate('/chats')}>‹</button>
-            <div
-              className={`${s.headerAvatar} ${meta.group ? s.headerAvatarGroup : ''}`}
-              style={{ background: meta.color }}
-            >
-              {meta.initials}
-            </div>
-            <div className={s.headerInfo}>
-              <div className={s.headerName}>{meta.name}</div>
-              <div className={s.headerSub}>
-                {meta.online
-                  ? <><span className={s.headerOnlineDot} />в сети</>
-                  : meta.group ? `${Object.values(CHAT_META).filter((_, i) => ['2','4','6'].includes(String(i+1))).length} участника` : 'был(а) недавно'
-                }
+            <button type="button" className={s.headerTrigger} onClick={() => setModalOpen(true)}>
+              <div
+                className={`${s.headerAvatar} ${meta.group ? s.headerAvatarGroup : ''}`}
+                style={{ background: meta.color }}
+              >
+                {meta.initials}
               </div>
-            </div>
+              <div className={s.headerInfo}>
+                <div className={s.headerName}>{meta.name}</div>
+                <div className={s.headerSub}>
+                  {meta.online
+                    ? <><span className={s.headerOnlineDot} />в сети</>
+                    : meta.group ? `${Object.values(CHAT_META).filter((_, i) => ['2','4','6'].includes(String(i+1))).length} участника` : 'был(а) недавно'
+                  }
+                </div>
+              </div>
+            </button>
           </div>
 
           <div className={s.messages}>
@@ -258,6 +304,75 @@ export function ChatPage() {
           </div>
         </div>
       </div>
+
+      {modalOpen && (
+        <div className={s.modalOverlay} onClick={() => setModalOpen(false)}>
+          <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
+            <button type="button" className={s.modalClose} onClick={() => setModalOpen(false)}>✕</button>
+
+            <div
+              className={`${s.modalAvatar} ${meta.group ? s.modalAvatarGroup : ''}`}
+              style={{ background: meta.color }}
+            >
+              {meta.initials}
+            </div>
+            <div className={s.modalName}>{meta.name}</div>
+            <div className={s.modalStatus}>
+              {meta.online
+                ? <><span className={s.modalStatusDot} />в сети</>
+                : meta.group
+                  ? `${(GROUP_MEMBERS[id] ?? []).length} участника`
+                  : 'был(а) недавно'
+              }
+            </div>
+
+            <div className={s.modalDivider} />
+
+            {meta.group ? (
+              <>
+                <div className={s.modalSection}>Участники ({(GROUP_MEMBERS[id] ?? []).length})</div>
+                <div className={s.memberList}>
+                  {(GROUP_MEMBERS[id] ?? []).map(member => (
+                    <div key={member.name} className={s.memberRow}>
+                      <div className={s.memberAvatarWrap}>
+                        <div className={s.memberAvatar} style={{ background: member.color }}>{member.initials}</div>
+                        {member.online && <span className={s.memberOnlineDot} />}
+                      </div>
+                      <span className={s.memberName}>{member.name}</span>
+                      <span className={`${s.roleBadge} ${member.role === 'Администратор' ? s.roleBadgeAdmin : ''}`}>
+                        {member.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className={s.editGroupBtn} onClick={() => alert('Изменить группу')}>
+                  Изменить группу
+                </button>
+              </>
+            ) : (
+              <>
+                <div className={s.modalSection}>Контакт</div>
+                {USER_PROFILES[id] && (
+                  <>
+                    <div className={s.modalField}>
+                      <span className={s.modalFieldLabel}>Телефон</span>
+                      <span className={s.modalFieldValue}>{USER_PROFILES[id].phone}</span>
+                    </div>
+                    <div className={s.modalField}>
+                      <span className={s.modalFieldLabel}>Email</span>
+                      <span className={s.modalFieldValue}>{USER_PROFILES[id].email}</span>
+                    </div>
+                    <div className={s.modalField}>
+                      <span className={s.modalFieldLabel}>Отдел</span>
+                      <span className={s.modalFieldValue}>{USER_PROFILES[id].department}</span>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <nav className={s.bottomNav}>
         {NAV_ITEMS.map(item => (
