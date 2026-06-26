@@ -1,4 +1,6 @@
+import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { AvatarUpload } from '../../features/profile/AvatarUpload'
 import s from './ProfilePage.module.css'
 
 const STUB_USER = {
@@ -21,6 +23,63 @@ export function ProfilePage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const user = STUB_USER
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [displayName, setDisplayName] = useState(user.fullName)
+  const [status, setStatus] = useState('')
+  const [avatar, setAvatar] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const isNameInvalid = hasTriedSubmit && !displayName.trim()
+
+  useEffect(() => {
+    if (!editOpen) return
+    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [editOpen])
+
+  useEffect(() => {
+    return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }
+  }, [avatarPreview])
+
+  function openModal() {
+    setDisplayName(user.fullName)
+    setStatus('')
+    setAvatar(null)
+    setAvatarPreview(undefined)
+    setHasTriedSubmit(false)
+    setError('')
+    setEditOpen(true)
+  }
+
+  function closeModal() {
+    setEditOpen(false)
+  }
+
+  function handleAvatarChange(file: File) {
+    setAvatar(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setHasTriedSubmit(true)
+    if (!displayName.trim()) return
+    setError('')
+    setIsLoading(true)
+    try {
+      console.log({ displayName: displayName.trim(), status: status.trim(), avatar })
+      closeModal()
+    } catch {
+      setError('Не удалось сохранить профиль. Попробуйте ещё раз.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className={s.root}>
@@ -68,7 +127,7 @@ export function ProfilePage() {
                 <div className={s.pageLabel}>ПРОФИЛЬ</div>
                 <h1 className={s.pageTitle}>Мой аккаунт</h1>
               </div>
-              <button className={s.editBtn} onClick={() => navigate('/profile/setup')}>
+              <button className={s.editBtn} onClick={openModal}>
                 <span>✎</span> Изменить профиль
               </button>
             </div>
@@ -124,6 +183,70 @@ export function ProfilePage() {
           </button>
         ))}
       </nav>
+
+      {/* Edit profile modal */}
+      {editOpen && (
+        <div className={s.modalOverlay} onClick={closeModal}>
+          <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
+            <div className={s.modalHeader}>
+              <span className={s.modalTitle}>Редактирование профиля</span>
+              <button type="button" className={s.modalClose} onClick={closeModal}>✕</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className={s.modalForm} noValidate>
+              <div className={s.avatarBlock}>
+                <AvatarUpload
+                  name={displayName}
+                  avatarPreview={avatarPreview}
+                  onChange={handleAvatarChange}
+                />
+              </div>
+
+              <div className={s.fields}>
+                <label className={s.field}>
+                  <span className={s.fieldLabel}>
+                    Имя пользователя
+                    <span className={s.required}>*</span>
+                  </span>
+                  <input
+                    className={`${s.fieldInput} ${isNameInvalid ? s.fieldInputError : ''}`}
+                    type="text"
+                    value={displayName}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
+                    placeholder="Например, Николай"
+                    required
+                  />
+                  {isNameInvalid && (
+                    <span className={s.fieldError}>Введите имя пользователя</span>
+                  )}
+                </label>
+
+                <label className={s.field}>
+                  <span className={s.fieldLabel}>Статус</span>
+                  <input
+                    className={s.fieldInput}
+                    type="text"
+                    value={status}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setStatus(e.target.value)}
+                    placeholder="Например, на связи"
+                  />
+                </label>
+              </div>
+
+              {error && <p className={s.formError}>{error}</p>}
+
+              <div className={s.modalActions}>
+                <button type="button" className={s.cancelBtn} onClick={closeModal}>
+                  Отмена
+                </button>
+                <button type="submit" className={s.saveBtn} disabled={isLoading}>
+                  {isLoading ? 'Сохраняем...' : 'Сохранить'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

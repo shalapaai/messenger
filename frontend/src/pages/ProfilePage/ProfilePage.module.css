@@ -382,6 +382,192 @@
   flex-shrink: 0;
 }
 
+/* ── EDIT PROFILE MODAL ──────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 27, 46, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalPanel {
+  background: #fff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(20, 27, 46, 0.18);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px 0;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #141b2e;
+}
+
+.modalClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f5f6fa;
+  cursor: pointer;
+  font-size: 14px;
+  color: #56607a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.modalClose:hover {
+  background: #eceef4;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px 28px 28px;
+}
+
+.avatarBlock {
+  display: flex;
+  justify-content: center;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.required {
+  margin-left: 4px;
+  color: #dc2626;
+}
+
+.fieldInput {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #eceef4;
+  border-radius: 14px;
+  outline: none;
+  font: inherit;
+  font-size: 15px;
+  color: #141b2e;
+  background: #f5f6fa;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.fieldInput::placeholder {
+  color: #a6aebf;
+}
+
+.fieldInput:hover {
+  border-color: #c4cad8;
+}
+
+.fieldInput:focus {
+  border-color: #2c5bf0;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(44, 91, 240, 0.1);
+}
+
+.fieldInputError,
+.fieldInputError:hover,
+.fieldInputError:focus {
+  border-color: #dc2626;
+}
+
+.fieldInputError:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+.fieldError {
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.formError {
+  font-size: 14px;
+  color: #dc2626;
+  margin: 0;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancelBtn {
+  flex: 1;
+  min-height: 48px;
+  border: 1px solid #eceef4;
+  border-radius: 14px;
+  background: #fff;
+  color: #56607a;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cancelBtn:hover {
+  background: #f5f6fa;
+  border-color: #c4cad8;
+}
+
+.saveBtn {
+  flex: 2;
+  min-height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #2c5bf0;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #1f4bdd;
+}
+
+.saveBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* ── BOTTOM NAV (mobile only) ────────────────────────────────── */
 .bottomNav {
   display: none;

@@ -18,6 +18,7 @@ interface Message {
 type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>
 
 const ME: Sender    = { own: true,  senderId: 'me',    senderName: 'Анна',   senderInitials: 'АС', senderColor: '#2C5BF0' }
+const ME_PROFILE: ModalUser = { name: 'Анна Соколова', initials: 'АС', color: '#2C5BF0', online: true, phone: '+7 905 •• •• 12', email: 'anna.sokolova@travelline.tech', department: 'Дизайн' }
 const KATYA: Sender = { own: false, senderId: 'katya', senderName: 'Катя',   senderInitials: 'КА', senderColor: '#E0556E' }
 const SLAVA: Sender = { own: false, senderId: 'slava', senderName: 'Слава',  senderInitials: 'СВ', senderColor: '#22B07D' }
 const MISHA: Sender = { own: false, senderId: 'misha', senderName: 'Михаил', senderInitials: 'МИ', senderColor: '#F0902C' }
@@ -101,6 +102,33 @@ const USER_PROFILES: Record<string, { phone: string; email: string; department: 
   '7': { phone: '+7 925 567-89-01', email: 'sofya.belova@travelline.ru',    department: 'Маркетинг'  },
 }
 
+interface ModalUser {
+  name: string
+  initials: string
+  color: string
+  online: boolean
+  phone?: string
+  email?: string
+  department?: string
+}
+
+const SENDER_DETAILS: Record<string, { phone: string; email: string; department: string; online: boolean }> = {
+  'katya': { phone: '+7 495 123-45-67', email: 'katya.andreeva@travelline.ru',   department: 'Дизайн',     online: true  },
+  'slava': { phone: '+7 499 234-56-78', email: 'slava.vinogradov@travelline.ru', department: 'Разработка', online: false },
+  'misha': { phone: '+7 916 345-67-89', email: 'mikhail.ivanov@travelline.ru',   department: 'Дизайн',     online: true  },
+}
+
+function getModalUserFromMsg(msg: Message): ModalUser {
+  if (msg.senderId === 'me') return ME_PROFILE
+  if (msg.senderId.startsWith('other-')) {
+    const cid = msg.senderId.replace('other-', '')
+    const cm = CHAT_META[cid] ?? CHAT_META['1']
+    return { name: cm.name, initials: cm.initials, color: cm.color, online: cm.online, ...USER_PROFILES[cid] }
+  }
+  const d = SENDER_DETAILS[msg.senderId]
+  return { name: msg.senderName, initials: msg.senderInitials, color: msg.senderColor, online: d?.online ?? false, phone: d?.phone, email: d?.email, department: d?.department }
+}
+
 const NAV_ITEMS = [
   { id: 'chats',   label: 'Чаты',    glyph: '💬', badge: '12', path: '/chats'   },
   { id: 'profile', label: 'Профиль', glyph: '👤', badge: '',   path: '/profile' },
@@ -128,7 +156,8 @@ export function ChatPage() {
 
   const [messages, setMessages] = useState<Message[]>(() => getInitialMessages(id))
   const [text, setText] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalUser, setModalUser] = useState<ModalUser | null>(null)
+  const [groupModalOpen, setGroupModalOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -146,11 +175,13 @@ export function ChatPage() {
   }, [messages])
 
   useEffect(() => {
-    if (!modalOpen) return
-    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') setModalOpen(false) }
+    if (!modalUser && !groupModalOpen) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') { setModalUser(null); setGroupModalOpen(false) }
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [modalOpen])
+  }, [modalUser, groupModalOpen])
 
   function send() {
     const trimmed = text.trim()
@@ -235,7 +266,7 @@ export function ChatPage() {
         <div className={s.chatView}>
           <div className={s.chatHeader}>
             <button className={s.backBtn} onClick={() => navigate('/chats')}>‹</button>
-            <button type="button" className={s.headerTrigger} onClick={() => setModalOpen(true)}>
+            <button type="button" className={s.headerTrigger} onClick={() => meta.group ? setGroupModalOpen(true) : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })}>
               <div
                 className={`${s.headerAvatar} ${meta.group ? s.headerAvatarGroup : ''}`}
                 style={{ background: meta.color }}
@@ -263,14 +294,19 @@ export function ChatPage() {
               ) : (
                 <div key={item.msg.id}>
                   {item.showName && (
-                    <div className={s.senderName} style={{ color: item.msg.senderColor }}>
+                    <div
+                      className={`${s.senderName} ${s.senderNameClickable}`}
+                      style={{ color: item.msg.senderColor }}
+                      onClick={() => setModalUser(getModalUserFromMsg(item.msg))}
+                    >
                       {item.msg.senderName}
                     </div>
                   )}
                   <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
                     <div
-                      className={`${s.msgAvatar} ${item.showAvatar ? '' : s.msgAvatarHidden}`}
+                      className={`${s.msgAvatar} ${item.showAvatar ? '' : s.msgAvatarHidden} ${item.showAvatar ? s.msgAvatarClickable : ''}`}
                       style={{ background: item.msg.senderColor }}
+                      onClick={() => item.showAvatar ? setModalUser(getModalUserFromMsg(item.msg)) : undefined}
                     >
                       {item.msg.senderInitials}
                     </div>
@@ -305,71 +341,73 @@ export function ChatPage() {
         </div>
       </div>
 
-      {modalOpen && (
-        <div className={s.modalOverlay} onClick={() => setModalOpen(false)}>
+      {modalUser && (
+        <div className={s.modalOverlay} onClick={() => setModalUser(null)}>
           <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
-            <button type="button" className={s.modalClose} onClick={() => setModalOpen(false)}>✕</button>
-
-            <div
-              className={`${s.modalAvatar} ${meta.group ? s.modalAvatarGroup : ''}`}
-              style={{ background: meta.color }}
-            >
-              {meta.initials}
-            </div>
-            <div className={s.modalName}>{meta.name}</div>
+            <button type="button" className={s.modalClose} onClick={() => setModalUser(null)}>✕</button>
+            <div className={s.modalAvatar} style={{ background: modalUser.color }}>{modalUser.initials}</div>
+            <div className={s.modalName}>{modalUser.name}</div>
             <div className={s.modalStatus}>
-              {meta.online
-                ? <><span className={s.modalStatusDot} />в сети</>
-                : meta.group
-                  ? `${(GROUP_MEMBERS[id] ?? []).length} участника`
-                  : 'был(а) недавно'
-              }
+              {modalUser.online ? <><span className={s.modalStatusDot} />в сети</> : 'был(а) недавно'}
             </div>
-
-            <div className={s.modalDivider} />
-
-            {meta.group ? (
+            {(modalUser.phone || modalUser.email || modalUser.department) && (
               <>
-                <div className={s.modalSection}>Участники ({(GROUP_MEMBERS[id] ?? []).length})</div>
-                <div className={s.memberList}>
-                  {(GROUP_MEMBERS[id] ?? []).map(member => (
-                    <div key={member.name} className={s.memberRow}>
-                      <div className={s.memberAvatarWrap}>
-                        <div className={s.memberAvatar} style={{ background: member.color }}>{member.initials}</div>
-                        {member.online && <span className={s.memberOnlineDot} />}
-                      </div>
-                      <span className={s.memberName}>{member.name}</span>
-                      <span className={`${s.roleBadge} ${member.role === 'Администратор' ? s.roleBadgeAdmin : ''}`}>
-                        {member.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <button type="button" className={s.editGroupBtn} onClick={() => alert('Изменить группу')}>
-                  Изменить группу
-                </button>
-              </>
-            ) : (
-              <>
+                <div className={s.modalDivider} />
                 <div className={s.modalSection}>Контакт</div>
-                {USER_PROFILES[id] && (
-                  <>
-                    <div className={s.modalField}>
-                      <span className={s.modalFieldLabel}>Телефон</span>
-                      <span className={s.modalFieldValue}>{USER_PROFILES[id].phone}</span>
-                    </div>
-                    <div className={s.modalField}>
-                      <span className={s.modalFieldLabel}>Email</span>
-                      <span className={s.modalFieldValue}>{USER_PROFILES[id].email}</span>
-                    </div>
-                    <div className={s.modalField}>
-                      <span className={s.modalFieldLabel}>Отдел</span>
-                      <span className={s.modalFieldValue}>{USER_PROFILES[id].department}</span>
-                    </div>
-                  </>
+                {modalUser.phone && (
+                  <div className={s.modalField}>
+                    <span className={s.modalFieldLabel}>Телефон</span>
+                    <span className={s.modalFieldValue}>{modalUser.phone}</span>
+                  </div>
+                )}
+                {modalUser.email && (
+                  <div className={s.modalField}>
+                    <span className={s.modalFieldLabel}>Email</span>
+                    <span className={s.modalFieldValue}>{modalUser.email}</span>
+                  </div>
+                )}
+                {modalUser.department && (
+                  <div className={s.modalField}>
+                    <span className={s.modalFieldLabel}>Отдел</span>
+                    <span className={s.modalFieldValue}>{modalUser.department}</span>
+                  </div>
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {groupModalOpen && (
+        <div className={s.modalOverlay} onClick={() => setGroupModalOpen(false)}>
+          <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
+            <button type="button" className={s.modalClose} onClick={() => setGroupModalOpen(false)}>✕</button>
+            <div className={`${s.modalAvatar} ${s.modalAvatarGroup}`} style={{ background: meta.color }}>{meta.initials}</div>
+            <div className={s.modalName}>{meta.name}</div>
+            <div className={s.modalStatus}>{(GROUP_MEMBERS[id] ?? []).length} участника</div>
+            <div className={s.modalDivider} />
+            <div className={s.modalSection}>Участники ({(GROUP_MEMBERS[id] ?? []).length})</div>
+            <div className={s.memberList}>
+              {(GROUP_MEMBERS[id] ?? []).map(member => (
+                <div
+                  key={member.name}
+                  className={`${s.memberRow} ${s.memberRowClickable}`}
+                  onClick={() => { setGroupModalOpen(false); setModalUser({ name: member.name, initials: member.initials, color: member.color, online: member.online }) }}
+                >
+                  <div className={s.memberAvatarWrap}>
+                    <div className={s.memberAvatar} style={{ background: member.color }}>{member.initials}</div>
+                    {member.online && <span className={s.memberOnlineDot} />}
+                  </div>
+                  <span className={s.memberName}>{member.name}</span>
+                  <span className={`${s.roleBadge} ${member.role === 'Администратор' ? s.roleBadgeAdmin : ''}`}>
+                    {member.role}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button type="button" className={s.editGroupBtn} onClick={() => alert('Изменить группу')}>
+              Изменить группу
+            </button>
           </div>
         </div>
       )}
