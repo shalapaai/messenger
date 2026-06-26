@@ -376,10 +376,6 @@
   cursor: pointer;
 }
 
-.senderNameClickable:hover {
-  text-decoration: underline;
-}
-
 .bubble {
   padding: 11px 16px;
   border-radius: 18px;

@@ -18,6 +18,7 @@ interface Message {
 type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>
 
 const ME: Sender    = { own: true,  senderId: 'me',    senderName: 'Анна',   senderInitials: 'АС', senderColor: '#2C5BF0' }
+const ME_PROFILE: ModalUser = { name: 'Анна Соколова', initials: 'АС', color: '#2C5BF0', online: true, phone: '+7 905 •• •• 12', email: 'anna.sokolova@travelline.tech', department: 'Дизайн' }
 const KATYA: Sender = { own: false, senderId: 'katya', senderName: 'Катя',   senderInitials: 'КА', senderColor: '#E0556E' }
 const SLAVA: Sender = { own: false, senderId: 'slava', senderName: 'Слава',  senderInitials: 'СВ', senderColor: '#22B07D' }
 const MISHA: Sender = { own: false, senderId: 'misha', senderName: 'Михаил', senderInitials: 'МИ', senderColor: '#F0902C' }
@@ -118,6 +119,7 @@ const SENDER_DETAILS: Record<string, { phone: string; email: string; department:
 }
 
 function getModalUserFromMsg(msg: Message): ModalUser {
+  if (msg.senderId === 'me') return ME_PROFILE
   if (msg.senderId.startsWith('other-')) {
     const cid = msg.senderId.replace('other-', '')
     const cm = CHAT_META[cid] ?? CHAT_META['1']
@@ -302,9 +304,9 @@ export function ChatPage() {
                   )}
                   <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
                     <div
-                      className={`${s.msgAvatar} ${item.showAvatar ? '' : s.msgAvatarHidden} ${item.showAvatar && !item.msg.own ? s.msgAvatarClickable : ''}`}
+                      className={`${s.msgAvatar} ${item.showAvatar ? '' : s.msgAvatarHidden} ${item.showAvatar ? s.msgAvatarClickable : ''}`}
                       style={{ background: item.msg.senderColor }}
-                      onClick={() => item.showAvatar && !item.msg.own ? setModalUser(getModalUserFromMsg(item.msg)) : undefined}
+                      onClick={() => item.showAvatar ? setModalUser(getModalUserFromMsg(item.msg)) : undefined}
                     >
                       {item.msg.senderInitials}
                     </div>
