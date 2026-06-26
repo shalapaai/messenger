@@ -4,8 +4,8 @@ using MediatR;
 using Messenger.Modules.Messages.Application.Features.EditMessage;
 using Messenger.Modules.Messages.Application.Features.GetMessages;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
+using Messenger.Modules.Messages.Application.Features.UploadAndSendMessage;
 using Messenger.Shared.Kernel.Extensions;
-using Messenger.Shared.Kernel.Pagination;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -25,7 +25,18 @@ public static class MessagesEndpoints
 
         group.MapGet("/", GetMessages)
             .WithName("GetMessages")
-            .Produces<PagedList<MessageDto>>();
+            .WithSummary("История сообщений чата")
+            .WithDescription("Возвращает сообщения чата с cursor-пагинацией. Передай nextCursor из предыдущего ответа как before для загрузки следующей страницы.")
+            .Produces<MessagesPageDto>();
+
+        group.MapPost("/upload", UploadAndSendMessage)
+            .WithName("UploadAndSendMessage")
+            .WithSummary("Отправить файл/фото")
+            .WithDescription("Загружает файл и отправляет его как сообщение. Поддерживает любые типы файлов до 20 МБ. Необязательное поле caption — подпись к файлу.")
+            .Accepts<IFormFile>("multipart/form-data")
+            .Produces<Guid>(StatusCodes.Status201Created)
+            .ProducesValidationProblem()
+            .DisableAntiforgery();
 
         group.MapPatch("/{messageId:guid}", EditMessage)
             .WithName("EditMessage")
@@ -52,16 +63,39 @@ public static class MessagesEndpoints
     }
 
     private static async Task<IResult> GetMessages(
-        Guid chatId,
-        ISender sender,
+        Guid              chatId,
+        ISender           sender,
         CancellationToken ct,
-        int page = 1,
-        int pageSize = 50)
+        Guid?             before = null,
+        int               limit  = 50)
     {
-        var result = await sender.Send(new GetMessagesQuery(chatId, page, pageSize), ct);
+        var result = await sender.Send(new GetMessagesQuery(chatId, before, limit), ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> UploadAndSendMessage(
+        Guid              chatId,
+        IFormFile         file,
+        HttpContext        httpContext,
+        ISender           sender,
+        CancellationToken ct,
+        string?           caption = null)
+    {
+        if (file is null || file.Length == 0)
+            return Results.BadRequest(new { error = "File is empty" });
+
+        var userId = httpContext.GetUserId();
+
+        await using var stream = file.OpenReadStream();
+        var command = new UploadAndSendMessageCommand(
+            chatId, userId, stream, file.FileName, file.ContentType, file.Length, caption);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.Created($"/api/chats/{chatId}/messages/{result.Value}", result.Value)
             : result.Error.ToHttpResult();
     }
 

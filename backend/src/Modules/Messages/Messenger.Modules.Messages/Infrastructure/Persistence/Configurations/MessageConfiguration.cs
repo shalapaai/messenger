@@ -29,6 +29,7 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(m => m.EditedAt);
         builder.Property(m => m.DeletedAt);
         builder.Property(m => m.ReplyToMessageId);
+        builder.Property(m => m.FileUrl).HasMaxLength(2048);
 
         // Составной индекс для пагинации по чату (самый частый запрос)
         builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_messages_chat_id_sent_at");
