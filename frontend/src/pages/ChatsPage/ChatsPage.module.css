@@ -1,0 +1,546 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #fff;
+  overflow: hidden;
+  font-family: 'Archivo', system-ui, sans-serif;
+  color: #141b2e;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOP BAR (mobile only) ───────────────────────────────────── */
+.topBar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  flex-shrink: 0;
+  padding: 0 18px;
+  border-bottom: 1px solid #eceef4;
+  background: #fff;
+}
+
+.topBarLogo {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #2c5bf0;
+}
+
+.topBarAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2c5bf0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* ── BODY ────────────────────────────────────────────────────── */
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── SIDEBAR (desktop only) ──────────────────────────────────── */
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid #eceef4;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 28px 20px 22px;
+}
+
+.sidebarLogo {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #2c5bf0;
+  padding: 0 12px 28px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px;
+  border-radius: 13px;
+  cursor: pointer;
+  color: #56607a;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+}
+
+.navItem:hover {
+  background: #f5f6fa;
+}
+
+.navItemActive {
+  background: #2c5bf0;
+  color: #fff;
+}
+
+.navItemActive:hover {
+  background: #1f4bdd;
+}
+
+.navGlyph {
+  font-size: 17px;
+  width: 22px;
+  text-align: center;
+}
+
+.navBadge {
+  margin-left: auto;
+  background: #2c5bf0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+}
+
+.navItemActive .navBadge {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.sidebarUser {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f5f6fa;
+}
+
+.sidebarUserAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #2c5bf0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.sidebarUserName {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarUserStatus {
+  font-size: 12px;
+  color: #8a93a6;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.onlineDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22b07d;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── MAIN ────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  min-width: 0;
+  background: #f5f6fa;
+  overflow-y: auto;
+  padding: 36px 40px;
+}
+
+.content {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ── PAGE HEADER ─────────────────────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+
+.pageLabel {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #2c5bf0;
+  margin-bottom: 6px;
+}
+
+.pageTitle {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.newBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #2c5bf0;
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 13px 22px;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(44, 91, 240, 0.28);
+  transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.newBtn:hover {
+  background: #1f4bdd;
+}
+
+/* ── SEARCH ──────────────────────────────────────────────────── */
+.searchWrap {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  border: 1px solid #eceef4;
+  background: #fff;
+  border-radius: 16px;
+  padding: 15px 18px 15px 46px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: #141b2e;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.searchInput::placeholder {
+  color: #a6aebf;
+}
+
+.searchInput:focus {
+  border-color: #2c5bf0;
+}
+
+/* ── TABS ────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #eceef4;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: 30px;
+  cursor: pointer;
+  color: #56607a;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.tabActive {
+  background: #2c5bf0;
+  color: #fff;
+  border-color: #2c5bf0;
+}
+
+.tabCount {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: #f0f1f6;
+  color: #8a93a6;
+}
+
+.tabCountActive {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+/* ── CHAT LIST ───────────────────────────────────────────────── */
+.chatList {
+  background: #fff;
+  border: 1px solid #eceef4;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.chatRow {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 22px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f2f7;
+  transition: background 0.12s;
+}
+
+.chatRow:last-child {
+  border-bottom: none;
+}
+
+.chatRow:hover {
+  background: #f8f9fc;
+}
+
+.chatAvatar {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.chatAvatarGroup {
+  border-radius: 16px;
+}
+
+.chatOnlineDot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #22b07d;
+  border: 2.5px solid #fff;
+}
+
+.chatInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.chatNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatName {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groupBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2c5bf0;
+  background: #eaf0ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.chatPreview {
+  font-size: 14px;
+  color: #8a93a6;
+  font-weight: 500;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chatMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.chatTime {
+  font-size: 13px;
+  color: #a6aebf;
+  font-weight: 600;
+}
+
+.chatUnread {
+  background: #2c5bf0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 21px;
+  height: 21px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+.emptyState {
+  padding: 48px 24px;
+  text-align: center;
+  color: #8a93a6;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* ── BOTTOM NAV (mobile only) ────────────────────────────────── */
+.bottomNav {
+  display: none;
+  align-items: stretch;
+  flex-shrink: 0;
+  border-top: 1px solid #eceef4;
+  background: #fff;
+  padding: 6px 4px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+}
+
+.bottomNavItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: #9098a8;
+  font-size: 10.5px;
+  font-weight: 700;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+.bottomNavItemActive {
+  color: #2c5bf0;
+}
+
+.bottomGlyph {
+  position: relative;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bottomBadge {
+  position: absolute;
+  top: -5px;
+  right: -9px;
+  background: #2c5bf0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 819px) {
+  .topBar {
+    display: flex;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    padding: 22px 16px 26px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  .pageTitle {
+    font-size: 27px;
+  }
+
+  .newBtn {
+    width: 100%;
+  }
+
+  .chatRow {
+    padding: 14px 16px;
+  }
+
+  .bottomNav {
+    display: flex;
+  }
+}
