@@ -205,7 +205,7 @@
 }
 
 .backBtn {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
@@ -239,6 +239,27 @@
 
 .headerAvatarGroup {
   border-radius: 14px;
+}
+
+.headerTrigger {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 14px;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.headerTrigger:hover {
+  background: #f5f6fa;
 }
 
 .headerInfo {
@@ -506,6 +527,219 @@
   padding: 0 4px;
 }
 
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 27, 46, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalPanel {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(20, 27, 46, 0.18);
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f5f6fa;
+  cursor: pointer;
+  font-size: 14px;
+  color: #56607a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.modalClose:hover {
+  background: #eceef4;
+}
+
+.modalAvatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 28px;
+  margin: 0 auto 16px;
+}
+
+.modalAvatarGroup {
+  border-radius: 22px;
+}
+
+.modalName {
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.modalStatus {
+  font-size: 14px;
+  color: #8a93a6;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.modalStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22b07d;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.modalDivider {
+  height: 1px;
+  background: #eceef4;
+  margin: 0 -32px 24px;
+}
+
+.modalSection {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: #a6aebf;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.modalField {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 18px;
+}
+
+.modalFieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a6aebf;
+}
+
+.modalFieldValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #141b2e;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f2f7;
+}
+
+.memberRow:last-child {
+  border-bottom: none;
+}
+
+.memberAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.memberAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.memberOnlineDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #22b07d;
+  border: 2px solid #fff;
+}
+
+.memberName {
+  font-size: 15px;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roleBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #eaf0ff;
+  color: #2c5bf0;
+  flex-shrink: 0;
+}
+
+.roleBadgeAdmin {
+  background: #fff4e6;
+  color: #e07b2c;
+}
+
+.editGroupBtn {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: #2c5bf0;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.editGroupBtn:hover {
+  background: #1f4bdd;
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 819px) {
   .topBar {
@@ -514,10 +748,6 @@
 
   .sidebar {
     display: none;
-  }
-
-  .backBtn {
-    display: flex;
   }
 
   .chatHeader {
