@@ -26,12 +26,17 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
     public async Task<PagedList<UserProfile>> SearchAsync(
         string query, Guid excludeUserId, int page, int pageSize, CancellationToken ct = default)
     {
+        var isLoginSearch = query.StartsWith('@');
         var q = query.ToLowerInvariant().TrimStart('@');
-        var baseQuery = dbContext.UserProfiles
-            .Where(p => p.AuthUserId != excludeUserId &&
-                        (EF.Functions.ILike(p.Email, $"%{q}%") ||
-                         EF.Functions.ILike(p.DisplayName, $"%{q}%") ||
-                         (p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))));
+        var baseQuery = isLoginSearch
+            ? dbContext.UserProfiles
+                .Where(p => p.AuthUserId != excludeUserId &&
+                            p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))
+            : dbContext.UserProfiles
+                .Where(p => p.AuthUserId != excludeUserId &&
+                            (EF.Functions.ILike(p.Email, $"%{q}%") ||
+                             EF.Functions.ILike(p.DisplayName, $"%{q}%") ||
+                             (p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))));
 
         var total = await baseQuery.CountAsync(ct);
         var items = await baseQuery
