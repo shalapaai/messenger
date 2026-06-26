@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import s from './ProfilePage.module.css'
 
 const STUB_USER = {
@@ -20,8 +21,8 @@ const STATUS_OPTIONS = [
 ]
 
 const NAV_ITEMS = [
-  { id: 'chats',   label: 'Чаты',    glyph: '💬', badge: '12' },
-  { id: 'profile', label: 'Профиль', glyph: '👤', badge: '' },
+  { id: 'chats',   label: 'Чаты',    glyph: '💬', badge: '12', path: '/chats'   },
+  { id: 'profile', label: 'Профиль', glyph: '👤', badge: '',   path: '/profile' },
 ]
 
 function StatusPicker() {
@@ -70,7 +71,8 @@ function StatusPicker() {
 }
 
 export function ProfilePage() {
-  const [active, setActive] = useState('profile')
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const user = STUB_USER
 
   return (
@@ -89,8 +91,8 @@ export function ProfilePage() {
             {NAV_ITEMS.map(item => (
               <button
                 key={item.id}
-                className={`${s.navItem} ${active === item.id ? s.navItemActive : ''}`}
-                onClick={() => setActive(item.id)}
+                className={`${s.navItem} ${pathname === item.path ? s.navItemActive : ''}`}
+                onClick={() => navigate(item.path)}
               >
                 <span className={s.navGlyph}>{item.glyph}</span>
                 <span>{item.label}</span>
@@ -161,8 +163,8 @@ export function ProfilePage() {
         {NAV_ITEMS.map(item => (
           <button
             key={item.id}
-            className={`${s.bottomNavItem} ${active === item.id ? s.bottomNavItemActive : ''}`}
-            onClick={() => setActive(item.id)}
+            className={`${s.bottomNavItem} ${pathname === item.path ? s.bottomNavItemActive : ''}`}
+            onClick={() => navigate(item.path)}
           >
             <span className={s.bottomGlyph}>
               {item.glyph}
