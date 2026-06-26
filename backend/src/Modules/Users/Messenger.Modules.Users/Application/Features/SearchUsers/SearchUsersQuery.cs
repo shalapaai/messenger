@@ -13,4 +13,5 @@ public sealed record UserSearchResultDto(
     Guid    UserId,
     string  Email,
     string  DisplayName,
+    string? Login,
     string? AvatarUrl);

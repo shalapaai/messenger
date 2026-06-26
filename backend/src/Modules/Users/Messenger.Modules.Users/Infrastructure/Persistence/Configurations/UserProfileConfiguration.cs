@@ -12,6 +12,7 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
         b.Property(p => p.AuthUserId).IsRequired();
         b.Property(p => p.Email).HasMaxLength(255).IsRequired();
         b.Property(p => p.DisplayName).HasMaxLength(100).IsRequired();
+        b.Property(p => p.Login).HasMaxLength(30);
         b.Property(p => p.Status).HasMaxLength(200);
         b.Property(p => p.AvatarUrl).HasMaxLength(2048);
         b.Property(p => p.CreatedAt).IsRequired();
@@ -19,6 +20,8 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
 
         b.HasIndex(p => p.AuthUserId).IsUnique().HasDatabaseName("ix_user_profiles_auth_user_id");
         b.HasIndex(p => p.Email).IsUnique().HasDatabaseName("ix_user_profiles_email");
+        b.HasIndex(p => p.Login).IsUnique().HasDatabaseName("ix_user_profiles_login")
+            .HasFilter("\"Login\" IS NOT NULL");
 
         b.ToTable("user_profiles");
     }

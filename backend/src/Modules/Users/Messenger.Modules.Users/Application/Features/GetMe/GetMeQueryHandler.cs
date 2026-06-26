@@ -17,6 +17,7 @@ public sealed class GetMeQueryHandler(IUserProfileRepository repository)
             profile.AuthUserId,
             profile.Email,
             profile.DisplayName,
+            profile.Login is not null ? $"@{profile.Login}" : null,
             profile.Status,
             profile.AvatarUrl,
             profile.CreatedAt,

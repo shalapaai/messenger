@@ -14,5 +14,10 @@ public sealed class CreateUserProfileCommandValidator : AbstractValidator<Create
         RuleFor(x => x.DisplayName)
             .NotEmpty().WithMessage("Display name is required")
             .MaximumLength(100).WithMessage("Display name must not exceed 100 characters");
+
+        When(x => x.Login is not null, () =>
+            RuleFor(x => x.Login!)
+                .Matches(@"^[a-zA-Z0-9_]{3,30}$")
+                .WithMessage("Login must be 3–30 characters and contain only letters, digits, or underscores"));
     }
 }

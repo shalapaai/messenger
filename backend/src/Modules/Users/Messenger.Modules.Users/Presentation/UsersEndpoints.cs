@@ -34,7 +34,8 @@ public static class UsersEndpoints
             .WithName("UpdateUserProfile")
             .WithSummary("Обновить профиль")
             .Produces<UpdatedProfileDto>()
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         group.MapPost("/me/avatar", UploadAvatar)
             .WithName("UploadUserAvatar")
@@ -59,7 +60,7 @@ public static class UsersEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var command = new CreateUserProfileCommand(ctx.GetUserId(), ctx.GetUserEmail(), request.DisplayName);
+        var command = new CreateUserProfileCommand(ctx.GetUserId(), ctx.GetUserEmail(), request.DisplayName, request.Login);
         var result  = await sender.Send(command, ct);
         return result.IsSuccess
             ? Results.Created($"/api/users/{result.Value!.UserId}", result.Value)
@@ -78,7 +79,7 @@ public static class UsersEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var command = new UpdateUserProfileCommand(ctx.GetUserId(), request.DisplayName, request.Status);
+        var command = new UpdateUserProfileCommand(ctx.GetUserId(), request.DisplayName, request.Status, request.Login);
         var result  = await sender.Send(command, ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
     }
@@ -117,8 +118,8 @@ public static class UsersEndpoints
     }
 }
 
-public sealed record CreateUserProfileRequest(string DisplayName);
-public sealed record UpdateUserProfileRequest(string? DisplayName, string? Status);
+public sealed record CreateUserProfileRequest(string DisplayName, string? Login);
+public sealed record UpdateUserProfileRequest(string? DisplayName, string? Status, string? Login);
 public sealed record AvatarUrlDto(string AvatarUrl);
 public sealed record SearchResultDto(
     IReadOnlyList<UserSearchResultDto> Items,
