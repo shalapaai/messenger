@@ -3,6 +3,7 @@ namespace Messenger.Modules.Chats.Presentation;
 using MediatR;
 using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Application.Features.AddChatMember;
+using Messenger.Modules.Chats.Application.Features.RemoveChatMember;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Shared.Kernel.Extensions;
@@ -36,6 +37,15 @@ public static class ChatsEndpoints
             .WithName("AddChatMember")
             .WithSummary("Добавить участника в групповой чат")
             .WithDescription("Добавляет пользователя в групповой чат. Доступно только участникам чата. Для личных чатов недоступно.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{id:guid}/members/{userId:guid}", RemoveChatMember)
+            .WithName("RemoveChatMember")
+            .WithSummary("Удалить участника / выйти из группы")
+            .WithDescription("Удаляет участника из группового чата. Любой участник может выйти сам. Удалить другого может только Admin или Owner. Owner не может быть удалён.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
@@ -96,6 +106,22 @@ public static class ChatsEndpoints
     {
         var requesterId = httpContext.GetUserId();
         var command = new AddChatMemberCommand(id, requesterId, request.UserId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> RemoveChatMember(
+        Guid              id,
+        Guid              userId,
+        HttpContext        httpContext,
+        ISender           sender,
+        CancellationToken ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var command = new RemoveChatMemberCommand(id, requesterId, userId);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess

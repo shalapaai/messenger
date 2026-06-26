@@ -73,6 +73,32 @@ public sealed class Chat : AggregateRoot<ChatId>
         if (_members.All(m => m.UserId != userId))
             _members.Add(new ChatMember(Id, userId, role));
     }
+
+    public Result RemoveMember(Guid requesterId, Guid userId)
+    {
+        var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
+        if (requester is null)
+            return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        var target = _members.FirstOrDefault(m => m.UserId == userId);
+        if (target is null)
+            return Result.Failure(Error.NotFound("Member"));
+
+        if (requesterId == userId)
+        {
+            _members.Remove(target);
+            return Result.Success();
+        }
+
+        if (requester.Role == ChatMemberRole.Member)
+            return Result.Failure(Error.Forbidden("Only admins can remove other members"));
+
+        if (target.Role == ChatMemberRole.Owner)
+            return Result.Failure(Error.Forbidden("Cannot remove the chat owner"));
+
+        _members.Remove(target);
+        return Result.Success();
+    }
 }
 
 // ── Repository contract ───────────────────────────────────────────────────────
