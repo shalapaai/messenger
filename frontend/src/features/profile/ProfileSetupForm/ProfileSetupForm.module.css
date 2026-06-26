@@ -1,0 +1,153 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.avatarBlock {
+  display: flex;
+  justify-content: center;
+
+  padding: 4px 0 2px;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  color: #334155;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+
+  font: inherit;
+  font-size: 15px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.input::placeholder {
+  color: #94a3b8;
+}
+
+.input:hover {
+  border-color: #94a3b8;
+}
+
+.input:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.error {
+  margin: -4px 0 0;
+
+  color: #dc2626;
+
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.submitButton {
+  min-height: 50px;
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.submitButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 640px) {
+  .form {
+    max-width: 100%;
+    gap: 18px;
+  }
+
+  .fields {
+    gap: 14px;
+  }
+
+  .input,
+  .submitButton {
+    min-height: 46px;
+  }
+}
+
+.required {
+  margin-left: 4px;
+
+  color: #dc2626;
+}
+
+.inputError,
+.inputError:hover,
+.inputError:focus {
+  border-color: #dc2626;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+.fieldError {
+  color: #dc2626;
+
+  font-size: 13px;
+  line-height: 1.35;
+}

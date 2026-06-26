@@ -3,6 +3,7 @@ import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { ChatsPage } from '../../pages/ChatsPage'
 import { ChatPage } from '../../pages/ChatPage'
+import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
 import { ProfilePage } from '../../pages/ProfilePage'
 
 export function AppRouter() {
@@ -15,6 +16,7 @@ export function AppRouter() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/chats" element={<ChatsPage />} />
         <Route path="/chats/:id" element={<ChatPage />} />
+        <Route path="/profile/setup" element={<ProfileSetupPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
