@@ -1,6 +1,9 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { AvatarCropModal } from '../../features/profile/AvatarCropModal'
 import { AvatarUpload } from '../../features/profile/AvatarUpload'
+import { getCroppedImage } from '../../shared/lib/image'
+import type { CroppedAreaPixels } from '../../shared/lib/image'
 import s from './ProfilePage.module.css'
 
 const STUB_USER = {
@@ -29,6 +32,8 @@ export function ProfilePage() {
   const [status, setStatus] = useState('')
   const [avatar, setAvatar] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
+  const [cropImageSrc, setCropImageSrc] = useState<string | undefined>(undefined)
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -46,23 +51,55 @@ export function ProfilePage() {
     return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }
   }, [avatarPreview])
 
+  useEffect(() => {
+    return () => { if (cropImageSrc) URL.revokeObjectURL(cropImageSrc) }
+  }, [cropImageSrc])
+
   function openModal() {
     setDisplayName(user.fullName)
     setStatus('')
     setAvatar(null)
     setAvatarPreview(undefined)
+    setSelectedAvatarFile(null)
+    setCropImageSrc(undefined)
     setHasTriedSubmit(false)
     setError('')
     setEditOpen(true)
   }
 
   function closeModal() {
+    setCropImageSrc(undefined)
+    setSelectedAvatarFile(null)
     setEditOpen(false)
   }
 
   function handleAvatarChange(file: File) {
-    setAvatar(file)
-    setAvatarPreview(URL.createObjectURL(file))
+    setSelectedAvatarFile(file)
+    setCropImageSrc(URL.createObjectURL(file))
+  }
+
+  function handleCropCancel() {
+    setCropImageSrc(undefined)
+    setSelectedAvatarFile(null)
+  }
+
+  async function handleCropConfirm(croppedAreaPixels: CroppedAreaPixels) {
+    if (!selectedAvatarFile || !cropImageSrc) {
+      return
+    }
+
+    const croppedFile = await getCroppedImage(
+      cropImageSrc,
+      croppedAreaPixels,
+      selectedAvatarFile.name,
+      selectedAvatarFile.type,
+    )
+
+    setAvatar(croppedFile)
+    setAvatarPreview(URL.createObjectURL(croppedFile))
+
+    setCropImageSrc(undefined)
+    setSelectedAvatarFile(null)
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -246,6 +283,14 @@ export function ProfilePage() {
             </form>
           </div>
         </div>
+      )}
+
+      {cropImageSrc && (
+        <AvatarCropModal
+          imageSrc={cropImageSrc}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
       )}
     </div>
   )
