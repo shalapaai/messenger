@@ -1,0 +1,98 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+
+  background: rgb(15 23 42 / 0.56);
+}
+
+.panel {
+  width: min(100%, 420px);
+  padding: 20px;
+
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 72px rgb(15 23 42 / 0.24);
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.cropArea {
+  position: relative;
+
+  height: 320px;
+  overflow: hidden;
+
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.zoomControl {
+  display: grid;
+  gap: 8px;
+
+  margin-top: 16px;
+
+  color: #475569;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.zoomControl input {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 20px;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 40px;
+  padding: 0 16px;
+
+  border-radius: 8px;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 0;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.primaryButton:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}

@@ -1,0 +1,1 @@
+export { AvatarCropModal } from './AvatarCropModal'
