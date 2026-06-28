@@ -133,4 +133,5 @@ public interface IChatRepository
     Task<Guid?> FindDirectChatIdAsync(Guid userId1, Guid userId2, CancellationToken ct = default);
     Task<List<Chat>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
     void Add(Chat chat);
+    void Delete(Chat chat);
 }
