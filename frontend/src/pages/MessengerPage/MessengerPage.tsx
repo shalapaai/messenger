@@ -159,6 +159,7 @@ export function MessengerPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [profileOpen, setProfileOpen] = useState(false)
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [displayName, setDisplayName] = useState(STUB_USER.fullName)
   const [editStatus, setEditStatus] = useState('')
@@ -173,13 +174,13 @@ export function MessengerPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   useEffect(() => {
-    if (!modalUser && !groupModalOpen && !editOpen) return
+    if (!modalUser && !groupModalOpen && !editOpen && !avatarMenuOpen) return
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') { setModalUser(null); setGroupModalOpen(false); setEditOpen(false) }
+      if (e.key === 'Escape') { setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setAvatarMenuOpen(false) }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [modalUser, groupModalOpen, editOpen])
+  }, [modalUser, groupModalOpen, editOpen, avatarMenuOpen])
 
   useEffect(() => () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }, [avatarPreview])
 
@@ -259,15 +260,16 @@ export function MessengerPage() {
         {/* Column 1: icon nav */}
         <nav className={s.iconNav}>
           <div className={s.iconNavLogo}>TL</div>
-          <div className={s.iconNavItems}>
-            <button className={`${s.iconBtn} ${s.iconBtnActive}`} title="Чаты">
-              <span>💬</span>
-              <span className={s.iconBtnBadge}>12</span>
-            </button>
-          </div>
           <div className={s.iconNavBottom}>
-            <button className={s.iconBtnLogout} title="Выйти" onClick={handleLogout}>↩</button>
-            <button className={s.userAvatarBtn} title="Профиль" onClick={() => setProfileOpen(true)}>АС</button>
+            <div className={s.avatarMenuWrap}>
+              {avatarMenuOpen && (
+                <div className={s.avatarMenu}>
+                  <button className={s.avatarMenuItem} onClick={() => { setAvatarMenuOpen(false); setProfileOpen(true) }}>Открыть профиль</button>
+                  <button className={`${s.avatarMenuItem} ${s.avatarMenuItemDanger}`} onClick={() => { setAvatarMenuOpen(false); handleLogout() }}>Выйти</button>
+                </div>
+              )}
+              <button className={s.userAvatarBtn} onClick={() => setAvatarMenuOpen(v => !v)}>АС</button>
+            </div>
           </div>
         </nav>
 
@@ -320,11 +322,10 @@ export function MessengerPage() {
         </aside>
 
         {/* Column 3: content */}
-        <main className={`${s.content} ${!id ? s.contentEmpty : ''}`}>
+        <main className={`${s.content}${!id ? ` ${s.contentMobileHidden}` : ''}`}>
           {id && meta ? (
             <>
               <div className={s.chatHeader}>
-                <button className={s.chatBackBtn} onClick={() => navigate('/chats')}>‹</button>
                 <button
                   type="button" className={s.chatHeaderTrigger}
                   onClick={() => meta.group
@@ -386,41 +387,59 @@ export function MessengerPage() {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className={s.bottomNav}>
+      <nav className={`${s.bottomNav}${id ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
           <span className={s.bnGlyph}>💬<span className={s.bnBadge}>12</span></span>
           <span>Чаты</span>
         </button>
-        <button className={`${s.bnItem} ${s.bnLogout}`} onClick={handleLogout}>
-          <span className={s.bnGlyph}>↩</span>
-          <span>Выйти</span>
+        <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
+          <span className={s.bnAvatarMini}>АС</span>
+          <span>Профиль</span>
         </button>
       </nav>
+
+      {avatarMenuOpen && <div className={s.avatarMenuBg} onClick={() => setAvatarMenuOpen(false)} />}
 
       {/* Profile panel */}
       {profileOpen && (
         <>
           <div className={s.panelBg} onClick={() => setProfileOpen(false)} />
           <div className={s.profilePanel}>
-            <button type="button" className={s.ppClose} onClick={() => setProfileOpen(false)}>✕</button>
-            <div className={s.ppCover} />
-            <div className={s.ppBody}>
-              <div className={s.ppAvatar}>{STUB_USER.initials}</div>
-              <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />В сети</div>
-              <h2 className={s.ppName}>{STUB_USER.fullName}</h2>
-              <div className={s.ppUsername}>{STUB_USER.username}</div>
-              <p className={s.ppBio}>{STUB_USER.bio}</p>
-              <div className={s.ppTags}>
-                <span className={s.ppTag}>📍 {STUB_USER.city}</span>
-                <span className={s.ppTag}>📅 {STUB_USER.since}</span>
-              </div>
-              <div className={s.ppDivider} />
-              <div className={s.ppDetails}>
-                <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{STUB_USER.email}</span></div>
-                <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{STUB_USER.phone}</span></div>
-              </div>
-              <button className={s.ppEditBtn} onClick={openEdit}>✎ Изменить профиль</button>
+            <div className={s.ppMobileBar}>
+              <button type="button" className={s.topBarBack} onClick={() => setProfileOpen(false)}>‹</button>
             </div>
+            <button type="button" className={s.ppClose} onClick={() => setProfileOpen(false)}>✕</button>
+            <div className={s.ppScrollArea}>
+              <div className={s.ppCover} />
+              <div className={s.ppBody}>
+                <div className={s.ppAvatar}>{STUB_USER.initials}</div>
+                <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />В сети</div>
+                <h2 className={s.ppName}>{STUB_USER.fullName}</h2>
+                <div className={s.ppUsername}>{STUB_USER.username}</div>
+                <p className={s.ppBio}>{STUB_USER.bio}</p>
+                <div className={s.ppTags}>
+                  <span className={s.ppTag}>📍 {STUB_USER.city}</span>
+                  <span className={s.ppTag}>📅 {STUB_USER.since}</span>
+                </div>
+                <div className={s.ppDivider} />
+                <div className={s.ppDetails}>
+                  <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{STUB_USER.email}</span></div>
+                  <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{STUB_USER.phone}</span></div>
+                </div>
+                <button className={s.ppEditBtn} onClick={openEdit}>✎ Изменить профиль</button>
+                <button className={s.ppLogoutBtn} onClick={handleLogout}>Выйти из аккаунта</button>
+              </div>
+            </div>
+            <nav className={s.ppBottomNav}>
+              <button className={s.bnItem} onClick={() => setProfileOpen(false)}>
+                <span className={s.bnGlyph}>💬</span>
+                <span>Чаты</span>
+              </button>
+              <button className={`${s.bnItem} ${s.bnItemActive}`}>
+                <span className={s.bnAvatarMini}>АС</span>
+                <span>Профиль</span>
+              </button>
+            </nav>
           </div>
         </>
       )}
@@ -488,7 +507,10 @@ export function MessengerPage() {
             <div className={s.umName}>{meta.name}</div>
             <div className={s.umStatus}>{(GROUP_MEMBERS[id!] ?? []).length} участника</div>
             <div className={s.umDivider} />
-            <div className={s.umSection}>Участники ({(GROUP_MEMBERS[id!] ?? []).length})</div>
+            <div className={s.umSectionRow}>
+              <span className={s.umSection}>Участники ({(GROUP_MEMBERS[id!] ?? []).length})</span>
+              <button type="button" className={s.umAddMemberBtn} onClick={() => alert('Добавить участника')} title="Добавить участника">+</button>
+            </div>
             <div className={s.umMemberList}>
               {(GROUP_MEMBERS[id!] ?? []).map(member => (
                 <div key={member.name} className={`${s.umMemberRow} ${s.umMemberRowClickable}`} onClick={() => { setGroupModalOpen(false); setModalUser({ name: member.name, initials: member.initials, color: member.color, online: member.online }) }}>
@@ -501,7 +523,10 @@ export function MessengerPage() {
                 </div>
               ))}
             </div>
-            <button type="button" className={s.umEditGroupBtn} onClick={() => alert('Изменить группу')}>Изменить группу</button>
+            <div className={s.umGroupActions}>
+              <button type="button" className={s.umEditGroupBtn} onClick={() => alert('Изменить группу')}>Изменить группу</button>
+              <button type="button" className={s.umLeaveGroupBtn} onClick={() => alert('Выйти из группы')}>Выйти из группы</button>
+            </div>
           </div>
         </div>
       )}
