@@ -13,39 +13,37 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
     [Fact]
     public async Task Refresh_WithValidToken_Returns200WithNewTokens()
     {
-        var tokens = await LoginAsync();
+        var login = await LoginAsync();
 
-        var response = await _client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            token = tokens.RefreshToken
-        });
+        var response = await PostWithCookieAsync("/api/auth/refresh", login.Cookie);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var newTokens = await response.Content.ReadFromJsonAsync<TokenPairDto>();
         newTokens!.AccessToken.Should().NotBeNullOrEmpty();
         newTokens.RefreshToken.Should().NotBeNullOrEmpty();
+        GetRefreshCookie(response).Should().Contain("HttpOnly");
     }
 
     [Fact]
     public async Task Refresh_NewTokensDifferFromOld()
     {
-        var tokens    = await LoginAsync();
-        var response  = await _client.PostAsJsonAsync("/api/auth/refresh", new { token = tokens.RefreshToken });
+        var login     = await LoginAsync();
+        var response  = await PostWithCookieAsync("/api/auth/refresh", login.Cookie);
         var newTokens = await response.Content.ReadFromJsonAsync<TokenPairDto>();
 
-        newTokens!.AccessToken.Should().NotBe(tokens.AccessToken);
-        newTokens.RefreshToken.Should().NotBe(tokens.RefreshToken);
+        newTokens!.AccessToken.Should().NotBe(login.Tokens.AccessToken);
+        newTokens.RefreshToken.Should().NotBe(login.Tokens.RefreshToken);
     }
 
     [Fact]
     public async Task Refresh_OldTokenCannotBeReusedAfterRotation()
     {
-        var tokens = await LoginAsync();
-        await _client.PostAsJsonAsync("/api/auth/refresh", new { token = tokens.RefreshToken });
+        var login = await LoginAsync();
+        await PostWithCookieAsync("/api/auth/refresh", login.Cookie);
 
         // повторное использование старого токена должно вернуть ошибку
-        var second = await _client.PostAsJsonAsync("/api/auth/refresh", new { token = tokens.RefreshToken });
+        var second = await PostWithCookieAsync("/api/auth/refresh", login.Cookie);
 
         second.IsSuccessStatusCode.Should().BeFalse();
     }
@@ -64,14 +62,12 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
     [Fact]
     public async Task Logout_WithValidToken_Returns204()
     {
-        var tokens = await LoginAsync();
+        var login = await LoginAsync();
 
-        var response = await _client.PostAsJsonAsync("/api/auth/logout", new
-        {
-            refreshToken = tokens.RefreshToken
-        });
+        var response = await PostWithCookieAsync("/api/auth/logout", login.Cookie);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        GetRefreshCookie(response).Should().Contain("expires=Thu, 01 Jan 1970");
     }
 
     [Fact]
@@ -89,15 +85,15 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
     [Fact]
     public async Task Logout_TokenCannotBeUsedForRefreshAfterward()
     {
-        var tokens = await LoginAsync();
+        var login = await LoginAsync();
 
-        await _client.PostAsJsonAsync("/api/auth/logout", new { refreshToken = tokens.RefreshToken });
-        var refresh = await _client.PostAsJsonAsync("/api/auth/refresh", new { token = tokens.RefreshToken });
+        await PostWithCookieAsync("/api/auth/logout", login.Cookie);
+        var refresh = await PostWithCookieAsync("/api/auth/refresh", login.Cookie);
 
         refresh.IsSuccessStatusCode.Should().BeFalse();
     }
 
-    private async Task<TokenPairDto> LoginAsync()
+    private async Task<AuthSession> LoginAsync()
     {
         var email = $"user_{Guid.NewGuid():N}@example.com";
         await _client.PostAsJsonAsync("/api/auth/register", new
@@ -113,8 +109,25 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
             password = "SecurePass1!"
         });
 
-        return (await loginResp.Content.ReadFromJsonAsync<TokenPairDto>())!;
+        var tokens = (await loginResp.Content.ReadFromJsonAsync<TokenPairDto>())!;
+        return new AuthSession(tokens, GetCookieHeader(loginResp));
     }
+
+    private async Task<HttpResponseMessage> PostWithCookieAsync(string requestUri, string cookie)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+        request.Headers.Add("Cookie", cookie);
+        return await _client.SendAsync(request);
+    }
+
+    private static string GetCookieHeader(HttpResponseMessage response) =>
+        GetRefreshCookie(response).Split(';')[0];
+
+    private static string GetRefreshCookie(HttpResponseMessage response) =>
+        response.Headers.GetValues("Set-Cookie")
+            .Single(cookie => cookie.StartsWith("messenger_refresh_token=", StringComparison.Ordinal));
+
+    private sealed record AuthSession(TokenPairDto Tokens, string Cookie);
 
     private sealed record TokenPairDto(
         string   AccessToken,

@@ -64,12 +64,12 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByText('Login page')).not.toBeInTheDocument()
   })
 
-  it('renders children when only refresh token exists', () => {
+  it('redirects to login when only legacy refresh token exists', () => {
     localStorage.setItem('messenger_refresh_token', 'refresh-token')
 
     renderProtectedRoute()
 
-    expect(screen.getByText('Private page')).toBeInTheDocument()
-    expect(screen.queryByText('Login page')).not.toBeInTheDocument()
+    expect(screen.getByText('Login page')).toBeInTheDocument()
+    expect(screen.queryByText('Private page')).not.toBeInTheDocument()
   })
 })

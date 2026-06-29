@@ -17,3 +17,7 @@ export async function register(data: AuthRequest) {
 
   return response.data
 }
+
+export async function logout() {
+  await apiClient.post('/auth/logout')
+}

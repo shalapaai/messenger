@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
 import type { StubUser } from '../../shared/types/messenger'
 import s from './ProfilePanel.module.css'
@@ -16,9 +17,13 @@ export function ProfilePanel({ isOpen, stubUser, onClose, onEdit, onChats }: Pro
 
   if (!isOpen) return null
 
-  function handleLogout() {
-    clearAuthTokens()
-    navigate('/login')
+  async function handleLogout() {
+    try {
+      await logout()
+    } finally {
+      clearAuthTokens()
+      navigate('/login')
+    }
   }
 
   return (

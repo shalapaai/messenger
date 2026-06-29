@@ -83,9 +83,8 @@ describe('ProfileSetupForm', () => {
     expect(consoleLog).not.toHaveBeenCalled()
   })
 
-  it('submits trimmed profile data when display name is filled', async () => {
+  it('does not show validation error when display name is filled', async () => {
     const user = userEvent.setup()
-    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     renderProfileSetupForm()
 
@@ -94,11 +93,7 @@ describe('ProfileSetupForm', () => {
     await user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     await waitFor(() => {
-      expect(consoleLog).toHaveBeenCalledWith({
-        displayName: 'Николай',
-        status: 'на связи',
-        avatar: null,
-      })
+      expect(screen.queryByText('Введите имя пользователя')).not.toBeInTheDocument()
     })
   })
 

@@ -27,6 +27,7 @@ public sealed class LoginEndpointTests(AuthApiFactory factory)
         body!.AccessToken.Should().NotBeNullOrEmpty();
         body.RefreshToken.Should().NotBeNullOrEmpty();
         body.AccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        GetRefreshCookie(response).Should().Contain("HttpOnly");
     }
 
     [Fact]
@@ -92,6 +93,10 @@ public sealed class LoginEndpointTests(AuthApiFactory factory)
         });
         return email;
     }
+
+    private static string GetRefreshCookie(HttpResponseMessage response) =>
+        response.Headers.GetValues("Set-Cookie")
+            .Single(cookie => cookie.StartsWith("messenger_refresh_token=", StringComparison.Ordinal));
 
     private sealed record TokenPairDto(
         string   AccessToken,
