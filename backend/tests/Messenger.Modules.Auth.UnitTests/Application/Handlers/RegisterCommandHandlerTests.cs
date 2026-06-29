@@ -24,7 +24,7 @@ public sealed class RegisterCommandHandlerTests
         _userRepo.ExistsByEmailAsync("user@example.com", Arg.Any<CancellationToken>()).Returns(false);
         _hasher.Hash("Secret123!").Returns("hashed_password");
 
-        var command = new RegisterCommand("user@example.com", "Secret123!", "Alice");
+        var command = new RegisterCommand("user@example.com", "Secret123!");
         var result  = await _sut.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -37,7 +37,7 @@ public sealed class RegisterCommandHandlerTests
     {
         _userRepo.ExistsByEmailAsync("taken@example.com", Arg.Any<CancellationToken>()).Returns(true);
 
-        var command = new RegisterCommand("taken@example.com", "Secret123!", "Bob");
+        var command = new RegisterCommand("taken@example.com", "Secret123!");
         var result  = await _sut.Handle(command, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -50,7 +50,7 @@ public sealed class RegisterCommandHandlerTests
         _userRepo.ExistsByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
         _hasher.Hash("plaintext").Returns("bcrypt_hash");
 
-        var command = new RegisterCommand("user@example.com", "plaintext", "Alice");
+        var command = new RegisterCommand("user@example.com", "plaintext");
         await _sut.Handle(command, CancellationToken.None);
 
         _hasher.Received(1).Hash("plaintext");
@@ -63,7 +63,7 @@ public sealed class RegisterCommandHandlerTests
         _userRepo.ExistsByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
         _hasher.Hash(Arg.Any<string>()).Returns("hash");
 
-        await _sut.Handle(new RegisterCommand("u@e.com", "Secret123!", "X"), CancellationToken.None);
+        await _sut.Handle(new RegisterCommand("u@e.com", "Secret123!"), CancellationToken.None);
 
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -73,7 +73,7 @@ public sealed class RegisterCommandHandlerTests
     {
         _userRepo.ExistsByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
 
-        await _sut.Handle(new RegisterCommand("taken@e.com", "Secret123!", "X"), CancellationToken.None);
+        await _sut.Handle(new RegisterCommand("taken@e.com", "Secret123!"), CancellationToken.None);
 
         _userRepo.DidNotReceive().Add(Arg.Any<UserAuth>());
         await _uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -85,7 +85,7 @@ public sealed class RegisterCommandHandlerTests
         _userRepo.ExistsByEmailAsync("user@example.com", Arg.Any<CancellationToken>()).Returns(false);
         _hasher.Hash(Arg.Any<string>()).Returns("hash");
 
-        var command = new RegisterCommand("USER@EXAMPLE.COM", "Secret123!", "Alice");
+        var command = new RegisterCommand("USER@EXAMPLE.COM", "Secret123!");
         var result  = await _sut.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
