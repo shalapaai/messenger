@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
 import { getCroppedImage } from '../../../shared/lib/image'
 import type { CroppedAreaPixels } from '../../../shared/lib/image'
 import { AvatarCropModal } from '../AvatarCropModal'
@@ -9,7 +8,6 @@ import styles from './ProfileSetupForm.module.css'
 function ProfileSetupForm() {
   const [displayName, setDisplayName] = useState('')
   const [status, setStatus] = useState('')
-  const [avatar, setAvatar] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string>()
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
     null,
@@ -59,14 +57,13 @@ function ProfileSetupForm() {
       selectedAvatarFile.type,
     )
 
-    setAvatar(croppedFile)
     setAvatarPreview(URL.createObjectURL(croppedFile))
 
     setCropImageSrc(undefined)
     setSelectedAvatarFile(null)
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: { preventDefault(): void }) {
     event.preventDefault()
     setHasTriedSubmit(true)
 
@@ -79,11 +76,7 @@ function ProfileSetupForm() {
     setIsLoading(true)
 
     try {
-      console.log({
-        displayName: displayName.trim(),
-        status: status.trim(),
-        avatar,
-      })
+      // TODO: call profile API
     } catch {
       setError('Не удалось сохранить профиль. Попробуйте еще раз.')
     } finally {

@@ -215,7 +215,6 @@ export function MessengerPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [displayName, setDisplayName] = useState(STUB_USER.fullName)
   const [editStatus, setEditStatus] = useState('')
-  const [editAvatar, setEditAvatar] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -321,7 +320,7 @@ export function MessengerPage() {
   }
 
   function openEdit() {
-    setDisplayName(STUB_USER.fullName); setEditStatus(''); setEditAvatar(null)
+    setDisplayName(STUB_USER.fullName); setEditStatus('')
     setAvatarPreview(undefined); setHasTriedSubmit(false); setFormError('')
     setEditOpen(true)
   }
@@ -331,7 +330,7 @@ export function MessengerPage() {
     setHasTriedSubmit(true)
     if (!displayName.trim()) return
     setFormError(''); setIsLoading(true)
-    try { console.log({ displayName: displayName.trim(), status: editStatus.trim(), avatar: editAvatar }); setEditOpen(false) }
+    try { setEditOpen(false) }
     catch { setFormError('Не удалось сохранить профиль. Попробуйте ещё раз.') }
     finally { setIsLoading(false) }
   }
@@ -619,7 +618,7 @@ export function MessengerPage() {
             </div>
             <form onSubmit={handleEditSubmit} className={s.modalForm} noValidate>
               <div className={s.modalAvatarBlock}>
-                <AvatarUpload name={displayName} avatarPreview={avatarPreview} onChange={f => { setEditAvatar(f); setAvatarPreview(URL.createObjectURL(f)) }} />
+                <AvatarUpload name={displayName} avatarPreview={avatarPreview} onChange={f => setAvatarPreview(URL.createObjectURL(f))} />
               </div>
               <div className={s.modalFields}>
                 <label className={s.modalField}>
