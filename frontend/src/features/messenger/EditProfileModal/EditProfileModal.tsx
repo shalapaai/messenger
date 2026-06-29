@@ -1,5 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { AvatarUpload } from '../../profile/AvatarUpload'
+import { AvatarCropModal } from '../../profile/AvatarCropModal'
+import { getCroppedImage, type CroppedAreaPixels } from '../../../shared/lib/image'
 import type { StubUser } from '../../../shared/types/messenger'
 import s from './EditProfileModal.module.css'
 
@@ -15,7 +17,9 @@ export function EditProfileModal({ isOpen, stubUser, onClose }: EditProfileModal
   const [editPhone, setEditPhone] = useState(stubUser.phone)
   const [editCity, setEditCity] = useState(stubUser.city)
   const [editDept, setEditDept] = useState(stubUser.department)
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
+  const [avatarPreview,      setAvatarPreview]      = useState<string | undefined>(undefined)
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
+  const [cropImageSrc,       setCropImageSrc]       = useState<string | undefined>(undefined)
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState('')
@@ -35,9 +39,25 @@ export function EditProfileModal({ isOpen, stubUser, onClose }: EditProfileModal
     setFormError('')
   }
 
-  // Reset state when opening (called from parent via key or effect).
-  // We run it once on mount when isOpen becomes true.
   void handleOpen
+
+  function handleAvatarChange(file: File) {
+    setSelectedAvatarFile(file)
+    setCropImageSrc(URL.createObjectURL(file))
+  }
+
+  function handleCropCancel() {
+    setCropImageSrc(undefined)
+    setSelectedAvatarFile(null)
+  }
+
+  async function handleCropConfirm(croppedAreaPixels: CroppedAreaPixels) {
+    if (!selectedAvatarFile || !cropImageSrc) return
+    const croppedFile = await getCroppedImage(cropImageSrc, croppedAreaPixels, selectedAvatarFile.name, selectedAvatarFile.type)
+    setAvatarPreview(URL.createObjectURL(croppedFile))
+    setCropImageSrc(undefined)
+    setSelectedAvatarFile(null)
+  }
 
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
@@ -51,51 +71,61 @@ export function EditProfileModal({ isOpen, stubUser, onClose }: EditProfileModal
   }
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
-      <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
-        <div className={s.modalHeader}>
-          <span className={s.modalTitle}>Редактирование профиля</span>
-          <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
+    <>
+      <div className={s.modalOverlay} onClick={onClose}>
+        <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
+          <div className={s.modalHeader}>
+            <span className={s.modalTitle}>Редактирование профиля</span>
+            <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
+          </div>
+          <form onSubmit={handleSubmit} className={s.modalForm} noValidate>
+            <div className={s.modalAvatarBlock}>
+              <AvatarUpload name={displayName} avatarPreview={avatarPreview} onChange={handleAvatarChange} />
+            </div>
+            <div className={s.modalFields}>
+              <label className={s.modalField}>
+                <span className={s.modalFieldLabel}>Имя пользователя <span className={s.required}>*</span></span>
+                <input
+                  className={`${s.modalFieldInput} ${isNameInvalid ? s.modalFieldInputError : ''}`}
+                  type="text" value={displayName}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
+                  placeholder="Например, Николай"
+                />
+                {isNameInvalid && <span className={s.modalFieldError}>Введите имя пользователя</span>}
+              </label>
+              <label className={s.modalField}>
+                <span className={s.modalFieldLabel}>Статус</span>
+                <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder="Например, на связи" />
+              </label>
+              <label className={s.modalField}>
+                <span className={s.modalFieldLabel}>Телефон</span>
+                <input className={s.modalFieldInput} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
+              </label>
+              <label className={s.modalField}>
+                <span className={s.modalFieldLabel}>Город</span>
+                <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder="Например, Москва" />
+              </label>
+              <label className={s.modalField}>
+                <span className={s.modalFieldLabel}>Отдел</span>
+                <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder="Например, Разработка" />
+              </label>
+            </div>
+            {formError && <p className={s.modalFormError}>{formError}</p>}
+            <div className={s.modalActions}>
+              <button type="button" className={s.modalCancelBtn} onClick={onClose}>Отмена</button>
+              <button type="submit" className={s.modalSaveBtn} disabled={isLoading}>{isLoading ? 'Сохраняем...' : 'Сохранить'}</button>
+            </div>
+          </form>
         </div>
-        <form onSubmit={handleSubmit} className={s.modalForm} noValidate>
-          <div className={s.modalAvatarBlock}>
-            <AvatarUpload name={displayName} avatarPreview={avatarPreview} onChange={f => setAvatarPreview(URL.createObjectURL(f))} />
-          </div>
-          <div className={s.modalFields}>
-            <label className={s.modalField}>
-              <span className={s.modalFieldLabel}>Имя пользователя <span className={s.required}>*</span></span>
-              <input
-                className={`${s.modalFieldInput} ${isNameInvalid ? s.modalFieldInputError : ''}`}
-                type="text" value={displayName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
-                placeholder="Например, Николай"
-              />
-              {isNameInvalid && <span className={s.modalFieldError}>Введите имя пользователя</span>}
-            </label>
-            <label className={s.modalField}>
-              <span className={s.modalFieldLabel}>Статус</span>
-              <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder="Например, на связи" />
-            </label>
-            <label className={s.modalField}>
-              <span className={s.modalFieldLabel}>Телефон</span>
-              <input className={s.modalFieldInput} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
-            </label>
-            <label className={s.modalField}>
-              <span className={s.modalFieldLabel}>Город</span>
-              <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder="Например, Москва" />
-            </label>
-            <label className={s.modalField}>
-              <span className={s.modalFieldLabel}>Отдел</span>
-              <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder="Например, Разработка" />
-            </label>
-          </div>
-          {formError && <p className={s.modalFormError}>{formError}</p>}
-          <div className={s.modalActions}>
-            <button type="button" className={s.modalCancelBtn} onClick={onClose}>Отмена</button>
-            <button type="submit" className={s.modalSaveBtn} disabled={isLoading}>{isLoading ? 'Сохраняем...' : 'Сохранить'}</button>
-          </div>
-        </form>
       </div>
-    </div>
+
+      {cropImageSrc && (
+        <AvatarCropModal
+          imageSrc={cropImageSrc}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      )}
+    </>
   )
 }

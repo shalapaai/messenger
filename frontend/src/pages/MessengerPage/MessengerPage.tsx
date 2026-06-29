@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback } fr
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, Message, ModalUser } from '../../shared/types/messenger'
 import {
-  CHATS, CHAT_META, GROUP_MEMBERS, STUB_USER,
+  CHATS, CHAT_META, GROUP_MEMBERS, USER_PROFILES, STUB_USER,
   getInitialMessages, makeOlderBatch, getModalUserFromMsg,
 } from '../../shared/lib/messenger/stubData'
 import { IconNav }          from '../../widgets/IconNav'
@@ -174,7 +174,7 @@ export function MessengerPage() {
               onSend={handleSend}
               onHeaderClick={() => meta.group
                 ? setGroupModalOpen(true)
-                : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online })
+                : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
               }
               onAvatarClick={msg => setModalUser(getModalUserFromMsg(msg))}
             />

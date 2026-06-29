@@ -7,7 +7,10 @@ import styles from './ProfileSetupForm.module.css'
 
 function ProfileSetupForm() {
   const [displayName, setDisplayName] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus]           = useState('')
+  const [phone, setPhone]             = useState('')
+  const [city, setCity]               = useState('')
+  const [department, setDepartment]   = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string>()
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
     null,
@@ -132,6 +135,42 @@ function ProfileSetupForm() {
               value={status}
               onChange={(event) => setStatus(event.target.value)}
               placeholder="Например, на связи"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Телефон</span>
+            <input
+              className={styles.input}
+              type="text"
+              name="phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+7 000 000-00-00"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Город</span>
+            <input
+              className={styles.input}
+              type="text"
+              name="city"
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              placeholder="Например, Москва"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Отдел</span>
+            <input
+              className={styles.input}
+              type="text"
+              name="department"
+              value={department}
+              onChange={(event) => setDepartment(event.target.value)}
+              placeholder="Например, Разработка"
             />
           </label>
         </div>
