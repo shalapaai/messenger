@@ -1,0 +1,93 @@
+import type { Chat, Filter } from '../../shared/types/messenger'
+import s from './ChatListPanel.module.css'
+
+interface ChatListPanelProps {
+  chats: Chat[]
+  activeId: string | undefined
+  filter: Filter
+  query: string
+  onFilterChange: (f: Filter) => void
+  onQueryChange: (q: string) => void
+  onSelect: (id: string) => void
+}
+
+const TABS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'Все' },
+  { id: 'direct', label: 'Личные' },
+  { id: 'group', label: 'Группы' },
+]
+
+export function ChatListPanel({ chats, activeId, filter, query, onFilterChange, onQueryChange, onSelect }: ChatListPanelProps) {
+  const counts = {
+    all:    chats.length,
+    direct: chats.filter(c => !c.group).length,
+    group:  chats.filter(c =>  c.group).length,
+  }
+  const q = query.trim().toLowerCase()
+  const visible = chats
+    .filter(c => filter === 'all' ? true : filter === 'group' ? c.group : !c.group)
+    .filter(c => !q || c.name.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
+
+  return (
+    <aside className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}>
+      <div className={s.clHeader}>
+        <h2 className={s.clTitle}>Сообщения</h2>
+        <button className={s.clNewBtn} onClick={() => alert('Новый чат')}>＋</button>
+      </div>
+
+      <div className={s.clSearch}>
+        <span className={s.clSearchIcon}>🔍</span>
+        <input
+          className={s.clSearchInput}
+          placeholder="Поиск"
+          value={query}
+          onChange={e => onQueryChange(e.target.value)}
+        />
+      </div>
+
+      <div className={s.clTabs}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`${s.clTab} ${filter === t.id ? s.clTabActive : ''}`}
+            onClick={() => onFilterChange(t.id)}
+          >
+            {t.label}
+            <span className={`${s.clTabCount} ${filter === t.id ? s.clTabCountActive : ''}`}>{counts[t.id]}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className={s.clList}>
+        {visible.length === 0
+          ? <div className={s.clEmpty}>Ничего не найдено</div>
+          : visible.map(chat => (
+            <div
+              key={chat.id}
+              className={`${s.clRow} ${activeId === String(chat.id) ? s.clRowActive : ''}`}
+              onClick={() => onSelect(String(chat.id))}
+            >
+              <div className={`${s.clAvatar} ${chat.group ? s.clAvatarGroup : ''}`} style={{ background: chat.color }}>
+                {chat.initials}
+                {chat.online && <span className={s.clOnlineDot} />}
+              </div>
+              <div className={s.clInfo}>
+                <div className={s.clNameRow}>
+                  <span className={s.clName}>{chat.name}</span>
+                  {chat.group && <span className={s.clGroupBadge}>ГРУППА</span>}
+                </div>
+                <div className={s.clPreview}>
+                  {chat.preview || <span className={s.clPreviewEmpty}>Нет сообщений</span>}
+                </div>
+              </div>
+              <div className={s.clMeta}>
+                <span className={s.clTime}>{chat.time}</span>
+                {chat.unread && <span className={s.clUnread}>{chat.unread}</span>}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </aside>
+  )
+}
