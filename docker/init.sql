@@ -1,7 +1,7 @@
 -- Инициализация БД: схемы, расширения и таблицы.
 -- Запускается ОДИН РАЗ при первом старте контейнера PostgreSQL.
 -- EnsureCreatedAsync / MigrateAsync в модулях увидят эти таблицы и пропустят создание.
--- Соглашение: snake_case, названия таблиц в единственном числе.
+-- Соглашение: snake_case. Chats: множественное число (chats.chats, chats.members), остальные — единственное.
 
 -- ── Схемы ─────────────────────────────────────────────────────────────────────
 CREATE SCHEMA IF NOT EXISTS auth;
@@ -81,18 +81,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_user_profile_login
 --  СХЕМА: chats
 -- ══════════════════════════════════════════════════════════════════════════════
 
-CREATE TABLE IF NOT EXISTS chats.chat (
+CREATE TABLE IF NOT EXISTS chats.chats (
     id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     type       VARCHAR(10)  NOT NULL,
     name       VARCHAR(100) DEFAULT NULL,
     avatar_url VARCHAR(512) DEFAULT NULL,
     created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT ck_chat_type       CHECK (type IN ('direct', 'group')),
-    CONSTRAINT ck_chat_group_name CHECK (type = 'direct' OR name IS NOT NULL)
+    CONSTRAINT ck_chats_type       CHECK (type IN ('direct', 'group')),
+    CONSTRAINT ck_chats_group_name CHECK (type = 'direct' OR name IS NOT NULL)
 );
 
-CREATE TABLE IF NOT EXISTS chats.chat_member (
+CREATE TABLE IF NOT EXISTS chats.members (
     chat_id   UUID        NOT NULL,
     user_id   UUID        NOT NULL,
     role      VARCHAR(10) NOT NULL DEFAULT 'member',
@@ -100,17 +100,16 @@ CREATE TABLE IF NOT EXISTS chats.chat_member (
 
     PRIMARY KEY (chat_id, user_id),
 
-    CONSTRAINT fk_chat_member_chat_id
-        FOREIGN KEY (chat_id) REFERENCES chats.chat (id) ON DELETE CASCADE,
+    CONSTRAINT fk_members_chat_id
+        FOREIGN KEY (chat_id) REFERENCES chats.chats (id) ON DELETE CASCADE,
 
-    CONSTRAINT fk_chat_member_user_id
+    CONSTRAINT fk_members_user_id
         FOREIGN KEY (user_id) REFERENCES auth.user (id) ON DELETE CASCADE,
 
-    CONSTRAINT ck_chat_member_role CHECK (role IN ('owner', 'admin', 'member'))
+    CONSTRAINT ck_members_role CHECK (role IN ('owner', 'admin', 'member'))
 );
 
-CREATE INDEX IF NOT EXISTS ix_chat_member_user_id ON chats.chat_member (user_id);
-CREATE INDEX IF NOT EXISTS ix_chat_member_chat_id ON chats.chat_member (chat_id);
+CREATE INDEX IF NOT EXISTS idx_chats_members_user_id ON chats.members (user_id);
 
 -- ══════════════════════════════════════════════════════════════════════════════
 --  СХЕМА: messages
@@ -121,6 +120,7 @@ CREATE TABLE IF NOT EXISTS messages.message (
     chat_id             UUID          NOT NULL,
     sender_id           UUID          NOT NULL,
     content             VARCHAR(4096) NOT NULL,
+    file_url            VARCHAR(2048) DEFAULT NULL,
     status              VARCHAR(20)   NOT NULL,
     sent_at             TIMESTAMPTZ   NOT NULL,
     edited_at           TIMESTAMPTZ   DEFAULT NULL,
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS messages.message (
     reply_to_message_id UUID          DEFAULT NULL,
 
     CONSTRAINT fk_message_chat_id
-        FOREIGN KEY (chat_id) REFERENCES chats.chat (id) ON DELETE CASCADE,
+        FOREIGN KEY (chat_id) REFERENCES chats.chats (id) ON DELETE CASCADE,
 
     CONSTRAINT fk_message_sender_id
         FOREIGN KEY (sender_id) REFERENCES auth.user (id) ON DELETE CASCADE,

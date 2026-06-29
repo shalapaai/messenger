@@ -1,10 +1,40 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getCroppedImage } from '../../../shared/lib/image'
 import ProfileSetupForm from './ProfileSetupForm'
 
 const createObjectURL = vi.fn()
 const revokeObjectURL = vi.fn()
+
+vi.mock('../../../shared/lib/image', () => ({
+  getCroppedImage: vi.fn(),
+}))
+
+vi.mock('../AvatarCropModal', () => ({
+  AvatarCropModal: ({
+    imageSrc,
+    onCancel,
+    onConfirm,
+  }: {
+    imageSrc: string
+    onCancel: () => void
+    onConfirm: (area: { x: number; y: number; width: number; height: number }) => void
+  }) => (
+    <div role="dialog" aria-label="Обрезать фото">
+      <span>{imageSrc}</span>
+      <button type="button" onClick={onCancel}>
+        Отмена
+      </button>
+      <button
+        type="button"
+        onClick={() => onConfirm({ x: 1, y: 2, width: 120, height: 120 })}
+      >
+        Сохранить фото
+      </button>
+    </div>
+  ),
+}))
 
 function renderProfileSetupForm() {
   return render(<ProfileSetupForm />)
@@ -13,6 +43,8 @@ function renderProfileSetupForm() {
 describe('ProfileSetupForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    createObjectURL.mockReset()
+    revokeObjectURL.mockReset()
     vi.stubGlobal('URL', {
       createObjectURL,
       revokeObjectURL,
@@ -70,9 +102,22 @@ describe('ProfileSetupForm', () => {
     })
   })
 
-  it('creates avatar preview when image is uploaded and revokes it on unmount', async () => {
+  it('opens crop modal and creates cropped avatar preview after confirmation', async () => {
     const user = userEvent.setup()
     const file = new File(['avatar'], 'avatar.png', { type: 'image/png' })
+    const croppedFile = new File(['cropped-avatar'], 'avatar.png', {
+      type: 'image/png',
+    })
+
+    createObjectURL.mockImplementation((value) => {
+      if (value === croppedFile) {
+        return 'blob:cropped-avatar'
+      }
+
+      return 'blob:original-avatar'
+    })
+
+    vi.mocked(getCroppedImage).mockResolvedValue(croppedFile)
 
     const { unmount } = renderProfileSetupForm()
 
@@ -80,14 +125,31 @@ describe('ProfileSetupForm', () => {
     await user.upload(screen.getByLabelText('Выбрать фото'), file)
 
     expect(createObjectURL).toHaveBeenCalledWith(file)
+    expect(screen.getByRole('dialog', { name: 'Обрезать фото' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Сохранить фото' }))
+
+    await waitFor(() => {
+      expect(getCroppedImage).toHaveBeenCalledWith(
+        'blob:original-avatar',
+        { x: 1, y: 2, width: 120, height: 120 },
+        'avatar.png',
+        'image/png',
+      )
+    })
+
+    expect(createObjectURL).toHaveBeenCalledWith(croppedFile)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:original-avatar')
     expect(screen.getByLabelText('Заменить фото')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Николай' })).toHaveAttribute(
-      'src',
-      'blob:avatar-preview',
-    )
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: 'Николай' })).toHaveAttribute(
+        'src',
+        'blob:cropped-avatar',
+      )
+    })
 
     unmount()
 
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:avatar-preview')
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:cropped-avatar')
   })
 })
