@@ -14,7 +14,7 @@ public sealed class GetMessagesQueryHandler(IMessageRepository messageRepository
         var raw = await messageRepository.GetByChatIdCursorAsync(query.ChatId, query.Before, limit + 1, ct);
 
         var hasMore = raw.Count > limit;
-        var items   = hasMore ? raw.Take(limit).ToList() : raw;
+        var items = hasMore ? raw.Take(limit).ToList() : raw;
 
         var dtos = items
             .Select(m => new MessageDto(

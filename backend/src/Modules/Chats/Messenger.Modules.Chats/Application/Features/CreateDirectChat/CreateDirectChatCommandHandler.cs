@@ -1,15 +1,9 @@
-namespace Messenger.Modules.Chats.Application;
+namespace Messenger.Modules.Chats.Application.Features.CreateDirectChat;
 
+using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
-
-public interface IUnitOfWork
-{
-    Task<int> SaveChangesAsync(CancellationToken ct = default);
-}
-
-public sealed record CreateDirectChatCommand(Guid CurrentUserId, Guid OtherUserId) : ICommand<Guid>;
 
 public sealed class CreateDirectChatCommandHandler(
     IChatRepository chatRepository,
