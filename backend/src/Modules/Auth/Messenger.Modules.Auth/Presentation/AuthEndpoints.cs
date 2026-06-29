@@ -13,6 +13,8 @@ using Microsoft.Extensions.Localization;
 
 public static class AuthEndpoints
 {
+    private const string RefreshTokenCookieName = "messenger_refresh_token";
+
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
@@ -20,8 +22,8 @@ public static class AuthEndpoints
         group.MapPost("/register", Register)
             .WithName("Register")
             .WithSummary("Регистрация нового пользователя")
-            .WithDescription("Создаёт аккаунт. Email должен быть уникальным, пароль — минимум 8 символов.")
-            .Produces<UserAuthDto>(StatusCodes.Status201Created)
+            .WithDescription("Создаёт аккаунт, возвращает access токен и устанавливает refresh токен в HttpOnly cookie.")
+            .Produces<TokenPairDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .AllowAnonymous();
@@ -29,7 +31,7 @@ public static class AuthEndpoints
         group.MapPost("/login", Login)
             .WithName("Login")
             .WithSummary("Аутентификация")
-            .WithDescription("Возвращает пару токенов: access (15 мин) и refresh (7 дней).")
+            .WithDescription("Возвращает access токен и устанавливает refresh токен в HttpOnly cookie.")
             .Produces<TokenPairDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -38,7 +40,7 @@ public static class AuthEndpoints
         group.MapPost("/refresh", RefreshToken)
             .WithName("RefreshToken")
             .WithSummary("Обновление access токена")
-            .WithDescription("Принимает refresh токен, возвращает новую пару. Старый refresh токен инвалидируется (rotation).")
+            .WithDescription("Читает refresh токен из HttpOnly cookie, возвращает новый access токен и обновляет refresh cookie.")
             .Produces<TokenPairDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .AllowAnonymous();
@@ -46,7 +48,7 @@ public static class AuthEndpoints
         group.MapPost("/logout", Logout)
             .WithName("Logout")
             .WithSummary("Выход из системы")
-            .WithDescription("Инвалидирует refresh токен. Bearer-токен не требуется — работает даже с истёкшим access токеном.")
+            .WithDescription("Инвалидирует refresh токен из cookie и удаляет refresh cookie. Bearer-токен не требуется.")
             .Produces(StatusCodes.Status204NoContent)
             .AllowAnonymous();
 
@@ -56,20 +58,27 @@ public static class AuthEndpoints
     private static async Task<IResult> Register(
         RegisterRequest request,
         ISender sender,
+        HttpContext httpContext,
         CancellationToken ct)
     {
         var command = new RegisterCommand(request.Email, request.Password);
         var result  = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? Results.Created($"/api/users/{result.Value!.Id}", result.Value)
-            : result.Error.ToHttpResult();
+        if (result.IsFailure)
+        {
+            return result.Error.ToHttpResult();
+        }
+
+        var tokens = result.Value!;
+        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken);
+        return Results.Created("/api/auth/register", tokens);
     }
 
     private static async Task<IResult> Login(
         LoginCommand command,
         ISender sender,
         IStringLocalizer<SharedMessages> localizer,
+        HttpContext httpContext,
         CancellationToken ct)
     {
         var result = await sender.Send(command, ct);
@@ -82,27 +91,75 @@ public static class AuthEndpoints
             return Results.UnprocessableEntity(new { code = result.Error.Code, description = message });
         }
 
-        return Results.Ok(result.Value);
+        var tokens = result.Value!;
+        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken);
+        return Results.Ok(tokens);
     }
 
     private static async Task<IResult> RefreshToken(
-        RefreshTokenRequest request,
+        RefreshTokenRequest? request,
         ISender sender,
+        HttpContext httpContext,
         CancellationToken ct)
     {
-        var command = new Application.Features.RefreshToken.RefreshTokenCommand(request.Token);
+        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.Token;
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Results.Unauthorized();
+        }
+        var command = new Application.Features.RefreshToken.RefreshTokenCommand(refreshToken);
         var result  = await sender.Send(command, ct);
 
-        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
+        if (result.IsFailure)
+        {
+            return result.Error.ToHttpResult();
+        }
+
+        var tokens = result.Value!;
+        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken);
+        return Results.Ok(tokens);
     }
 
     private static async Task<IResult> Logout(
-        LogoutRequest request,
+        LogoutRequest? request,
         ISender sender,
+        HttpContext httpContext,
         CancellationToken ct)
     {
-        await sender.Send(new LogoutCommand(request.RefreshToken), ct);
+        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.RefreshToken;
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            await sender.Send(new LogoutCommand(refreshToken), ct);
+        }
+        DeleteRefreshTokenCookie(httpContext.Response);
         return Results.NoContent();
+    }
+
+    private static void AppendRefreshTokenCookie(HttpResponse response, string refreshToken)
+    {
+        response.Cookies.Append(
+            RefreshTokenCookieName,
+            refreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(7),
+                Path = "/api/auth"
+            });
+    }
+
+    private static void DeleteRefreshTokenCookie(HttpResponse response)
+    {
+        response.Cookies.Delete(
+            RefreshTokenCookieName,
+            new CookieOptions
+            {
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/api/auth"
+            });
     }
 }
 

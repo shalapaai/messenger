@@ -3,7 +3,6 @@ import {
   type AuthTokens,
   clearAuthTokens,
   getAccessToken,
-  getRefreshToken,
   saveAuthTokens,
 } from '../lib/auth/authTokens'
 import { refreshAuthTokens } from './refreshAuthTokens'
@@ -19,15 +18,16 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 })
 
 function redirectToLogin() {
   window.location.href = '/login'
 }
 
-function getRefreshPromise(refreshToken: string) {
+function getRefreshPromise() {
   if (!refreshPromise) {
-    refreshPromise = refreshAuthTokens(refreshToken).finally(() => {
+    refreshPromise = refreshAuthTokens().finally(() => {
       refreshPromise = null
     })
   }
@@ -63,17 +63,8 @@ apiClient.interceptors.response.use(
 
     originalRequest._retry = true
 
-    const refreshToken = getRefreshToken()
-
-    if (!refreshToken) {
-      clearAuthTokens()
-      redirectToLogin()
-
-      return Promise.reject(error)
-    }
-
     try {
-      const newTokens = await getRefreshPromise(refreshToken)
+      const newTokens = await getRefreshPromise()
 
       saveAuthTokens(newTokens)
 

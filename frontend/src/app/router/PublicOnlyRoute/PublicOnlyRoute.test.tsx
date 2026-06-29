@@ -64,12 +64,12 @@ describe('PublicOnlyRoute', () => {
     expect(screen.queryByText('Login page')).not.toBeInTheDocument()
   })
 
-  it('redirects to chats when only refresh token exists', () => {
+  it('renders children when only legacy refresh token exists', () => {
     localStorage.setItem('messenger_refresh_token', 'refresh-token')
 
     renderPublicOnlyRoute()
 
-    expect(screen.getByText('Chats page')).toBeInTheDocument()
-    expect(screen.queryByText('Login page')).not.toBeInTheDocument()
+    expect(screen.getByText('Login page')).toBeInTheDocument()
+    expect(screen.queryByText('Chats page')).not.toBeInTheDocument()
   })
 })

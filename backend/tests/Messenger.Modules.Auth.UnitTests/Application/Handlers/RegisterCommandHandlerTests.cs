@@ -4,32 +4,50 @@ using FluentAssertions;
 using Messenger.Modules.Auth.Application.Abstractions;
 using Messenger.Modules.Auth.Application.Features.Register;
 using Messenger.Modules.Auth.Domain;
+using Microsoft.Extensions.Configuration;
 using NSubstitute;
 
 public sealed class RegisterCommandHandlerTests
 {
-    private readonly IUserAuthRepository   _userRepo = Substitute.For<IUserAuthRepository>();
-    private readonly IPasswordHasher       _hasher   = Substitute.For<IPasswordHasher>();
-    private readonly IUnitOfWork           _uow      = Substitute.For<IUnitOfWork>();
+    private readonly IUserAuthRepository     _userRepo         = Substitute.For<IUserAuthRepository>();
+    private readonly IPasswordHasher         _hasher           = Substitute.For<IPasswordHasher>();
+    private readonly IJwtTokenService        _jwtService       = Substitute.For<IJwtTokenService>();
+    private readonly IRefreshTokenRepository _refreshTokenRepo = Substitute.For<IRefreshTokenRepository>();
+    private readonly IUnitOfWork             _uow              = Substitute.For<IUnitOfWork>();
+    private readonly IConfiguration          _config           = BuildConfig();
     private readonly RegisterCommandHandler _sut;
 
     public RegisterCommandHandlerTests()
     {
-        _sut = new RegisterCommandHandler(_userRepo, _hasher, _uow);
+        _jwtService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>())
+                   .Returns(new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15)));
+        _jwtService.GenerateRefreshToken().Returns("refresh-token");
+
+        _sut = new RegisterCommandHandler(
+            _userRepo,
+            _hasher,
+            _jwtService,
+            _refreshTokenRepo,
+            _uow,
+            _config);
     }
 
     [Fact]
-    public async Task Handle_WithNewEmail_ReturnsUserDto()
+    public async Task Handle_WithNewEmail_ReturnsTokenPair()
     {
         _userRepo.ExistsByEmailAsync("user@example.com", Arg.Any<CancellationToken>()).Returns(false);
         _hasher.Hash("Secret123!").Returns("hashed_password");
+        _jwtService.GenerateAccessToken(Arg.Any<Guid>(), "user@example.com")
+                   .Returns(new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15)));
+        _jwtService.GenerateRefreshToken().Returns("refresh-token");
 
         var command = new RegisterCommand("user@example.com", "Secret123!");
         var result  = await _sut.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Email.Should().Be("user@example.com");
-        result.Value!.Id.Should().NotBe(Guid.Empty);
+        result.Value!.AccessToken.Should().Be("access-token");
+        result.Value!.RefreshToken.Should().Be("refresh-token");
+        result.Value!.AccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
     }
 
     [Fact]
@@ -76,6 +94,7 @@ public sealed class RegisterCommandHandlerTests
         await _sut.Handle(new RegisterCommand("taken@e.com", "Secret123!"), CancellationToken.None);
 
         _userRepo.DidNotReceive().Add(Arg.Any<UserAuth>());
+        _refreshTokenRepo.DidNotReceive().Add(Arg.Any<RefreshToken>());
         await _uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -84,11 +103,38 @@ public sealed class RegisterCommandHandlerTests
     {
         _userRepo.ExistsByEmailAsync("user@example.com", Arg.Any<CancellationToken>()).Returns(false);
         _hasher.Hash(Arg.Any<string>()).Returns("hash");
+        _jwtService.GenerateAccessToken(Arg.Any<Guid>(), "user@example.com")
+                   .Returns(new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15)));
+        _jwtService.GenerateRefreshToken().Returns("refresh-token");
 
         var command = new RegisterCommand("USER@EXAMPLE.COM", "Secret123!");
         var result  = await _sut.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Email.Should().Be("user@example.com");
+        _jwtService.Received(1).GenerateAccessToken(Arg.Any<Guid>(), "user@example.com");
     }
+
+    [Fact]
+    public async Task Handle_OnSuccess_SavesRefreshTokenToRepository()
+    {
+        _userRepo.ExistsByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        _hasher.Hash(Arg.Any<string>()).Returns("hash");
+        _jwtService.GenerateAccessToken(Arg.Any<Guid>(), Arg.Any<string>())
+                   .Returns(new AccessTokenResult("token", DateTime.UtcNow.AddMinutes(15)));
+        _jwtService.GenerateRefreshToken().Returns("refresh");
+
+        await _sut.Handle(new RegisterCommand("u@e.com", "Secret123!"), CancellationToken.None);
+
+        _refreshTokenRepo.Received(1).Add(Arg.Is<RefreshToken>(t =>
+            t.Token == "refresh" &&
+            t.IsActive));
+    }
+
+    private static IConfiguration BuildConfig(int refreshDays = 7) =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:RefreshTokenExpirationDays"] = refreshDays.ToString()
+            })
+            .Build();
 }
