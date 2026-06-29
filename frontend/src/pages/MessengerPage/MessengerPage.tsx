@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type KeyboardEvent, type ChangeEvent, type FormEvent } from 'react'
+import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback, type KeyboardEvent, type ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import s from './MessengerPage.module.css'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
@@ -19,6 +19,7 @@ const CHATS: Chat[] = [
   { id: 5, name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', preview: 'Ты: ок, договорились 👍',                     time: 'Вчера', unread: '',  online: false, group: false },
   { id: 6, name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', preview: 'Ольга: накидайте идей к понедельнику',         time: 'Вчера', unread: '',  online: false, group: true  },
   { id: 7, name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', preview: 'Голосовое сообщение · 0:42',                  time: 'Пн',    unread: '',  online: true,  group: false },
+  { id: 8, name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', preview: '',                                             time: '',      unread: '',  online: false, group: false },
 ]
 
 interface Message {
@@ -73,6 +74,7 @@ const CHAT_META: Record<string, { name: string; initials: string; color: string;
   '5': { name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', online: false, group: false },
   '6': { name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', online: false, group: true  },
   '7': { name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', online: true,  group: false },
+  '8': { name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', online: false, group: false },
 }
 
 interface GroupMember { name: string; initials: string; color: string; role: 'Администратор' | 'Участник'; online: boolean }
@@ -125,16 +127,42 @@ const STUB_USER = {
 type Filter = 'all' | 'direct' | 'group'
 
 function getInitialMessages(chatId: string): Message[] {
+  if (chatId === '8') return []
   if (chatId === '2') return GROUP_MESSAGES_2
   const meta = CHAT_META[chatId] ?? CHAT_META['1']
   const other: Sender = { own: false, senderId: `other-${chatId}`, senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color }
   return directMessages(other)
 }
 
+let _hid = 10000
+function makeOlderBatch(chatId: string): Message[] {
+  if (chatId === '8') return []
+  const meta = CHAT_META[chatId]
+  if (!meta) return []
+  const h = (s: Sender, t: string, time: string): Message => ({ id: _hid++, ...s, text: t, time, date: 'Вчера' })
+  const other: Sender = { own: false, senderId: `hist-${chatId}`, senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color }
+  if (chatId === '2') {
+    return [
+      h(KATYA, 'Ребята, нужно определиться с направлением дизайна до конца недели', '09:00'),
+      h(SLAVA, 'Видел референсы — мне нравится минималистичный подход',              '09:20'),
+      h(MISHA, 'Согласен, меньше — лучше',                                           '09:22'),
+      h(ME,    'Поддерживаю. Пришлю несколько примеров сегодня',                     '09:40'),
+      h(KATYA, 'Отлично, ждём 👍',                                                   '09:45'),
+    ]
+  }
+  return [
+    h(other, 'Добрый день! Как продвигается работа?',          '09:00'),
+    h(ME,    'Всё по плану, заканчиваем основную часть',        '09:15'),
+    h(other, 'Хорошо, если что — пиши',                        '09:17'),
+    h(ME,    'Конечно, напишу к вечеру',                        '09:20'),
+    h(other, 'Жду 👌',                                          '09:21'),
+  ]
+}
+
 function getModalUserFromMsg(msg: Message): ModalUser {
   if (msg.senderId === 'me') return ME_PROFILE
-  if (msg.senderId.startsWith('other-')) {
-    const cid = msg.senderId.replace('other-', '')
+  if (msg.senderId.startsWith('other-') || msg.senderId.startsWith('hist-')) {
+    const cid = msg.senderId.replace('other-', '').replace('hist-', '')
     const cm = CHAT_META[cid] ?? CHAT_META['1']
     return { name: cm.name, initials: cm.initials, color: cm.color, online: cm.online, ...USER_PROFILES[cid] }
   }
@@ -155,11 +183,32 @@ export function MessengerPage() {
     Object.fromEntries(Object.keys(CHAT_META).map(cid => [cid, getInitialMessages(cid)]))
   )
   const messages = useMemo(() => id ? (chatMessages[id] ?? []) : [], [chatMessages, id])
+
   const [text, setText] = useState('')
   const [modalUser, setModalUser] = useState<ModalUser | null>(null)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Infinite scroll state
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState<Record<string, boolean>>({ '8': true })
+  const [restoreSignal, setRestoreSignal] = useState(0)
+
+  // Typing indicator state
+  const [typingChats, setTypingChats] = useState<Record<string, boolean>>({})
+
+  const bottomRef    = useRef<HTMLDivElement>(null)
+  const textareaRef  = useRef<HTMLTextAreaElement>(null)
+  const messagesRef  = useRef<HTMLDivElement>(null)
+  const topSentinel  = useRef<HTMLDivElement>(null)
+
+  // Scroll control flags
+  const scrollToBottom  = useRef(true)
+  const smoothScroll    = useRef(false)
+  const savedScrollHeight = useRef(0)
+  const savedScrollTop    = useRef(0)
+
+  // Typing timers — stable ref so cleanup always works
+  const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   const [profileOpen, setProfileOpen] = useState(false)
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
@@ -173,7 +222,74 @@ export function MessengerPage() {
   const [formError, setFormError] = useState('')
   const isNameInvalid = hasTriedSubmit && !displayName.trim()
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  // When the active chat changes, flag next messages update to scroll to bottom instantly
+  useEffect(() => {
+    scrollToBottom.current = true
+    smoothScroll.current   = false
+  }, [id])
+
+  // Auto-scroll to bottom (after send or chat change), skip after history load
+  useEffect(() => {
+    if (!scrollToBottom.current) return
+    bottomRef.current?.scrollIntoView({ behavior: smoothScroll.current ? 'smooth' : 'instant' })
+    scrollToBottom.current = false
+  }, [messages])
+
+  // Restore scroll position synchronously after prepending older messages
+  useLayoutEffect(() => {
+    if (restoreSignal === 0 || !messagesRef.current) return
+    messagesRef.current.scrollTop =
+      savedScrollTop.current + (messagesRef.current.scrollHeight - savedScrollHeight.current)
+  }, [restoreSignal])
+
+  const loadMoreHistory = useCallback(() => {
+    if (!id || loadingHistory || historyLoaded[id]) return
+    const el = messagesRef.current
+    if (!el) return
+    setLoadingHistory(true)
+
+    setTimeout(() => {
+      const batch = makeOlderBatch(id)
+      if (batch.length > 0 && messagesRef.current) {
+        savedScrollHeight.current = messagesRef.current.scrollHeight
+        savedScrollTop.current    = messagesRef.current.scrollTop
+        setChatMessages(prev => ({ ...prev, [id]: [...batch, ...(prev[id] ?? [])] }))
+        setRestoreSignal(s => s + 1)
+      }
+      setHistoryLoaded(prev => ({ ...prev, [id]: true }))
+      setLoadingHistory(false)
+    }, 700)
+  }, [id, loadingHistory, historyLoaded])
+
+  // IntersectionObserver — fires when the top sentinel scrolls into view
+  useEffect(() => {
+    const el       = messagesRef.current
+    const sentinel = topSentinel.current
+    if (!el || !sentinel || !id || messages.length === 0 || historyLoaded[id]) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMoreHistory() },
+      { root: el, threshold: 0 }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [id, messages.length, historyLoaded, loadMoreHistory])
+
+  // Typing indicator: show remote user typing after local user sends a message
+  function triggerTypingIndicator(chatId: string) {
+    clearTimeout(typingTimers.current[`${chatId}:on`])
+    clearTimeout(typingTimers.current[`${chatId}:off`])
+    typingTimers.current[`${chatId}:on`] = setTimeout(() => {
+      setTypingChats(prev => ({ ...prev, [chatId]: true }))
+      typingTimers.current[`${chatId}:off`] = setTimeout(() => {
+        setTypingChats(prev => ({ ...prev, [chatId]: false }))
+      }, 2200)
+    }, 900)
+  }
+
+  useEffect(() => () => {
+    Object.values(typingTimers.current).forEach(clearTimeout)
+  }, [])
 
   useEffect(() => {
     if (!modalUser && !groupModalOpen && !editOpen && !avatarMenuOpen) return
@@ -190,12 +306,14 @@ export function MessengerPage() {
 
   function send() {
     const trimmed = text.trim()
-    if (!trimmed) return
-    if (!id) return
+    if (!trimmed || !id) return
     const newMsg: Message = { ...ME, id: Date.now(), text: trimmed, time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }), date: 'Сегодня' }
+    scrollToBottom.current = true
+    smoothScroll.current   = true
     setChatMessages(prev => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }))
     setText('')
     textareaRef.current?.focus()
+    if (!(CHAT_META[id]?.group)) triggerTypingIndicator(id)
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -208,7 +326,7 @@ export function MessengerPage() {
     setEditOpen(true)
   }
 
-  async function handleEditSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleEditSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     setHasTriedSubmit(true)
     if (!displayName.trim()) return
@@ -313,7 +431,7 @@ export function MessengerPage() {
                       <span className={s.clName}>{chat.name}</span>
                       {chat.group && <span className={s.clGroupBadge}>ГРУППА</span>}
                     </div>
-                    <div className={s.clPreview}>{chat.preview}</div>
+                    <div className={s.clPreview}>{chat.preview || <span className={s.clPreviewEmpty}>Нет сообщений</span>}</div>
                   </div>
                   <div className={s.clMeta}>
                     <span className={s.clTime}>{chat.time}</span>
@@ -341,37 +459,80 @@ export function MessengerPage() {
                   <div className={s.chatHeaderInfo}>
                     <div className={s.chatHeaderName}>{meta.name}</div>
                     <div className={s.chatHeaderSub}>
-                      {meta.online ? <><span className={s.chatHeaderOnlineDot} />в сети</> : meta.group ? `${(GROUP_MEMBERS[id] ?? []).length} участника` : 'был(а) недавно'}
+                      {typingChats[id] && !meta.group
+                        ? <span className={s.typingText}>печатает...</span>
+                        : meta.online
+                          ? <><span className={s.chatHeaderOnlineDot} />в сети</>
+                          : meta.group
+                            ? `${(GROUP_MEMBERS[id] ?? []).length} участника`
+                            : 'был(а) недавно'
+                      }
                     </div>
                   </div>
                 </button>
               </div>
 
-              <div className={s.messages}>
-                {rendered.map((item, i) =>
-                  item.type === 'sep' ? (
-                    <div key={`sep-${i}`} className={s.dateSep}><span className={s.dateSepLabel}>{item.label}</span></div>
-                  ) : (
-                    <div key={item.msg.id}>
-                      {item.showName && (
-                        <div className={`${s.senderName} ${s.senderNameClickable}`} style={{ color: item.msg.senderColor }} onClick={() => setModalUser(getModalUserFromMsg(item.msg))}>
-                          {item.msg.senderName}
-                        </div>
-                      )}
-                      <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
-                        <div
-                          className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
-                          style={{ background: item.msg.senderColor }}
-                          onClick={() => item.showAvatar ? setModalUser(getModalUserFromMsg(item.msg)) : undefined}
-                        >{item.msg.senderInitials}</div>
-                        <div className={`${s.bubble} ${item.msg.own ? s.bubbleOwn : s.bubbleOther} ${item.showAvatar ? s.bubbleTail : ''}`}>{item.msg.text}</div>
-                      </div>
-                      <span className={s.msgTime}>{item.msg.time}</span>
+              {messages.length === 0 ? (
+                <div className={s.emptyChat}>
+                  <div className={s.emptyChatIcon}>💬</div>
+                  <h3 className={s.emptyChatTitle}>Начните общение</h3>
+                  <p className={s.emptyChatSub}>Напишите первое сообщение {meta.name.split(' ')[0]} 👋</p>
+                </div>
+              ) : (
+                <div className={s.messages} ref={messagesRef}>
+                  {/* Sentinel for IntersectionObserver — sits above all messages */}
+                  <div ref={topSentinel} />
+
+                  {loadingHistory && (
+                    <div className={s.historyLoader}>
+                      <div className={s.historySpinner} />
                     </div>
-                  )
-                )}
-                <div ref={bottomRef} />
-              </div>
+                  )}
+
+                  {!loadingHistory && historyLoaded[id] && (
+                    <div className={s.historyEnd}>Начало переписки</div>
+                  )}
+
+                  {rendered.map((item, i) =>
+                    item.type === 'sep' ? (
+                      <div key={`sep-${i}`} className={s.dateSep}><span className={s.dateSepLabel}>{item.label}</span></div>
+                    ) : (
+                      <div key={item.msg.id}>
+                        {item.showName && (
+                          <div className={`${s.senderName} ${s.senderNameClickable}`} style={{ color: item.msg.senderColor }} onClick={() => setModalUser(getModalUserFromMsg(item.msg))}>
+                            {item.msg.senderName}
+                          </div>
+                        )}
+                        <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
+                          <div
+                            className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
+                            style={{ background: item.msg.senderColor }}
+                            onClick={() => item.showAvatar ? setModalUser(getModalUserFromMsg(item.msg)) : undefined}
+                          >{item.msg.senderInitials}</div>
+                          <div className={`${s.bubble} ${item.msg.own ? s.bubbleOwn : s.bubbleOther} ${item.showAvatar ? s.bubbleTail : ''}`}>{item.msg.text}</div>
+                        </div>
+                        <span className={s.msgTime}>{item.msg.time}</span>
+                      </div>
+                    )
+                  )}
+
+                  {/* Typing indicator bubble */}
+                  {typingChats[id] && !meta.group && (
+                    <div className={`${s.msgRow} ${s.typingRow}`}>
+                      <div className={s.msgAvatar} style={{ background: meta.color }}>{meta.initials}</div>
+                      <div className={`${s.bubble} ${s.bubbleOther} ${s.bubbleTail}`}>
+                        <span className={s.typingDots}>
+                          <span className={s.typingDot} />
+                          <span className={s.typingDot} />
+                          <span className={s.typingDot} />
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={bottomRef} />
+                </div>
+              )}
 
               <div className={s.inputBar}>
                 <textarea ref={textareaRef} className={s.textInput} placeholder="Написать сообщение…" value={text} rows={1} onChange={e => setText(e.target.value)} onKeyDown={handleKeyDown} />
