@@ -27,66 +27,77 @@ namespace Messenger.Modules.Auth.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
 
                     b.Property<bool>("IsRevoked")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_revoked");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("token");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Token")
                         .IsUnique()
-                        .HasDatabaseName("ix_refresh_tokens_token");
+                        .HasDatabaseName("ix_refresh_token_token");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_refresh_tokens_user_id");
+                        .HasDatabaseName("ix_refresh_token_user_id");
 
-                    b.ToTable("refresh_tokens", "auth");
+                    b.ToTable("refresh_token", "auth");
                 });
 
             modelBuilder.Entity("Messenger.Modules.Auth.Domain.UserAuth", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("email");
 
                     b.Property<bool>("IsEmailVerified")
-                        .HasColumnType("boolean");
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_email_verified");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("password_hash");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_users_email");
+                        .HasDatabaseName("ix_user_email");
 
-                    b.ToTable("users", "auth");
+                    b.ToTable("user", "auth");
                 });
 #pragma warning restore 612, 618
         }

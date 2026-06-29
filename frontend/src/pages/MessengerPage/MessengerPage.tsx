@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type KeyboardEvent, type ChangeEvent, type FormEvent } from 'react'
+import { useState, useRef, useEffect, useMemo, type KeyboardEvent, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import s from './MessengerPage.module.css'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
@@ -151,7 +151,10 @@ export function MessengerPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
 
-  const [messages, setMessages] = useState<Message[]>(() => id ? getInitialMessages(id) : [])
+  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>(() =>
+    Object.fromEntries(Object.keys(CHAT_META).map(cid => [cid, getInitialMessages(cid)]))
+  )
+  const messages = useMemo(() => id ? (chatMessages[id] ?? []) : [], [chatMessages, id])
   const [text, setText] = useState('')
   const [modalUser, setModalUser] = useState<ModalUser | null>(null)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
@@ -170,7 +173,6 @@ export function MessengerPage() {
   const [formError, setFormError] = useState('')
   const isNameInvalid = hasTriedSubmit && !displayName.trim()
 
-  useEffect(() => { setMessages(id ? getInitialMessages(id) : []) }, [id])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   useEffect(() => {
@@ -189,7 +191,9 @@ export function MessengerPage() {
   function send() {
     const trimmed = text.trim()
     if (!trimmed) return
-    setMessages(prev => [...prev, { ...ME, id: Date.now(), text: trimmed, time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }), date: 'Сегодня' }])
+    if (!id) return
+    const newMsg: Message = { ...ME, id: Date.now(), text: trimmed, time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }), date: 'Сегодня' }
+    setChatMessages(prev => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }))
     setText('')
     textareaRef.current?.focus()
   }

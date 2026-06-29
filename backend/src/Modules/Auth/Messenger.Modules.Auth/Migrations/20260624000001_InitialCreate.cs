@@ -14,64 +14,64 @@ namespace Messenger.Modules.Auth.Migrations
             migrationBuilder.EnsureSchema(name: "auth");
 
             migrationBuilder.CreateTable(
-                name: "users",
+                name: "user",
                 schema: "auth",
                 columns: table => new
                 {
-                    Id            = table.Column<Guid>(type: "uuid", nullable: false),
-                    Email         = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    PasswordHash  = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    IsEmailVerified = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    CreatedAt     = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    id                = table.Column<Guid>(type: "uuid", nullable: false),
+                    email             = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    password_hash     = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    is_email_verified = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    created_at        = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_users", x => x.Id);
+                    table.PrimaryKey("PK_user", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "refresh_tokens",
+                name: "refresh_token",
                 schema: "auth",
                 columns: table => new
                 {
-                    Id        = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId    = table.Column<Guid>(type: "uuid", nullable: false),
-                    Token     = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                    id         = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id    = table.Column<Guid>(type: "uuid", nullable: false),
+                    token      = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    expires_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    is_revoked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_refresh_tokens", x => x.Id);
+                    table.PrimaryKey("PK_refresh_token", x => x.id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "ix_users_email",
+                name: "ix_user_email",
                 schema: "auth",
-                table: "users",
-                column: "Email",
+                table: "user",
+                column: "email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_refresh_tokens_token",
+                name: "ix_refresh_token_token",
                 schema: "auth",
-                table: "refresh_tokens",
-                column: "Token",
+                table: "refresh_token",
+                column: "token",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_refresh_tokens_user_id",
+                name: "ix_refresh_token_user_id",
                 schema: "auth",
-                table: "refresh_tokens",
-                column: "UserId");
+                table: "refresh_token",
+                column: "user_id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "refresh_tokens", schema: "auth");
-            migrationBuilder.DropTable(name: "users", schema: "auth");
+            migrationBuilder.DropTable(name: "refresh_token", schema: "auth");
+            migrationBuilder.DropTable(name: "user", schema: "auth");
         }
     }
 }

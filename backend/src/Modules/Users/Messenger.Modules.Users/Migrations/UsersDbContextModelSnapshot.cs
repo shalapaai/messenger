@@ -27,55 +27,64 @@ namespace Messenger.Modules.Users.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("AuthUserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("auth_user_id");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("email");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("display_name");
 
                     b.Property<string>("Login")
                         .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("login");
 
                     b.Property<string>("Status")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("status");
 
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("avatar_url");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AuthUserId")
                         .IsUnique()
-                        .HasDatabaseName("ix_user_profiles_auth_user_id");
+                        .HasDatabaseName("ix_user_profile_auth_user_id");
 
                     b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_user_profiles_email");
+                        .HasDatabaseName("ix_user_profile_email");
 
                     b.HasIndex("Login")
                         .IsUnique()
-                        .HasDatabaseName("ix_user_profiles_login")
-                        .HasFilter("\"Login\" IS NOT NULL");
+                        .HasDatabaseName("ix_user_profile_login")
+                        .HasFilter("login IS NOT NULL");
 
-                    b.ToTable("user_profiles", "users");
+                    b.ToTable("user_profile", "users");
                 });
 #pragma warning restore 612, 618
         }

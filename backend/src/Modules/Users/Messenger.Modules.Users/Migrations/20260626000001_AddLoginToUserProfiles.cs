@@ -11,34 +11,34 @@ namespace Messenger.Modules.Users.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "Login",
+                name: "login",
                 schema: "users",
-                table: "user_profiles",
+                table: "user_profile",
                 type: "character varying(30)",
                 maxLength: 30,
                 nullable: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_user_profiles_login",
+                name: "ix_user_profile_login",
                 schema: "users",
-                table: "user_profiles",
-                column: "Login",
+                table: "user_profile",
+                column: "login",
                 unique: true,
-                filter: "\"Login\" IS NOT NULL");
+                filter: "login IS NOT NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
-                name: "ix_user_profiles_login",
+                name: "ix_user_profile_login",
                 schema: "users",
-                table: "user_profiles");
+                table: "user_profile");
 
             migrationBuilder.DropColumn(
-                name: "Login",
+                name: "login",
                 schema: "users",
-                table: "user_profiles");
+                table: "user_profile");
         }
     }
 }

@@ -11,29 +11,31 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.HasKey(m => m.Id);
 
         builder.Property(m => m.Id)
+            .HasColumnName("id")
             .HasConversion(id => id.Value, value => MessageId.From(value))
             .ValueGeneratedNever();
 
         builder.Property(m => m.Content)
+            .HasColumnName("content")
             .HasMaxLength(4096)
             .IsRequired();
 
         builder.Property(m => m.Status)
+            .HasColumnName("status")
             .HasConversion<string>()
             .HasMaxLength(20)
             .IsRequired();
 
-        builder.Property(m => m.ChatId).IsRequired();
-        builder.Property(m => m.SenderId).IsRequired();
-        builder.Property(m => m.SentAt).IsRequired();
-        builder.Property(m => m.EditedAt);
-        builder.Property(m => m.DeletedAt);
-        builder.Property(m => m.ReplyToMessageId);
+        builder.Property(m => m.ChatId).HasColumnName("chat_id").IsRequired();
+        builder.Property(m => m.SenderId).HasColumnName("sender_id").IsRequired();
+        builder.Property(m => m.SentAt).HasColumnName("sent_at").IsRequired();
+        builder.Property(m => m.EditedAt).HasColumnName("edited_at");
+        builder.Property(m => m.DeletedAt).HasColumnName("deleted_at");
+        builder.Property(m => m.ReplyToMessageId).HasColumnName("reply_to_message_id");
 
-        // Составной индекс для пагинации по чату (самый частый запрос)
-        builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_messages_chat_id_sent_at");
-        builder.HasIndex(m => m.SenderId).HasDatabaseName("ix_messages_sender_id");
+        builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_message_chat_id_sent_at");
+        builder.HasIndex(m => m.SenderId).HasDatabaseName("ix_message_sender_id");
 
-        builder.ToTable("messages");
+        builder.ToTable("message");
     }
 }
