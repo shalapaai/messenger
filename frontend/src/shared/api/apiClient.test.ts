@@ -111,9 +111,9 @@ describe('apiClient', () => {
 
     await apiClient.get('/users/me')
 
-    expect(refreshAuthTokens).toHaveBeenCalledWith('old-refresh-token')
+    expect(refreshAuthTokens).toHaveBeenCalledWith()
     expect(localStorage.getItem('messenger_access_token')).toBe('new-access-token')
-    expect(localStorage.getItem('messenger_refresh_token')).toBe('new-refresh-token')
+    expect(localStorage.getItem('messenger_refresh_token')).toBeNull()
     expect(adapter).toHaveBeenLastCalledWith(
       expect.objectContaining({
         _retry: true,

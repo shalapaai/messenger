@@ -6,12 +6,22 @@ import { login } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import LoginForm from './LoginForm'
 
+const userProfileMock = vi.hoisted(() => ({
+  refetchProfile: vi.fn(),
+}))
+
 vi.mock('../api/authApi', () => ({
   login: vi.fn(),
 }))
 
 vi.mock('../../../shared/lib/auth/authTokens', () => ({
   saveAuthTokens: vi.fn(),
+}))
+
+vi.mock('../../../shared/context/UserProfileContext', () => ({
+  useUserProfile: () => ({
+    refetchProfile: userProfileMock.refetchProfile,
+  }),
 }))
 
 function renderLoginForm() {
@@ -25,6 +35,7 @@ function renderLoginForm() {
 describe('LoginForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    userProfileMock.refetchProfile.mockResolvedValue(null)
   })
 
   it('renders email and password fields', () => {

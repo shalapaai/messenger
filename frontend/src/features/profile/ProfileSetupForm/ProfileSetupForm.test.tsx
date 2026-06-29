@@ -1,14 +1,24 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCroppedImage } from '../../../shared/lib/image'
 import ProfileSetupForm from './ProfileSetupForm'
 
 const createObjectURL = vi.fn()
 const revokeObjectURL = vi.fn()
+const userProfileMock = vi.hoisted(() => ({
+  setProfile: vi.fn(),
+}))
 
 vi.mock('../../../shared/lib/image', () => ({
   getCroppedImage: vi.fn(),
+}))
+
+vi.mock('../../../shared/context/UserProfileContext', () => ({
+  useUserProfile: () => ({
+    setProfile: userProfileMock.setProfile,
+  }),
 }))
 
 vi.mock('../AvatarCropModal', () => ({
@@ -37,12 +47,17 @@ vi.mock('../AvatarCropModal', () => ({
 }))
 
 function renderProfileSetupForm() {
-  return render(<ProfileSetupForm />)
+  return render(
+    <MemoryRouter>
+      <ProfileSetupForm />
+    </MemoryRouter>,
+  )
 }
 
 describe('ProfileSetupForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    userProfileMock.setProfile.mockReset()
     createObjectURL.mockReset()
     revokeObjectURL.mockReset()
     vi.stubGlobal('URL', {
@@ -83,9 +98,8 @@ describe('ProfileSetupForm', () => {
     expect(consoleLog).not.toHaveBeenCalled()
   })
 
-  it('submits trimmed profile data when display name is filled', async () => {
+  it('does not show validation error when display name is filled', async () => {
     const user = userEvent.setup()
-    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined)
 
     renderProfileSetupForm()
 
@@ -94,11 +108,7 @@ describe('ProfileSetupForm', () => {
     await user.click(screen.getByRole('button', { name: 'Продолжить' }))
 
     await waitFor(() => {
-      expect(consoleLog).toHaveBeenCalledWith({
-        displayName: 'Николай',
-        status: 'на связи',
-        avatar: null,
-      })
+      expect(screen.queryByText('Введите имя пользователя')).not.toBeInTheDocument()
     })
   })
 

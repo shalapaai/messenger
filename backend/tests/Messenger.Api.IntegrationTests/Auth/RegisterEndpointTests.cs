@@ -11,7 +11,7 @@ public sealed class RegisterEndpointTests(AuthApiFactory factory)
     private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task Register_WithValidData_Returns201WithUserDto()
+    public async Task Register_WithValidData_Returns201WithTokensAndRefreshCookie()
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new
         {
@@ -22,14 +22,15 @@ public sealed class RegisterEndpointTests(AuthApiFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var body = await response.Content.ReadFromJsonAsync<UserDto>();
-        body!.Email.Should().NotBeNullOrEmpty();
-        body.Id.Should().NotBe(Guid.Empty);
-        body.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
+        var body = await response.Content.ReadFromJsonAsync<TokenPairDto>();
+        body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.RefreshToken.Should().NotBeNullOrEmpty();
+        body.AccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        GetRefreshCookie(response).Should().Contain("HttpOnly");
     }
 
     [Fact]
-    public async Task Register_LocationHeaderPointsToUserResource()
+    public async Task Register_LocationHeaderPointsToAuthResource()
     {
         var email = $"loc_{Guid.NewGuid():N}@example.com";
         var response = await _client.PostAsJsonAsync("/api/auth/register", new
@@ -40,7 +41,7 @@ public sealed class RegisterEndpointTests(AuthApiFactory factory)
         });
 
         response.Headers.Location.Should().NotBeNull();
-        response.Headers.Location!.ToString().Should().StartWith("/api/users/");
+        response.Headers.Location!.ToString().Should().Be("/api/auth/register");
     }
 
     [Fact]
@@ -85,17 +86,23 @@ public sealed class RegisterEndpointTests(AuthApiFactory factory)
     }
 
     [Fact]
-    public async Task Register_WithMissingDisplayName_Returns422()
+    public async Task Register_WithMissingPassword_Returns422()
     {
         var response = await _client.PostAsJsonAsync("/api/auth/register", new
         {
             email    = "user@example.com",
-            password = "SecurePass1!",
-            displayName = ""
+            password = ""
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    private sealed record UserDto(Guid Id, string Email, DateTime CreatedAt);
+    private static string GetRefreshCookie(HttpResponseMessage response) =>
+        response.Headers.GetValues("Set-Cookie")
+            .Single(cookie => cookie.StartsWith("messenger_refresh_token=", StringComparison.Ordinal));
+
+    private sealed record TokenPairDto(
+        string   AccessToken,
+        string   RefreshToken,
+        DateTime AccessTokenExpiresAt);
 }

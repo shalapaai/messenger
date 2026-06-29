@@ -13,5 +13,11 @@ export async function login(data: AuthRequest) {
 }
 
 export async function register(data: AuthRequest) {
-  await apiClient.post('/auth/register', data)
+  const response = await apiClient.post<AuthTokens>('/auth/register', data)
+
+  return response.data
+}
+
+export async function logout() {
+  await apiClient.post('/auth/logout')
 }

@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, register } from '../api/authApi'
+import { register } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
-import { useUserProfile } from '../../../shared/context/UserProfileContext'
 import styles from './RegisterForm.module.css'
 
 function RegisterForm() {
   const navigate = useNavigate()
-  const { refetchProfile } = useUserProfile()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
@@ -43,18 +41,11 @@ function RegisterForm() {
     setIsLoading(true)
 
     try {
-      const credentials = { email: email.trim(), password }
-
-      await register(credentials)
-      console.log('[Register] account created for:', credentials.email)
-
-      const tokens = await login(credentials)
+      const tokens = await register({
+        email: email.trim(),
+        password,
+      })
       saveAuthTokens(tokens)
-      console.log('[Register] tokens saved:', tokens)
-
-      const profile = await refetchProfile()
-      console.log('[Register] profile after fetch:', profile)
-
       navigate('/profile/setup')
     } catch {
       setError(
