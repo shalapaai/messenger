@@ -37,6 +37,10 @@ public sealed class AuthDbContext(DbContextOptions<AuthDbContext> options)
             b.Property(t => t.IsRevoked).HasColumnName("is_revoked");
             b.HasIndex(t => t.Token).IsUnique().HasDatabaseName("ix_refresh_token_token");
             b.HasIndex(t => t.UserId).HasDatabaseName("ix_refresh_token_user_id");
+            b.HasOne<UserAuth>()
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             b.ToTable("refresh_token");
         });
     }
