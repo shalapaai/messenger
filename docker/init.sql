@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS users.user_profile (
     login        VARCHAR(30)   DEFAULT NULL,
     status       VARCHAR(200)  DEFAULT NULL,
     avatar_url   VARCHAR(2048) DEFAULT NULL,
+    phone        VARCHAR(20)   DEFAULT NULL,
+    city         VARCHAR(100)  DEFAULT NULL,
+    department   VARCHAR(100)  DEFAULT NULL,
     created_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMPTZ   DEFAULT NULL,
 

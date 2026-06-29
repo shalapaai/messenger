@@ -6,7 +6,10 @@ public sealed record UpdateUserProfileCommand(
     Guid    AuthUserId,
     string? DisplayName,
     string? Status,
-    string? Login) : ICommand<UpdatedProfileDto>;
+    string? Login,
+    string? Phone,
+    string? City,
+    string? Department) : ICommand<UpdatedProfileDto>;
 
 public sealed record UpdatedProfileDto(
     Guid      UserId,
@@ -15,5 +18,8 @@ public sealed record UpdatedProfileDto(
     string?   Login,
     string?   Status,
     string?   AvatarUrl,
-    DateTime  CreatedAt,
+    string?   Phone,
+    string?   City,
+    string?   Department,
+    DateTime  RegisteredAt,
     DateTime? UpdatedAt);
