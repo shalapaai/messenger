@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
 import { getCroppedImage } from '../../../shared/lib/image'
 import type { CroppedAreaPixels } from '../../../shared/lib/image'
 import { AvatarCropModal } from '../AvatarCropModal'
@@ -8,8 +7,10 @@ import styles from './ProfileSetupForm.module.css'
 
 function ProfileSetupForm() {
   const [displayName, setDisplayName] = useState('')
-  const [status, setStatus] = useState('')
-  const [avatar, setAvatar] = useState<File | null>(null)
+  const [status, setStatus]           = useState('')
+  const [phone, setPhone]             = useState('')
+  const [city, setCity]               = useState('')
+  const [department, setDepartment]   = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string>()
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
     null,
@@ -59,14 +60,13 @@ function ProfileSetupForm() {
       selectedAvatarFile.type,
     )
 
-    setAvatar(croppedFile)
     setAvatarPreview(URL.createObjectURL(croppedFile))
 
     setCropImageSrc(undefined)
     setSelectedAvatarFile(null)
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: { preventDefault(): void }) {
     event.preventDefault()
     setHasTriedSubmit(true)
 
@@ -79,11 +79,7 @@ function ProfileSetupForm() {
     setIsLoading(true)
 
     try {
-      console.log({
-        displayName: displayName.trim(),
-        status: status.trim(),
-        avatar,
-      })
+      // TODO: call profile API
     } catch {
       setError('Не удалось сохранить профиль. Попробуйте еще раз.')
     } finally {
@@ -139,6 +135,42 @@ function ProfileSetupForm() {
               value={status}
               onChange={(event) => setStatus(event.target.value)}
               placeholder="Например, на связи"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Телефон</span>
+            <input
+              className={styles.input}
+              type="text"
+              name="phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder="+7 000 000-00-00"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Город</span>
+            <input
+              className={styles.input}
+              type="text"
+              name="city"
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              placeholder="Например, Москва"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>Отдел</span>
+            <input
+              className={styles.input}
+              type="text"
+              name="department"
+              value={department}
+              onChange={(event) => setDepartment(event.target.value)}
+              placeholder="Например, Разработка"
             />
           </label>
         </div>

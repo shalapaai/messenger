@@ -1,10 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
-import { ChatsPage } from '../../pages/ChatsPage'
-import { ChatPage } from '../../pages/ChatPage'
+import { MessengerPage } from '../../pages/MessengerPage'
 import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
-import { ProfilePage } from '../../pages/ProfilePage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { PublicOnlyRoute } from './PublicOnlyRoute'
 
@@ -12,7 +10,7 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/chats" replace />} />
 
         <Route
           path="/login"
@@ -34,7 +32,7 @@ export function AppRouter() {
           path="/chats"
           element={
             <ProtectedRoute>
-              <ChatsPage />
+              <MessengerPage />
             </ProtectedRoute>
           }
         />
@@ -42,7 +40,7 @@ export function AppRouter() {
           path="/chats/:id"
           element={
             <ProtectedRoute>
-              <ChatPage />
+              <MessengerPage />
             </ProtectedRoute>
           }
         />
@@ -54,14 +52,7 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/profile" element={<Navigate to="/chats" replace />} />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

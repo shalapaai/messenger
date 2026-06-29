@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { signalR, type IncomingMessage, type MessageEdited, type TypingEvent, type UserOnlineEvent } from './signalrClient'
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting'
@@ -15,7 +15,7 @@ interface UseSignalROptions {
 export function useSignalR(options: UseSignalROptions = {}) {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected')
   const optionsRef = useRef(options)
-  optionsRef.current = options
+  useLayoutEffect(() => { optionsRef.current = options })
 
   // ── Подключение при монтировании ──────────────────────────────────────────
   useEffect(() => {

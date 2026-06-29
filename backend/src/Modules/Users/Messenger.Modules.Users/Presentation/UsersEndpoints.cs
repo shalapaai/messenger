@@ -96,7 +96,7 @@ public static class UsersEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var command = new UpdateUserProfileCommand(ctx.GetUserId(), request.DisplayName, request.Status, request.Login);
+        var command = new UpdateUserProfileCommand(ctx.GetUserId(), request.DisplayName, request.Status, request.Login, request.Phone, request.City, request.Department);
         var result  = await sender.Send(command, ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
     }
@@ -136,7 +136,7 @@ public static class UsersEndpoints
 }
 
 public sealed record CreateUserProfileRequest(string DisplayName, string? Login);
-public sealed record UpdateUserProfileRequest(string? DisplayName, string? Status, string? Login);
+public sealed record UpdateUserProfileRequest(string? DisplayName, string? Status, string? Login, string? Phone, string? City, string? Department);
 public sealed record AvatarUrlDto(string AvatarUrl);
 public sealed record SearchResultDto(
     IReadOnlyList<UserSearchResultDto> Items,

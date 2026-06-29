@@ -1,0 +1,65 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,27,46,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 20px;
+}
+
+.modalPanel {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(20,27,46,0.18);
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f5f6fa;
+  cursor: pointer;
+  font-size: 14px;
+  color: #56607a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.modalClose:hover { background: #eceef4; }
+
+.modalHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.modalTitle { font-size: 18px; font-weight: 800; }
+.modalForm { display: flex; flex-direction: column; gap: 20px; }
+.modalAvatarBlock { display: flex; justify-content: center; }
+.modalFields { display: flex; flex-direction: column; gap: 14px; }
+.modalField { display: flex; flex-direction: column; gap: 7px; }
+.modalFieldLabel { font-size: 14px; font-weight: 600; color: #334155; }
+.required { margin-left: 3px; color: #dc2626; }
+.modalFieldInput { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #eceef4; border-radius: 14px; outline: none; font: inherit; font-size: 15px; color: #141b2e; background: #f5f6fa; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; box-sizing: border-box; }
+.modalFieldInput::placeholder { color: #a6aebf; }
+.modalFieldInput:hover { border-color: #c4cad8; }
+.modalFieldInput:focus { border-color: #2c5bf0; background: #fff; box-shadow: 0 0 0 4px rgba(44,91,240,0.1); }
+.modalFieldInputError, .modalFieldInputError:hover, .modalFieldInputError:focus { border-color: #dc2626; }
+.modalFieldInputError:focus { box-shadow: 0 0 0 4px rgba(220,38,38,0.1); }
+.modalFieldError { font-size: 13px; color: #dc2626; }
+.modalFormError { font-size: 14px; color: #dc2626; margin: 0; }
+.modalActions { display: flex; gap: 12px; }
+.modalCancelBtn { flex: 1; min-height: 48px; border: 1px solid #eceef4; border-radius: 14px; background: #fff; color: #56607a; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.modalCancelBtn:hover { background: #f5f6fa; border-color: #c4cad8; }
+.modalSaveBtn { flex: 2; min-height: 48px; border: none; border-radius: 14px; background: #2c5bf0; color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+.modalSaveBtn:hover:not(:disabled) { background: #1f4bdd; }
+.modalSaveBtn:disabled { opacity: 0.65; cursor: not-allowed; }

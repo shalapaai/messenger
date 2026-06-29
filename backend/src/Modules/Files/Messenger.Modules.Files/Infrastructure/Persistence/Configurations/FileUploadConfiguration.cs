@@ -9,19 +9,19 @@ public sealed class FileUploadConfiguration : IEntityTypeConfiguration<FileUploa
     public void Configure(EntityTypeBuilder<FileUpload> builder)
     {
         builder.HasKey(f => f.Id);
-        builder.Property(f => f.FileKey).HasMaxLength(512).IsRequired();
-        builder.Property(f => f.OriginalName).HasMaxLength(255).IsRequired();
-        builder.Property(f => f.ContentType).HasMaxLength(100).IsRequired();
-        builder.Property(f => f.SizeBytes).IsRequired();
-        builder.Property(f => f.UploadedBy).IsRequired();
-        builder.Property(f => f.UploadedAt).IsRequired();
-        builder.Property(f => f.Category).HasConversion<string>().HasMaxLength(30);
+        builder.Property(f => f.Id).HasColumnName("id");
+        builder.Property(f => f.FileKey).HasColumnName("file_key").HasMaxLength(512).IsRequired();
+        builder.Property(f => f.OriginalName).HasColumnName("original_name").HasMaxLength(255).IsRequired();
+        builder.Property(f => f.ContentType).HasColumnName("content_type").HasMaxLength(100).IsRequired();
+        builder.Property(f => f.SizeBytes).HasColumnName("size_bytes").IsRequired();
+        builder.Property(f => f.UploadedBy).HasColumnName("uploaded_by").IsRequired();
+        builder.Property(f => f.UploadedAt).HasColumnName("uploaded_at").IsRequired();
+        builder.Property(f => f.Category).HasColumnName("category").HasConversion<string>().HasMaxLength(30);
 
-        builder.HasIndex(f => f.FileKey).IsUnique().HasDatabaseName("ix_file_uploads_file_key");
-        // Индекс для поиска аватара пользователя
+        builder.HasIndex(f => f.FileKey).IsUnique().HasDatabaseName("ix_file_upload_file_key");
         builder.HasIndex(f => new { f.UploadedBy, f.Category })
-               .HasDatabaseName("ix_file_uploads_uploaded_by_category");
+               .HasDatabaseName("ix_file_upload_uploaded_by_category");
 
-        builder.ToTable("file_uploads");
+        builder.ToTable("file_upload");
     }
 }

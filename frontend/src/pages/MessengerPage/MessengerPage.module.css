@@ -1,0 +1,85 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #fff;
+  overflow: hidden;
+  font-family: 'Archivo', system-ui, sans-serif;
+  color: #141b2e;
+  -webkit-font-smoothing: antialiased;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Content (column 3) ──────────────────────────────────────── */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f5f6fa;
+}
+
+/* ── Placeholder ─────────────────────────────────────────────── */
+.placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+}
+
+.placeholderIcon  { font-size: 60px; opacity: 0.25; }
+.placeholderTitle { font-size: 22px; font-weight: 800; color: #141b2e; margin: 0; }
+.placeholderText  { font-size: 15px; font-weight: 500; color: #8a93a6; margin: 0; text-align: center; }
+
+/* ── Mobile top bar ──────────────────────────────────────────── */
+.topBar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  flex-shrink: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid #eceef4;
+  background: #fff;
+}
+
+.topBarLogo { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; color: #2c5bf0; }
+
+.topBarBack { width: 36px; height: 36px; border-radius: 10px; border: none; background: #f5f6fa; cursor: pointer; font-size: 20px; color: #56607a; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.topBarBack:hover { background: #eceef4; }
+
+.topBarUserBtn { width: 36px; height: 36px; border-radius: 50%; border: none; background: #2c5bf0; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.15s; }
+.topBarUserBtn:hover { opacity: 0.85; }
+
+/* ── Mobile bottom nav ───────────────────────────────────────── */
+.bottomNav {
+  display: none;
+  align-items: stretch;
+  flex-shrink: 0;
+  border-top: 1px solid #eceef4;
+  background: #fff;
+  padding: 6px 4px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+}
+
+.bnItem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px; cursor: pointer; color: #9098a8; font-size: 10.5px; font-weight: 700; border: none; background: none; font-family: inherit; }
+.bnItemActive { color: #2c5bf0; }
+.bnGlyph { position: relative; font-size: 20px; line-height: 1; }
+.bnBadge { position: absolute; top: -5px; right: -9px; background: #2c5bf0; color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.bnAvatarMini { width: 22px; height: 22px; border-radius: 50%; background: #2c5bf0; color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 819px) {
+  .topBar   { display: flex; }
+  .bottomNav { display: flex; }
+  .bottomNavHidden { display: none; }
+  .contentMobileHidden { display: none; }
+}

@@ -20,6 +20,9 @@ public sealed class GetMeQueryHandler(IUserProfileRepository repository)
             profile.Login is not null ? $"@{profile.Login}" : null,
             profile.Status,
             profile.AvatarUrl,
+            profile.Phone,
+            profile.City,
+            profile.Department,
             profile.CreatedAt,
             profile.UpdatedAt));
     }
