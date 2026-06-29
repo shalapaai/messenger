@@ -1,17 +1,27 @@
 import { useNavigate } from 'react-router-dom'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
-import type { StubUser } from '../../shared/types/messenger'
+import type { UserProfile } from '../../shared/types/user'
 import s from './ProfilePanel.module.css'
 
 interface ProfilePanelProps {
   isOpen: boolean
-  stubUser: StubUser
+  profile: UserProfile
   onClose: () => void
   onEdit: () => void
   onChats: () => void
 }
 
-export function ProfilePanel({ isOpen, stubUser, onClose, onEdit, onChats }: ProfilePanelProps) {
+function getInitials(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return displayName.slice(0, 2).toUpperCase()
+}
+
+function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })
+}
+
+export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: ProfilePanelProps) {
   const navigate = useNavigate()
 
   if (!isOpen) return null
@@ -20,6 +30,8 @@ export function ProfilePanel({ isOpen, stubUser, onClose, onEdit, onChats }: Pro
     clearAuthTokens()
     navigate('/login')
   }
+
+  const initials = getInitials(profile.displayName)
 
   return (
     <>
@@ -33,20 +45,24 @@ export function ProfilePanel({ isOpen, stubUser, onClose, onEdit, onChats }: Pro
         <div className={s.ppScrollArea}>
           <div className={s.ppCover} />
           <div className={s.ppBody}>
-            <div className={s.ppAvatar}>{stubUser.initials}</div>
+            {profile.avatarUrl ? (
+              <img className={s.ppAvatar} src={profile.avatarUrl} alt={profile.displayName} />
+            ) : (
+              <div className={s.ppAvatar}>{initials}</div>
+            )}
             <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />В сети</div>
-            <h2 className={s.ppName}>{stubUser.fullName}</h2>
-            <div className={s.ppUsername}>{stubUser.username}</div>
-            <p className={s.ppBio}>{stubUser.bio}</p>
+            <h2 className={s.ppName}>{profile.displayName}</h2>
+            {profile.login && <div className={s.ppUsername}>{profile.login}</div>}
+            {profile.status && <p className={s.ppBio}>{profile.status}</p>}
             <div className={s.ppTags}>
-              <span className={s.ppTag}>📍 {stubUser.city}</span>
-              <span className={s.ppTag}>📅 {stubUser.since}</span>
+              {profile.city && <span className={s.ppTag}>📍 {profile.city}</span>}
+              <span className={s.ppTag}>📅 {formatDate(profile.registeredAt)}</span>
             </div>
             <div className={s.ppDivider} />
             <div className={s.ppDetails}>
-              <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{stubUser.email}</span></div>
-              <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{stubUser.phone}</span></div>
-              <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Отдел</span><span className={s.ppDetailValue}>{stubUser.department}</span></div>
+              <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{profile.email}</span></div>
+              {profile.phone && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{profile.phone}</span></div>}
+              {profile.department && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Отдел</span><span className={s.ppDetailValue}>{profile.department}</span></div>}
             </div>
             <button className={s.ppEditBtn} onClick={onEdit}>✎ Изменить профиль</button>
             <button className={s.ppLogoutBtn} onClick={handleLogout}>Выйти из аккаунта</button>
@@ -59,7 +75,7 @@ export function ProfilePanel({ isOpen, stubUser, onClose, onEdit, onChats }: Pro
             <span>Чаты</span>
           </button>
           <button className={`${s.bnItem} ${s.bnItemActive}`}>
-            <span className={s.bnAvatarMini}>АС</span>
+            <span className={s.bnAvatarMini}>{initials}</span>
             <span>Профиль</span>
           </button>
         </nav>

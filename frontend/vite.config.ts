@@ -1,4 +1,5 @@
-import { defineConfig } from 'vitest/config'
+/// <reference types="vitest/config" />
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // API_TARGET используется в Docker (http://api:8080).

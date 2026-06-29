@@ -63,3 +63,12 @@
 .modalSaveBtn { flex: 2; min-height: 48px; border: none; border-radius: 14px; background: #2c5bf0; color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
 .modalSaveBtn:hover:not(:disabled) { background: #1f4bdd; }
 .modalSaveBtn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.loginInputWrapper { display: flex; align-items: center; border: 1px solid #eceef4; border-radius: 14px; background: #f5f6fa; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
+.loginInputWrapper:hover { border-color: #c4cad8; }
+.loginInputWrapper:focus-within { border-color: #2c5bf0; background: #fff; box-shadow: 0 0 0 4px rgba(44,91,240,0.1); }
+.loginPrefix { padding: 0 0 0 14px; color: #a6aebf; font-size: 15px; font-weight: 500; user-select: none; }
+.loginInput { flex: 1; min-height: 48px; padding: 0 14px 0 4px; border: none; border-radius: 14px; outline: none; background: transparent; color: #141b2e; font: inherit; font-size: 15px; }
+.loginInput::placeholder { color: #a6aebf; }
+.loginInputWrapperError, .loginInputWrapperError:hover, .loginInputWrapperError:focus-within { border-color: #dc2626; }
+.loginInputWrapperError:focus-within { box-shadow: 0 0 0 4px rgba(220,38,38,0.1); }
