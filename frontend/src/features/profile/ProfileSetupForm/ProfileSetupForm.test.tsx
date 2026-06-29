@@ -15,7 +15,7 @@ vi.mock('../../../shared/lib/image', () => ({
   getCroppedImage: vi.fn(),
 }))
 
-vi.mock('../../../shared/context/UserProfileContext', () => ({
+vi.mock('../../../shared/context/useUserProfile', () => ({
   useUserProfile: () => ({
     setProfile: userProfileMock.setProfile,
   }),

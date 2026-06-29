@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import axios from 'axios'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
@@ -16,7 +16,13 @@ interface EditProfileModalProps {
   onSave: (updated: UserProfile) => void
 }
 
-export function EditProfileModal({ isOpen, profile, onClose, onSave }: EditProfileModalProps) {
+export function EditProfileModal(props: EditProfileModalProps) {
+  if (!props.isOpen) return null
+
+  return <EditProfileModalContent {...props} />
+}
+
+function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalProps) {
   const [displayName, setDisplayName] = useState(profile.displayName)
   const [editLogin,   setEditLogin]   = useState(profile.login?.replace(/^@/, '') ?? '')
   const [editStatus,  setEditStatus]  = useState(profile.status ?? '')
@@ -31,24 +37,6 @@ export function EditProfileModal({ isOpen, profile, onClose, onSave }: EditProfi
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [loginError, setLoginError] = useState('')
-
-  useEffect(() => {
-    if (isOpen) {
-      setDisplayName(profile.displayName)
-      setEditLogin(profile.login?.replace(/^@/, '') ?? '')
-      setEditStatus(profile.status ?? '')
-      setEditPhone(profile.phone ?? '')
-      setEditCity(profile.city ?? '')
-      setEditDept(profile.department ?? '')
-      setAvatarPreview(undefined)
-      setCroppedAvatarFile(null)
-      setHasTriedSubmit(false)
-      setFormError('')
-      setLoginError('')
-    }
-  }, [isOpen, profile])
-
-  if (!isOpen) return null
 
   const trimmedLogin    = editLogin.trim()
   const isNameInvalid   = hasTriedSubmit && !displayName.trim()

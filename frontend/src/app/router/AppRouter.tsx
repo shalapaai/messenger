@@ -4,7 +4,7 @@ import { RegisterPage } from '../../pages/RegisterPage'
 import { MessengerPage } from '../../pages/MessengerPage'
 import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
 import { hasAuthTokens } from '../../shared/lib/auth/authTokens'
-import { useUserProfile } from '../../shared/context/UserProfileContext'
+import { useUserProfile } from '../../shared/context/useUserProfile'
 
 function GuardedLayout() {
   const { profile, isLoading } = useUserProfile()

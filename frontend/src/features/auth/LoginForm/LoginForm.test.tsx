@@ -18,7 +18,7 @@ vi.mock('../../../shared/lib/auth/authTokens', () => ({
   saveAuthTokens: vi.fn(),
 }))
 
-vi.mock('../../../shared/context/UserProfileContext', () => ({
+vi.mock('../../../shared/context/useUserProfile', () => ({
   useUserProfile: () => ({
     refetchProfile: userProfileMock.refetchProfile,
   }),
