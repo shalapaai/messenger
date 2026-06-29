@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
-import { useUserProfile } from '../../../shared/context/UserProfileContext'
+import { useUserProfile } from '../../../shared/context/useUserProfile'
 import styles from './LoginForm.module.css'
 
 function LoginForm() {

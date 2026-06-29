@@ -5,7 +5,7 @@ import {
   CHATS, CHAT_META, GROUP_MEMBERS, USER_PROFILES,
   getInitialMessages, makeOlderBatch, getModalUserFromMsg,
 } from '../../shared/lib/messenger/stubData'
-import { useUserProfile } from '../../shared/context/UserProfileContext'
+import { useUserProfile } from '../../shared/context/useUserProfile'
 import { IconNav }          from '../../widgets/IconNav'
 import { ChatListPanel }    from '../../widgets/ChatListPanel'
 import { ChatWindow }       from '../../widgets/ChatWindow'
