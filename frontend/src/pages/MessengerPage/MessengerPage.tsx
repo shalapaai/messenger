@@ -121,7 +121,7 @@ const STUB_USER = {
   initials: 'АС', fullName: 'Анна Соколова', username: '@anna.sokolova',
   bio: 'Продакт-дизайнер в команде TravelLine. Веду проекты интерфейсов и обожаю осмысленные диалоги.',
   city: 'Москва', since: 'С марта 2023',
-  email: 'anna.sokolova@travelline.tech', phone: '+7 905 •• •• 12',
+  email: 'anna.sokolova@travelline.tech', phone: '+7 905 •• •• 12', department: 'Дизайн',
 }
 
 type Filter = 'all' | 'direct' | 'group'
@@ -215,6 +215,9 @@ export function MessengerPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [displayName, setDisplayName] = useState(STUB_USER.fullName)
   const [editStatus, setEditStatus] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [editCity, setEditCity] = useState('')
+  const [editDept, setEditDept] = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -321,6 +324,7 @@ export function MessengerPage() {
 
   function openEdit() {
     setDisplayName(STUB_USER.fullName); setEditStatus('')
+    setEditPhone(STUB_USER.phone); setEditCity(STUB_USER.city); setEditDept(STUB_USER.department)
     setAvatarPreview(undefined); setHasTriedSubmit(false); setFormError('')
     setEditOpen(true)
   }
@@ -589,6 +593,7 @@ export function MessengerPage() {
                 <div className={s.ppDetails}>
                   <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{STUB_USER.email}</span></div>
                   <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{STUB_USER.phone}</span></div>
+                  <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Отдел</span><span className={s.ppDetailValue}>{STUB_USER.department}</span></div>
                 </div>
                 <button className={s.ppEditBtn} onClick={openEdit}>✎ Изменить профиль</button>
                 <button className={s.ppLogoutBtn} onClick={handleLogout}>Выйти из аккаунта</button>
@@ -629,6 +634,18 @@ export function MessengerPage() {
                 <label className={s.modalField}>
                   <span className={s.modalFieldLabel}>Статус</span>
                   <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder="Например, на связи" />
+                </label>
+                <label className={s.modalField}>
+                  <span className={s.modalFieldLabel}>Телефон</span>
+                  <input className={s.modalFieldInput} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
+                </label>
+                <label className={s.modalField}>
+                  <span className={s.modalFieldLabel}>Город</span>
+                  <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder="Например, Москва" />
+                </label>
+                <label className={s.modalField}>
+                  <span className={s.modalFieldLabel}>Отдел</span>
+                  <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder="Например, Разработка" />
                 </label>
               </div>
               {formError && <p className={s.modalFormError}>{formError}</p>}

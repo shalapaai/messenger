@@ -11,5 +11,8 @@ public sealed record MeDto(
     string?   Login,
     string?   Status,
     string?   AvatarUrl,
-    DateTime  CreatedAt,
+    string?   Phone,
+    string?   City,
+    string?   Department,
+    DateTime  RegisteredAt,
     DateTime? UpdatedAt);

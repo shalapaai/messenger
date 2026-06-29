@@ -23,13 +23,15 @@ public sealed class UpdateUserProfileCommandHandler(
             profile.SetLogin(normalised);
         }
 
-        profile.Update(command.DisplayName, command.Status);
+        profile.Update(command.DisplayName, command.Status, command.Phone, command.City, command.Department);
         repository.Update(profile);
         await unitOfWork.SaveChangesAsync(ct);
 
         return Result.Success(new UpdatedProfileDto(
             profile.AuthUserId, profile.Email, profile.DisplayName,
             profile.Login is not null ? $"@{profile.Login}" : null,
-            profile.Status, profile.AvatarUrl, profile.CreatedAt, profile.UpdatedAt));
+            profile.Status, profile.AvatarUrl,
+            profile.Phone, profile.City, profile.Department,
+            profile.CreatedAt, profile.UpdatedAt));
     }
 }
