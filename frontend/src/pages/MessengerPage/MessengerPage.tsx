@@ -1,243 +1,64 @@
-import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback, type KeyboardEvent, type ChangeEvent } from 'react'
+import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import type { Filter, Message, ModalUser } from '../../shared/types/messenger'
+import {
+  CHATS, CHAT_META, GROUP_MEMBERS, STUB_USER,
+  getInitialMessages, makeOlderBatch, getModalUserFromMsg,
+} from '../../shared/lib/messenger/stubData'
+import { IconNav }          from '../../widgets/IconNav'
+import { ChatListPanel }    from '../../widgets/ChatListPanel'
+import { ChatWindow }       from '../../widgets/ChatWindow'
+import { ProfilePanel }     from '../../widgets/ProfilePanel'
+import { EditProfileModal } from '../../features/messenger/EditProfileModal'
+import { UserProfileModal } from '../../features/messenger/UserProfileModal'
+import { GroupModal }       from '../../features/messenger/GroupModal'
 import s from './MessengerPage.module.css'
-import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
-import { AvatarUpload } from '../../features/profile/AvatarUpload'
 
-/* ── Data ─────────────────────────────────────────────────────────────────── */
-
-interface Chat {
-  id: number; name: string; initials: string; color: string
-  preview: string; time: string; unread: string; online: boolean; group: boolean
-}
-
-const CHATS: Chat[] = [
-  { id: 1, name: 'Михаил Орлов',        initials: 'МО', color: '#2C5BF0', preview: 'Отправил макеты, посмотри когда будет время',  time: '12:48', unread: '3', online: true,  group: false },
-  { id: 2, name: 'Дизайн-команда',      initials: 'ДК', color: '#7A5BF0', preview: 'Катя: согласовали финальную палитру 🎨',       time: '12:31', unread: '8', online: false, group: true  },
-  { id: 3, name: 'Елена Власова',       initials: 'ЕВ', color: '#22B07D', preview: 'Спасибо! Жду созвон в 15:00',                  time: '11:05', unread: '',  online: true,  group: false },
-  { id: 4, name: 'TravelLine — Релизы', initials: 'TL', color: '#F0902C', preview: 'Денис: выкатили обновление 4.2 на прод',       time: '10:52', unread: '',  online: false, group: true  },
-  { id: 5, name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', preview: 'Ты: ок, договорились 👍',                     time: 'Вчера', unread: '',  online: false, group: false },
-  { id: 6, name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', preview: 'Ольга: накидайте идей к понедельнику',         time: 'Вчера', unread: '',  online: false, group: true  },
-  { id: 7, name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', preview: 'Голосовое сообщение · 0:42',                  time: 'Пн',    unread: '',  online: true,  group: false },
-  { id: 8, name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', preview: '',                                             time: '',      unread: '',  online: false, group: false },
-]
-
-interface Message {
-  id: number; text: string; own: boolean; senderId: string
-  senderName: string; senderInitials: string; senderColor: string; time: string; date: string
-}
-type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>
-
-const ME: Sender    = { own: true,  senderId: 'me',    senderName: 'Анна',   senderInitials: 'АС', senderColor: '#2C5BF0' }
-const KATYA: Sender = { own: false, senderId: 'katya', senderName: 'Катя',   senderInitials: 'КА', senderColor: '#E0556E' }
-const SLAVA: Sender = { own: false, senderId: 'slava', senderName: 'Слава',  senderInitials: 'СВ', senderColor: '#22B07D' }
-const MISHA: Sender = { own: false, senderId: 'misha', senderName: 'Михаил', senderInitials: 'МИ', senderColor: '#F0902C' }
-
-let _mid = 1
-const m = (sender: Sender, text: string, time: string, date = 'Сегодня'): Message =>
-  ({ id: _mid++, ...sender, text, time, date })
-
-function directMessages(other: Sender): Message[] {
-  return [
-    m(other, 'Привет! Отправил макеты на почту, посмотри когда будет время',      '12:30'),
-    m(ME,    'Привет! Гляну сегодня вечером',                                      '12:33'),
-    m(other, 'Окей, там три варианта главного экрана. Жду фидбека',                '12:34'),
-    m(other, 'Особенно посмотри второй — там новый подход к навигации',            '12:34'),
-    m(ME,    'Договорились, напишу как просмотрю',                                 '12:40'),
-    m(other, 'Кстати, встреча завтра в 10 всё ещё актуальна?',                     '12:41'),
-    m(ME,    'Да, всё в силе',                                                     '12:42'),
-    m(other, '👍',                                                                  '12:43'),
-    m(ME,    'Посмотрел макеты — второй вариант интересный. Давай обсудим завтра', '18:02'),
-    m(other, 'Отлично! До завтра 🙌',                                              '18:05'),
-  ]
-}
-
-const GROUP_MESSAGES_2: Message[] = [
-  m(KATYA, 'Всем привет! Нужно утвердить финальную палитру до конца дня 🎨',      '11:00'),
-  m(KATYA, 'Скинула три варианта в общую папку, посмотрите',                      '11:01'),
-  m(SLAVA, 'Видел, я за второй — он нейтральнее и лучше читается',                '11:08'),
-  m(MISHA, 'Согласен со Славой. Второй вариант отлично под бренд ложится',        '11:09'),
-  m(ME,    'Тоже второй. По-моему, там хорошо работает контраст',                 '11:14'),
-  m(KATYA, 'Отлично, все за второй 👏',                                            '11:20'),
-  m(KATYA, 'Тогда фиксируем, пришлю финальные файлы вечером',                     '11:20'),
-  m(SLAVA, '👍',                                                                   '11:21'),
-  m(MISHA, 'Ждём! И ещё — надо обсудить шрифты на следующей неделе',              '11:25'),
-  m(ME,    'Договорились, создам встречу на понедельник',                          '11:30'),
-  m(KATYA, 'Согласовали финальную палитру 🎉',                                     '12:31'),
-]
-
-const CHAT_META: Record<string, { name: string; initials: string; color: string; online: boolean; group: boolean }> = {
-  '1': { name: 'Михаил Орлов',        initials: 'МО', color: '#2C5BF0', online: true,  group: false },
-  '2': { name: 'Дизайн-команда',      initials: 'ДК', color: '#7A5BF0', online: false, group: true  },
-  '3': { name: 'Елена Власова',       initials: 'ЕВ', color: '#22B07D', online: true,  group: false },
-  '4': { name: 'TravelLine — Релизы', initials: 'TL', color: '#F0902C', online: false, group: true  },
-  '5': { name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', online: false, group: false },
-  '6': { name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', online: false, group: true  },
-  '7': { name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', online: true,  group: false },
-  '8': { name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', online: false, group: false },
-}
-
-interface GroupMember { name: string; initials: string; color: string; role: 'Администратор' | 'Участник'; online: boolean }
-
-const GROUP_MEMBERS: Record<string, GroupMember[]> = {
-  '2': [
-    { name: 'Катя Андреева',    initials: 'КА', color: '#E0556E', role: 'Администратор', online: true  },
-    { name: 'Слава Виноградов', initials: 'СВ', color: '#22B07D', role: 'Участник',       online: false },
-    { name: 'Михаил Иванов',    initials: 'МИ', color: '#F0902C', role: 'Участник',       online: true  },
-    { name: 'Анна Соколова',    initials: 'АС', color: '#2C5BF0', role: 'Участник',       online: true  },
-  ],
-  '4': [
-    { name: 'Денис Петров',    initials: 'ДП', color: '#2C5BF0', role: 'Администратор', online: false },
-    { name: 'Ирина Смирнова',  initials: 'ИС', color: '#7A5BF0', role: 'Участник',       online: true  },
-    { name: 'Алексей Фёдоров', initials: 'АФ', color: '#22B07D', role: 'Участник',       online: false },
-    { name: 'Анна Соколова',   initials: 'АС', color: '#2C5BF0', role: 'Участник',       online: true  },
-  ],
-  '6': [
-    { name: 'Ольга Козлова',  initials: 'ОК', color: '#2CA6C9', role: 'Администратор', online: false },
-    { name: 'Виктор Попов',   initials: 'ВП', color: '#E0556E', role: 'Участник',       online: false },
-    { name: 'Настя Лебедева', initials: 'НЛ', color: '#F0902C', role: 'Участник',       online: true  },
-    { name: 'Анна Соколова',  initials: 'АС', color: '#2C5BF0', role: 'Участник',       online: true  },
-  ],
-}
-
-const USER_PROFILES: Record<string, { phone: string; email: string; department: string }> = {
-  '1': { phone: '+7 912 345-67-89', email: 'mikhail.orlov@travelline.ru',   department: 'Дизайн'     },
-  '3': { phone: '+7 916 234-56-78', email: 'elena.vlasova@travelline.ru',   department: 'Разработка' },
-  '5': { phone: '+7 903 456-78-90', email: 'artem.kuznetsov@travelline.ru', department: 'Аналитика'  },
-  '7': { phone: '+7 925 567-89-01', email: 'sofya.belova@travelline.ru',    department: 'Маркетинг'  },
-}
-
-interface ModalUser { name: string; initials: string; color: string; online: boolean; phone?: string; email?: string; department?: string }
-
-const SENDER_DETAILS: Record<string, { phone: string; email: string; department: string; online: boolean }> = {
-  'katya': { phone: '+7 495 123-45-67', email: 'katya.andreeva@travelline.ru',   department: 'Дизайн',     online: true  },
-  'slava': { phone: '+7 499 234-56-78', email: 'slava.vinogradov@travelline.ru', department: 'Разработка', online: false },
-  'misha': { phone: '+7 916 345-67-89', email: 'mikhail.ivanov@travelline.ru',   department: 'Дизайн',     online: true  },
-}
-
-const ME_PROFILE: ModalUser = { name: 'Анна Соколова', initials: 'АС', color: '#2C5BF0', online: true, phone: '+7 905 •• •• 12', email: 'anna.sokolova@travelline.tech', department: 'Дизайн' }
-
-const STUB_USER = {
-  initials: 'АС', fullName: 'Анна Соколова', username: '@anna.sokolova',
-  bio: 'Продакт-дизайнер в команде TravelLine. Веду проекты интерфейсов и обожаю осмысленные диалоги.',
-  city: 'Москва', since: 'С марта 2023',
-  email: 'anna.sokolova@travelline.tech', phone: '+7 905 •• •• 12', department: 'Дизайн',
-}
-
-type Filter = 'all' | 'direct' | 'group'
-
-function getInitialMessages(chatId: string): Message[] {
-  if (chatId === '8') return []
-  if (chatId === '2') return GROUP_MESSAGES_2
-  const meta = CHAT_META[chatId] ?? CHAT_META['1']
-  const other: Sender = { own: false, senderId: `other-${chatId}`, senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color }
-  return directMessages(other)
-}
-
-let _hid = 10000
-function makeOlderBatch(chatId: string): Message[] {
-  if (chatId === '8') return []
-  const meta = CHAT_META[chatId]
-  if (!meta) return []
-  const h = (s: Sender, t: string, time: string): Message => ({ id: _hid++, ...s, text: t, time, date: 'Вчера' })
-  const other: Sender = { own: false, senderId: `hist-${chatId}`, senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color }
-  if (chatId === '2') {
-    return [
-      h(KATYA, 'Ребята, нужно определиться с направлением дизайна до конца недели', '09:00'),
-      h(SLAVA, 'Видел референсы — мне нравится минималистичный подход',              '09:20'),
-      h(MISHA, 'Согласен, меньше — лучше',                                           '09:22'),
-      h(ME,    'Поддерживаю. Пришлю несколько примеров сегодня',                     '09:40'),
-      h(KATYA, 'Отлично, ждём 👍',                                                   '09:45'),
-    ]
-  }
-  return [
-    h(other, 'Добрый день! Как продвигается работа?',          '09:00'),
-    h(ME,    'Всё по плану, заканчиваем основную часть',        '09:15'),
-    h(other, 'Хорошо, если что — пиши',                        '09:17'),
-    h(ME,    'Конечно, напишу к вечеру',                        '09:20'),
-    h(other, 'Жду 👌',                                          '09:21'),
-  ]
-}
-
-function getModalUserFromMsg(msg: Message): ModalUser {
-  if (msg.senderId === 'me') return ME_PROFILE
-  if (msg.senderId.startsWith('other-') || msg.senderId.startsWith('hist-')) {
-    const cid = msg.senderId.replace('other-', '').replace('hist-', '')
-    const cm = CHAT_META[cid] ?? CHAT_META['1']
-    return { name: cm.name, initials: cm.initials, color: cm.color, online: cm.online, ...USER_PROFILES[cid] }
-  }
-  const d = SENDER_DETAILS[msg.senderId]
-  return { name: msg.senderName, initials: msg.senderInitials, color: msg.senderColor, online: d?.online ?? false, phone: d?.phone, email: d?.email, department: d?.department }
-}
-
-/* ── Component ────────────────────────────────────────────────────────────── */
+const ME_SENDER = { own: true, senderId: 'me', senderName: 'Анна', senderInitials: 'АС', senderColor: '#2C5BF0' }
 
 export function MessengerPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const [filter, setFilter] = useState<Filter>('all')
-  const [query, setQuery] = useState('')
+  const [filter, setFilter]   = useState<Filter>('all')
+  const [query, setQuery]     = useState('')
 
   const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>(() =>
     Object.fromEntries(Object.keys(CHAT_META).map(cid => [cid, getInitialMessages(cid)]))
   )
   const messages = useMemo(() => id ? (chatMessages[id] ?? []) : [], [chatMessages, id])
 
-  const [text, setText] = useState('')
-  const [modalUser, setModalUser] = useState<ModalUser | null>(null)
+  const [typingChats,   setTypingChats]   = useState<Record<string, boolean>>({})
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyLoaded,  setHistoryLoaded]  = useState<Record<string, boolean>>({ '8': true })
+  const [restoreSignal,  setRestoreSignal]  = useState(0)
+
+  const [profileOpen,    setProfileOpen]    = useState(false)
+  const [editOpen,       setEditOpen]       = useState(false)
+  const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
 
-  // Infinite scroll state
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [historyLoaded, setHistoryLoaded] = useState<Record<string, boolean>>({ '8': true })
-  const [restoreSignal, setRestoreSignal] = useState(0)
+  const bottomRef      = useRef<HTMLDivElement>(null)
+  const messagesRef    = useRef<HTMLDivElement>(null)
+  const topSentinelRef = useRef<HTMLDivElement>(null)
 
-  // Typing indicator state
-  const [typingChats, setTypingChats] = useState<Record<string, boolean>>({})
-
-  const bottomRef    = useRef<HTMLDivElement>(null)
-  const textareaRef  = useRef<HTMLTextAreaElement>(null)
-  const messagesRef  = useRef<HTMLDivElement>(null)
-  const topSentinel  = useRef<HTMLDivElement>(null)
-
-  // Scroll control flags
-  const scrollToBottom  = useRef(true)
-  const smoothScroll    = useRef(false)
+  const scrollToBottom   = useRef(true)
+  const smoothScroll     = useRef(false)
   const savedScrollHeight = useRef(0)
   const savedScrollTop    = useRef(0)
+  const typingTimers     = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  // Typing timers — stable ref so cleanup always works
-  const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
-
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
-  const [displayName, setDisplayName] = useState(STUB_USER.fullName)
-  const [editStatus, setEditStatus] = useState('')
-  const [editPhone, setEditPhone] = useState('')
-  const [editCity, setEditCity] = useState('')
-  const [editDept, setEditDept] = useState('')
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined)
-  const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [formError, setFormError] = useState('')
-  const isNameInvalid = hasTriedSubmit && !displayName.trim()
-
-  // When the active chat changes, flag next messages update to scroll to bottom instantly
   useEffect(() => {
     scrollToBottom.current = true
     smoothScroll.current   = false
   }, [id])
 
-  // Auto-scroll to bottom (after send or chat change), skip after history load
   useEffect(() => {
     if (!scrollToBottom.current) return
     bottomRef.current?.scrollIntoView({ behavior: smoothScroll.current ? 'smooth' : 'instant' })
     scrollToBottom.current = false
   }, [messages])
 
-  // Restore scroll position synchronously after prepending older messages
   useLayoutEffect(() => {
     if (restoreSignal === 0 || !messagesRef.current) return
     messagesRef.current.scrollTop =
@@ -246,10 +67,7 @@ export function MessengerPage() {
 
   const loadMoreHistory = useCallback(() => {
     if (!id || loadingHistory || historyLoaded[id]) return
-    const el = messagesRef.current
-    if (!el) return
     setLoadingHistory(true)
-
     setTimeout(() => {
       const batch = makeOlderBatch(id)
       if (batch.length > 0 && messagesRef.current) {
@@ -263,12 +81,10 @@ export function MessengerPage() {
     }, 700)
   }, [id, loadingHistory, historyLoaded])
 
-  // IntersectionObserver — fires when the top sentinel scrolls into view
   useEffect(() => {
     const el       = messagesRef.current
-    const sentinel = topSentinel.current
+    const sentinel = topSentinelRef.current
     if (!el || !sentinel || !id || messages.length === 0 || historyLoaded[id]) return
-
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) loadMoreHistory() },
       { root: el, threshold: 0 }
@@ -277,7 +93,22 @@ export function MessengerPage() {
     return () => observer.disconnect()
   }, [id, messages.length, historyLoaded, loadMoreHistory])
 
-  // Typing indicator: show remote user typing after local user sends a message
+  useEffect(() => () => {
+    Object.values(typingTimers.current).forEach(clearTimeout)
+  }, [])
+
+  useEffect(() => {
+    const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen
+    if (!anyOpen) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [modalUser, groupModalOpen, editOpen, profileOpen])
+
   function triggerTypingIndicator(chatId: string) {
     clearTimeout(typingTimers.current[`${chatId}:on`])
     clearTimeout(typingTimers.current[`${chatId}:off`])
@@ -289,86 +120,20 @@ export function MessengerPage() {
     }, 900)
   }
 
-  useEffect(() => () => {
-    Object.values(typingTimers.current).forEach(clearTimeout)
-  }, [])
-
-  useEffect(() => {
-    if (!modalUser && !groupModalOpen && !editOpen && !avatarMenuOpen) return
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') { setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setAvatarMenuOpen(false) }
+  function handleSend(text: string) {
+    if (!id) return
+    const newMsg: Message = {
+      ...ME_SENDER, id: Date.now(), text,
+      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+      date: 'Сегодня',
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [modalUser, groupModalOpen, editOpen, avatarMenuOpen])
-
-  useEffect(() => () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }, [avatarPreview])
-
-  function handleLogout() { clearAuthTokens(); navigate('/login') }
-
-  function send() {
-    const trimmed = text.trim()
-    if (!trimmed || !id) return
-    const newMsg: Message = { ...ME, id: Date.now(), text: trimmed, time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }), date: 'Сегодня' }
     scrollToBottom.current = true
     smoothScroll.current   = true
     setChatMessages(prev => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }))
-    setText('')
-    textareaRef.current?.focus()
-    if (!(CHAT_META[id]?.group)) triggerTypingIndicator(id)
+    if (!CHAT_META[id]?.group) triggerTypingIndicator(id)
   }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
-  }
-
-  function openEdit() {
-    setDisplayName(STUB_USER.fullName); setEditStatus('')
-    setEditPhone(STUB_USER.phone); setEditCity(STUB_USER.city); setEditDept(STUB_USER.department)
-    setAvatarPreview(undefined); setHasTriedSubmit(false); setFormError('')
-    setEditOpen(true)
-  }
-
-  async function handleEditSubmit(e: { preventDefault(): void }) {
-    e.preventDefault()
-    setHasTriedSubmit(true)
-    if (!displayName.trim()) return
-    setFormError(''); setIsLoading(true)
-    try { setEditOpen(false) }
-    catch { setFormError('Не удалось сохранить профиль. Попробуйте ещё раз.') }
-    finally { setIsLoading(false) }
-  }
-
-  const counts = { all: CHATS.length, direct: CHATS.filter(c => !c.group).length, group: CHATS.filter(c => c.group).length }
-  const q = query.trim().toLowerCase()
-  const visibleChats = CHATS
-    .filter(c => filter === 'all' ? true : filter === 'group' ? c.group : !c.group)
-    .filter(c => !q || c.name.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
-
-  const TABS: { id: Filter; label: string }[] = [
-    { id: 'all', label: 'Все' }, { id: 'direct', label: 'Личные' }, { id: 'group', label: 'Группы' },
-  ]
 
   const meta = id ? (CHAT_META[id] ?? CHAT_META['1']) : null
-
-  type RenderedItem =
-    | { type: 'sep'; label: string }
-    | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
-
-  const rendered: RenderedItem[] = []
-  if (id && meta) {
-    let lastDate = ''
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i], prev = messages[i - 1], next = messages[i + 1]
-      if (msg.date !== lastDate) { rendered.push({ type: 'sep', label: msg.date }); lastDate = msg.date }
-      rendered.push({
-        type: 'msg', msg,
-        showAvatar: !next || next.senderId !== msg.senderId,
-        showName: !msg.own && meta.group && (!prev || prev.senderId !== msg.senderId),
-        senderSwitch: !!prev && prev.senderId !== msg.senderId,
-      })
-    }
-  }
 
   return (
     <div className={s.root}>
@@ -382,168 +147,37 @@ export function MessengerPage() {
       </header>
 
       <div className={s.body}>
-        {/* Column 1: icon nav */}
-        <nav className={s.iconNav}>
-          <div className={s.iconNavLogo}>TL</div>
-          <div className={s.iconNavBottom}>
-            <div className={s.avatarMenuWrap}>
-              {avatarMenuOpen && (
-                <div className={s.avatarMenu}>
-                  <button className={s.avatarMenuItem} onClick={() => { setAvatarMenuOpen(false); setProfileOpen(true) }}>Открыть профиль</button>
-                  <button className={`${s.avatarMenuItem} ${s.avatarMenuItemDanger}`} onClick={() => { setAvatarMenuOpen(false); handleLogout() }}>Выйти</button>
-                </div>
-              )}
-              <button className={s.userAvatarBtn} onClick={() => setAvatarMenuOpen(v => !v)}>АС</button>
-            </div>
-          </div>
-        </nav>
+        <IconNav onProfileOpen={() => setProfileOpen(true)} />
 
-        {/* Column 2: chat list */}
-        <aside className={`${s.chatListPanel} ${id ? s.chatListPanelHidden : ''}`}>
-          <div className={s.clHeader}>
-            <h2 className={s.clTitle}>Сообщения</h2>
-            <button className={s.clNewBtn} onClick={() => alert('Новый чат')}>＋</button>
-          </div>
-          <div className={s.clSearch}>
-            <span className={s.clSearchIcon}>🔍</span>
-            <input className={s.clSearchInput} placeholder="Поиск" value={query} onChange={e => setQuery(e.target.value)} />
-          </div>
-          <div className={s.clTabs}>
-            {TABS.map(t => (
-              <button key={t.id} className={`${s.clTab} ${filter === t.id ? s.clTabActive : ''}`} onClick={() => setFilter(t.id)}>
-                {t.label}
-                <span className={`${s.clTabCount} ${filter === t.id ? s.clTabCountActive : ''}`}>{counts[t.id]}</span>
-              </button>
-            ))}
-          </div>
-          <div className={s.clList}>
-            {visibleChats.length === 0
-              ? <div className={s.clEmpty}>Ничего не найдено</div>
-              : visibleChats.map(chat => (
-                <div
-                  key={chat.id}
-                  className={`${s.clRow} ${id === String(chat.id) ? s.clRowActive : ''}`}
-                  onClick={() => navigate(`/chats/${chat.id}`)}
-                >
-                  <div className={`${s.clAvatar} ${chat.group ? s.clAvatarGroup : ''}`} style={{ background: chat.color }}>
-                    {chat.initials}
-                    {chat.online && <span className={s.clOnlineDot} />}
-                  </div>
-                  <div className={s.clInfo}>
-                    <div className={s.clNameRow}>
-                      <span className={s.clName}>{chat.name}</span>
-                      {chat.group && <span className={s.clGroupBadge}>ГРУППА</span>}
-                    </div>
-                    <div className={s.clPreview}>{chat.preview || <span className={s.clPreviewEmpty}>Нет сообщений</span>}</div>
-                  </div>
-                  <div className={s.clMeta}>
-                    <span className={s.clTime}>{chat.time}</span>
-                    {chat.unread && <span className={s.clUnread}>{chat.unread}</span>}
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-        </aside>
+        <ChatListPanel
+          chats={CHATS}
+          activeId={id}
+          filter={filter}
+          query={query}
+          onFilterChange={setFilter}
+          onQueryChange={setQuery}
+          onSelect={cid => navigate(`/chats/${cid}`)}
+        />
 
-        {/* Column 3: content */}
         <main className={`${s.content}${!id ? ` ${s.contentMobileHidden}` : ''}`}>
           {id && meta ? (
-            <>
-              <div className={s.chatHeader}>
-                <button
-                  type="button" className={s.chatHeaderTrigger}
-                  onClick={() => meta.group
-                    ? setGroupModalOpen(true)
-                    : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
-                  }
-                >
-                  <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={{ background: meta.color }}>{meta.initials}</div>
-                  <div className={s.chatHeaderInfo}>
-                    <div className={s.chatHeaderName}>{meta.name}</div>
-                    <div className={s.chatHeaderSub}>
-                      {typingChats[id] && !meta.group
-                        ? <span className={s.typingText}>печатает...</span>
-                        : meta.online
-                          ? <><span className={s.chatHeaderOnlineDot} />в сети</>
-                          : meta.group
-                            ? `${(GROUP_MEMBERS[id] ?? []).length} участника`
-                            : 'был(а) недавно'
-                      }
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              {messages.length === 0 ? (
-                <div className={s.emptyChat}>
-                  <div className={s.emptyChatIcon}>💬</div>
-                  <h3 className={s.emptyChatTitle}>Начните общение</h3>
-                  <p className={s.emptyChatSub}>Напишите первое сообщение {meta.name.split(' ')[0]} 👋</p>
-                </div>
-              ) : (
-                <div className={s.messages} ref={messagesRef}>
-                  {/* Sentinel for IntersectionObserver — sits above all messages */}
-                  <div ref={topSentinel} />
-
-                  {loadingHistory && (
-                    <div className={s.historyLoader}>
-                      <div className={s.historySpinner} />
-                    </div>
-                  )}
-
-                  {!loadingHistory && historyLoaded[id] && (
-                    <div className={s.historyEnd}>Начало переписки</div>
-                  )}
-
-                  {rendered.map((item, i) =>
-                    item.type === 'sep' ? (
-                      <div key={`sep-${i}`} className={s.dateSep}><span className={s.dateSepLabel}>{item.label}</span></div>
-                    ) : (
-                      <div key={item.msg.id}>
-                        {item.showName && (
-                          <div className={`${s.senderName} ${s.senderNameClickable}`} style={{ color: item.msg.senderColor }} onClick={() => setModalUser(getModalUserFromMsg(item.msg))}>
-                            {item.msg.senderName}
-                          </div>
-                        )}
-                        <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
-                          <div
-                            className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
-                            style={{ background: item.msg.senderColor }}
-                            onClick={() => item.showAvatar ? setModalUser(getModalUserFromMsg(item.msg)) : undefined}
-                          >{item.msg.senderInitials}</div>
-                          <div className={`${s.bubble} ${item.msg.own ? s.bubbleOwn : s.bubbleOther} ${item.showAvatar ? s.bubbleTail : ''}`}>{item.msg.text}</div>
-                        </div>
-                        <span className={s.msgTime}>{item.msg.time}</span>
-                      </div>
-                    )
-                  )}
-
-                  {/* Typing indicator bubble */}
-                  {typingChats[id] && !meta.group && (
-                    <div className={`${s.msgRow} ${s.typingRow}`}>
-                      <div className={s.msgAvatar} style={{ background: meta.color }}>{meta.initials}</div>
-                      <div className={`${s.bubble} ${s.bubbleOther} ${s.bubbleTail}`}>
-                        <span className={s.typingDots}>
-                          <span className={s.typingDot} />
-                          <span className={s.typingDot} />
-                          <span className={s.typingDot} />
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div ref={bottomRef} />
-                </div>
-              )}
-
-              <div className={s.inputBar}>
-                <textarea ref={textareaRef} className={s.textInput} placeholder="Написать сообщение…" value={text} rows={1} onChange={e => setText(e.target.value)} onKeyDown={handleKeyDown} />
-                <button className={s.sendBtn} disabled={!text.trim()} onClick={send}>
-                  <svg className={s.sendIcon} viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                </button>
-              </div>
-            </>
+            <ChatWindow
+              chatId={id}
+              meta={meta}
+              messages={messages}
+              typingChats={typingChats}
+              loadingHistory={loadingHistory}
+              historyLoaded={!!historyLoaded[id]}
+              messagesRef={messagesRef}
+              topSentinelRef={topSentinelRef}
+              bottomRef={bottomRef}
+              onSend={handleSend}
+              onHeaderClick={() => meta.group
+                ? setGroupModalOpen(true)
+                : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online })
+              }
+              onAvatarClick={msg => setModalUser(getModalUserFromMsg(msg))}
+            />
           ) : (
             <div className={s.placeholder}>
               <div className={s.placeholderIcon}>💬</div>
@@ -566,150 +200,34 @@ export function MessengerPage() {
         </button>
       </nav>
 
-      {avatarMenuOpen && <div className={s.avatarMenuBg} onClick={() => setAvatarMenuOpen(false)} />}
+      <ProfilePanel
+        isOpen={profileOpen}
+        stubUser={STUB_USER}
+        onClose={() => setProfileOpen(false)}
+        onEdit={() => { setProfileOpen(false); setEditOpen(true) }}
+        onChats={() => navigate('/chats')}
+      />
 
-      {/* Profile panel */}
-      {profileOpen && (
-        <>
-          <div className={s.panelBg} onClick={() => setProfileOpen(false)} />
-          <div className={s.profilePanel}>
-            <div className={s.ppMobileBar}>
-              <button type="button" className={s.topBarBack} onClick={() => setProfileOpen(false)}>‹</button>
-            </div>
-            <button type="button" className={s.ppClose} onClick={() => setProfileOpen(false)}>✕</button>
-            <div className={s.ppScrollArea}>
-              <div className={s.ppCover} />
-              <div className={s.ppBody}>
-                <div className={s.ppAvatar}>{STUB_USER.initials}</div>
-                <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />В сети</div>
-                <h2 className={s.ppName}>{STUB_USER.fullName}</h2>
-                <div className={s.ppUsername}>{STUB_USER.username}</div>
-                <p className={s.ppBio}>{STUB_USER.bio}</p>
-                <div className={s.ppTags}>
-                  <span className={s.ppTag}>📍 {STUB_USER.city}</span>
-                  <span className={s.ppTag}>📅 {STUB_USER.since}</span>
-                </div>
-                <div className={s.ppDivider} />
-                <div className={s.ppDetails}>
-                  <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{STUB_USER.email}</span></div>
-                  <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{STUB_USER.phone}</span></div>
-                  <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Отдел</span><span className={s.ppDetailValue}>{STUB_USER.department}</span></div>
-                </div>
-                <button className={s.ppEditBtn} onClick={openEdit}>✎ Изменить профиль</button>
-                <button className={s.ppLogoutBtn} onClick={handleLogout}>Выйти из аккаунта</button>
-              </div>
-            </div>
-            <nav className={s.ppBottomNav}>
-              <button className={s.bnItem} onClick={() => setProfileOpen(false)}>
-                <span className={s.bnGlyph}>💬</span>
-                <span>Чаты</span>
-              </button>
-              <button className={`${s.bnItem} ${s.bnItemActive}`}>
-                <span className={s.bnAvatarMini}>АС</span>
-                <span>Профиль</span>
-              </button>
-            </nav>
-          </div>
-        </>
-      )}
+      <EditProfileModal
+        isOpen={editOpen}
+        stubUser={STUB_USER}
+        onClose={() => setEditOpen(false)}
+      />
 
-      {/* Edit profile modal */}
-      {editOpen && (
-        <div className={s.modalOverlay} onClick={() => setEditOpen(false)}>
-          <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
-            <div className={s.modalHeader}>
-              <span className={s.modalTitle}>Редактирование профиля</span>
-              <button type="button" className={s.modalClose} onClick={() => setEditOpen(false)}>✕</button>
-            </div>
-            <form onSubmit={handleEditSubmit} className={s.modalForm} noValidate>
-              <div className={s.modalAvatarBlock}>
-                <AvatarUpload name={displayName} avatarPreview={avatarPreview} onChange={f => setAvatarPreview(URL.createObjectURL(f))} />
-              </div>
-              <div className={s.modalFields}>
-                <label className={s.modalField}>
-                  <span className={s.modalFieldLabel}>Имя пользователя <span className={s.required}>*</span></span>
-                  <input className={`${s.modalFieldInput} ${isNameInvalid ? s.modalFieldInputError : ''}`} type="text" value={displayName} onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)} placeholder="Например, Николай" />
-                  {isNameInvalid && <span className={s.modalFieldError}>Введите имя пользователя</span>}
-                </label>
-                <label className={s.modalField}>
-                  <span className={s.modalFieldLabel}>Статус</span>
-                  <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder="Например, на связи" />
-                </label>
-                <label className={s.modalField}>
-                  <span className={s.modalFieldLabel}>Телефон</span>
-                  <input className={s.modalFieldInput} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
-                </label>
-                <label className={s.modalField}>
-                  <span className={s.modalFieldLabel}>Город</span>
-                  <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder="Например, Москва" />
-                </label>
-                <label className={s.modalField}>
-                  <span className={s.modalFieldLabel}>Отдел</span>
-                  <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder="Например, Разработка" />
-                </label>
-              </div>
-              {formError && <p className={s.modalFormError}>{formError}</p>}
-              <div className={s.modalActions}>
-                <button type="button" className={s.modalCancelBtn} onClick={() => setEditOpen(false)}>Отмена</button>
-                <button type="submit" className={s.modalSaveBtn} disabled={isLoading}>{isLoading ? 'Сохраняем...' : 'Сохранить'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UserProfileModal
+        user={modalUser}
+        onClose={() => setModalUser(null)}
+      />
 
-      {/* User profile modal */}
-      {modalUser && (
-        <div className={s.modalOverlay} onClick={() => setModalUser(null)}>
-          <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
-            <button type="button" className={s.modalClose} onClick={() => setModalUser(null)}>✕</button>
-            <div className={s.umAvatar} style={{ background: modalUser.color }}>{modalUser.initials}</div>
-            <div className={s.umName}>{modalUser.name}</div>
-            <div className={s.umStatus}>{modalUser.online ? <><span className={s.umStatusDot} />в сети</> : 'был(а) недавно'}</div>
-            {(modalUser.phone || modalUser.email || modalUser.department) && (
-              <>
-                <div className={s.umDivider} />
-                <div className={s.umSection}>Контакт</div>
-                {modalUser.phone      && <div className={s.umField}><span className={s.umFieldLabel}>Телефон</span><span className={s.umFieldValue}>{modalUser.phone}</span></div>}
-                {modalUser.email      && <div className={s.umField}><span className={s.umFieldLabel}>Email</span><span className={s.umFieldValue}>{modalUser.email}</span></div>}
-                {modalUser.department && <div className={s.umField}><span className={s.umFieldLabel}>Отдел</span><span className={s.umFieldValue}>{modalUser.department}</span></div>}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Group modal */}
-      {groupModalOpen && meta && (
-        <div className={s.modalOverlay} onClick={() => setGroupModalOpen(false)}>
-          <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
-            <button type="button" className={s.modalClose} onClick={() => setGroupModalOpen(false)}>✕</button>
-            <div className={`${s.umAvatar} ${s.umAvatarGroup}`} style={{ background: meta.color }}>{meta.initials}</div>
-            <div className={s.umName}>{meta.name}</div>
-            <div className={s.umStatus}>{(GROUP_MEMBERS[id!] ?? []).length} участника</div>
-            <div className={s.umDivider} />
-            <div className={s.umSectionRow}>
-              <span className={s.umSection}>Участники ({(GROUP_MEMBERS[id!] ?? []).length})</span>
-              <button type="button" className={s.umAddMemberBtn} onClick={() => alert('Добавить участника')} title="Добавить участника">+</button>
-            </div>
-            <div className={s.umMemberList}>
-              {(GROUP_MEMBERS[id!] ?? []).map(member => (
-                <div key={member.name} className={`${s.umMemberRow} ${s.umMemberRowClickable}`} onClick={() => { setGroupModalOpen(false); setModalUser({ name: member.name, initials: member.initials, color: member.color, online: member.online }) }}>
-                  <div className={s.umMemberAvatarWrap}>
-                    <div className={s.umMemberAvatar} style={{ background: member.color }}>{member.initials}</div>
-                    {member.online && <span className={s.umMemberOnlineDot} />}
-                  </div>
-                  <span className={s.umMemberName}>{member.name}</span>
-                  <span className={`${s.umRoleBadge} ${member.role === 'Администратор' ? s.umRoleBadgeAdmin : ''}`}>{member.role}</span>
-                </div>
-              ))}
-            </div>
-            <div className={s.umGroupActions}>
-              <button type="button" className={s.umEditGroupBtn} onClick={() => alert('Изменить группу')}>Изменить группу</button>
-              <button type="button" className={s.umLeaveGroupBtn} onClick={() => alert('Выйти из группы')}>Выйти из группы</button>
-            </div>
-          </div>
-        </div>
+      {meta && (
+        <GroupModal
+          isOpen={groupModalOpen}
+          chatId={id!}
+          meta={meta}
+          members={GROUP_MEMBERS[id!] ?? []}
+          onClose={() => setGroupModalOpen(false)}
+          onMemberClick={user => { setGroupModalOpen(false); setModalUser(user) }}
+        />
       )}
     </div>
   )
