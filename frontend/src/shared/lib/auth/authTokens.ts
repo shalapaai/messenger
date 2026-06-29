@@ -27,3 +27,20 @@ export function clearAuthTokens() {
 export function hasAuthTokens() {
   return Boolean(getAccessToken() || getRefreshToken())
 }
+
+export function getMyUserId(): string | null {
+  const token = getAccessToken()
+  if (!token) return null
+  try {
+    // JWT использует base64url: заменяем - → + и _ → / перед atob
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(b64))
+    // .NET ClaimTypes.NameIdentifier → "nameid" в JWT (или полный URI)
+    return payload.nameid
+      ?? payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']
+      ?? payload.sub
+      ?? null
+  } catch {
+    return null
+  }
+}

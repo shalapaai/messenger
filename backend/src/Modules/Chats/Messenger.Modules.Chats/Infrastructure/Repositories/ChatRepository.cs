@@ -25,4 +25,6 @@ public sealed class ChatRepository(ChatsDbContext dbContext) : IChatRepository
             .ToListAsync(ct);
 
     public void Add(Chat chat) => dbContext.Chats.Add(chat);
+
+    public void Delete(Chat chat) => dbContext.Chats.Remove(chat);
 }

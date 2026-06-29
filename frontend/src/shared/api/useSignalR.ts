@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { signalR, type IncomingMessage, type MessageEdited, type TypingEvent, type UserOnlineEvent } from './signalrClient'
+import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting'
+export type { ConnectionStatus }
 
 interface UseSignalROptions {
   chatId?: string
@@ -13,28 +14,17 @@ interface UseSignalROptions {
 }
 
 export function useSignalR(options: UseSignalROptions = {}) {
-  const [status, setStatus] = useState<ConnectionStatus>('disconnected')
+  const status = useConnectionStore((s) => s.status)
   const optionsRef = useRef(options)
   useLayoutEffect(() => { optionsRef.current = options })
-
-  // ── Подключение при монтировании ──────────────────────────────────────────
-  useEffect(() => {
-    signalR.connect().then(() => setStatus('connected')).catch(console.error)
-
-    signalR.onReconnecting(() => setStatus('reconnecting'))
-    signalR.onReconnected(() => setStatus('connected'))
-    signalR.onDisconnected(() => setStatus('disconnected'))
-
-    return () => { signalR.disconnect() }
-  }, [])
 
   // ── Подписка на чат при смене chatId ─────────────────────────────────────
   useEffect(() => {
     const { chatId } = optionsRef.current
     if (!chatId || !signalR.isConnected) return
 
-    signalR.joinChat(chatId)
-    return () => { signalR.leaveChat(chatId) }
+    signalR.joinChat(chatId).catch(() => {})
+    return () => { signalR.leaveChat(chatId).catch(() => {}) }
   }, [options.chatId, status])
 
   // ── Подписки на события ───────────────────────────────────────────────────

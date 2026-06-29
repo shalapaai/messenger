@@ -18,6 +18,7 @@ interface ChatWindowProps {
   topSentinelRef: RefObject<HTMLDivElement | null>
   bottomRef: RefObject<HTMLDivElement | null>
   onSend: (text: string) => void
+  onRetry: (msg: Message) => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
 }
@@ -25,7 +26,7 @@ interface ChatWindowProps {
 export function ChatWindow({
   chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onHeaderClick, onAvatarClick,
+  onSend, onRetry, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -123,11 +124,26 @@ export function ChatWindow({
                   >
                     {item.msg.senderInitials}
                   </div>
-                  <div className={`${s.bubble} ${item.msg.own ? s.bubbleOwn : s.bubbleOther} ${item.showAvatar ? s.bubbleTail : ''}`}>
+                  <div className={[
+                    s.bubble,
+                    item.msg.own ? s.bubbleOwn : s.bubbleOther,
+                    item.showAvatar ? s.bubbleTail : '',
+                    item.msg.status === 'pending' ? s.bubblePending : '',
+                    item.msg.status === 'failed'  ? s.bubbleFailed  : '',
+                  ].join(' ')}>
                     {item.msg.text}
                   </div>
                 </div>
-                <span className={s.msgTime}>{item.msg.time}</span>
+                <span className={s.msgTime}>
+                  {item.msg.own && item.msg.status === 'pending' && <span className={`${s.msgStatusIcon} ${s.msgStatusPending}`}>●</span>}
+                  {item.msg.own && item.msg.status === 'sent'    && <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>}
+                  {item.msg.time}
+                </span>
+                {item.msg.status === 'failed' && (
+                  <button className={s.msgRetry} onClick={() => onRetry(item.msg)}>
+                    ⚠ Не отправлено · Повторить
+                  </button>
+                )}
               </div>
             )
           )}

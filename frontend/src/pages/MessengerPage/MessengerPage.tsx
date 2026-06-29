@@ -2,9 +2,14 @@ import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback } fr
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, Message, ModalUser } from '../../shared/types/messenger'
 import {
-  CHATS, CHAT_META, GROUP_MEMBERS, USER_PROFILES, STUB_USER,
+  CHAT_META, GROUP_MEMBERS, USER_PROFILES, STUB_USER,
   getInitialMessages, makeOlderBatch, getModalUserFromMsg,
 } from '../../shared/lib/messenger/stubData'
+import { useSignalR } from '../../shared/api/useSignalR'
+import { useChatsStore } from '../../shared/api/chatsStore'
+import { fetchMessages } from '../../shared/api/chatsApi'
+import { getMyUserId } from '../../shared/lib/auth/authTokens'
+import type { IncomingMessage } from '../../shared/api/signalrClient'
 import { IconNav }          from '../../widgets/IconNav'
 import { ChatListPanel }    from '../../widgets/ChatListPanel'
 import { ChatWindow }       from '../../widgets/ChatWindow'
@@ -23,9 +28,7 @@ export function MessengerPage() {
   const [filter, setFilter]   = useState<Filter>('all')
   const [query, setQuery]     = useState('')
 
-  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>(() =>
-    Object.fromEntries(Object.keys(CHAT_META).map(cid => [cid, getInitialMessages(cid)]))
-  )
+  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({})
   const messages = useMemo(() => id ? (chatMessages[id] ?? []) : [], [chatMessages, id])
 
   const [typingChats,   setTypingChats]   = useState<Record<string, boolean>>({})
@@ -41,6 +44,37 @@ export function MessengerPage() {
   const bottomRef      = useRef<HTMLDivElement>(null)
   const messagesRef    = useRef<HTMLDivElement>(null)
   const topSentinelRef = useRef<HTMLDivElement>(null)
+  // ── Zustand чаты ─────────────────────────────────────────────────────────
+  const chats       = useChatsStore((s) => s.chats)
+  const loadChats   = useChatsStore((s) => s.loadChats)
+  const resetUnread = useChatsStore((s) => s.resetUnread)
+
+  // загружаем чаты из API при монтировании
+  useEffect(() => { loadChats().catch(console.error) }, [loadChats])
+
+  // ── SignalR: входящие сообщения ───────────────────────────────────────────
+  const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
+    if (msg.chatId !== id) return
+    if (msg.senderId === getMyUserId()) return
+    setChatMessages(prev => ({
+      ...prev,
+      [msg.chatId]: [...(prev[msg.chatId] ?? []), {
+        id: Date.now(),
+        text: msg.content,
+        own: false,
+        senderId: msg.senderId,
+        senderName: msg.senderId,
+        senderInitials: msg.senderId.slice(0, 2).toUpperCase(),
+        senderColor: '#888888',
+        time: new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+        date: 'Сегодня',
+      }],
+    }))
+    scrollToBottom.current = true
+    smoothScroll.current   = true
+  }, [id])
+
+  const { sendMessage: signalRSend } = useSignalR({ chatId: id, onMessage: handleIncomingMessage })
 
   const scrollToBottom   = useRef(true)
   const smoothScroll     = useRef(false)
@@ -51,7 +85,18 @@ export function MessengerPage() {
   useEffect(() => {
     scrollToBottom.current = true
     smoothScroll.current   = false
-  }, [id])
+    if (!id) return
+    resetUnread(id)
+    // загружаем сообщения из API если ещё не загружены
+    if (!chatMessages[id]) {
+      fetchMessages(id).then(({ messages }) => {
+        setChatMessages(prev => ({ ...prev, [id]: messages }))
+      }).catch(() => {
+        // fallback на моковые данные если API недоступен
+        setChatMessages(prev => ({ ...prev, [id]: getInitialMessages(id) }))
+      })
+    }
+  }, [id, resetUnread])
 
   useEffect(() => {
     if (!scrollToBottom.current) return
@@ -120,17 +165,50 @@ export function MessengerPage() {
     }, 900)
   }
 
+  async function doSend(chatId: string, text: string, tempId: number) {
+    try {
+      const { messageId } = await signalRSend(text)
+      setChatMessages(prev => ({
+        ...prev,
+        [chatId]: (prev[chatId] ?? []).map(m =>
+          m.id === tempId ? { ...m, status: 'sent' as const, messageId } : m
+        ),
+      }))
+    } catch {
+      setChatMessages(prev => ({
+        ...prev,
+        [chatId]: (prev[chatId] ?? []).map(m =>
+          m.id === tempId ? { ...m, status: 'failed' as const } : m
+        ),
+      }))
+    }
+  }
+
   function handleSend(text: string) {
     if (!id) return
+    const tempId = Date.now()
     const newMsg: Message = {
-      ...ME_SENDER, id: Date.now(), text,
+      ...ME_SENDER, id: tempId, text,
       time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
       date: 'Сегодня',
+      status: 'pending',
     }
     scrollToBottom.current = true
     smoothScroll.current   = true
     setChatMessages(prev => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }))
     if (!CHAT_META[id]?.group) triggerTypingIndicator(id)
+    doSend(id, text, tempId)
+  }
+
+  function handleRetry(msg: Message) {
+    if (!id) return
+    setChatMessages(prev => ({
+      ...prev,
+      [id]: (prev[id] ?? []).map(m =>
+        m.id === msg.id ? { ...m, status: 'pending' as const } : m
+      ),
+    }))
+    doSend(id, msg.text, msg.id)
   }
 
   const meta = id ? (CHAT_META[id] ?? CHAT_META['1']) : null
@@ -150,7 +228,7 @@ export function MessengerPage() {
         <IconNav onProfileOpen={() => setProfileOpen(true)} />
 
         <ChatListPanel
-          chats={CHATS}
+          chats={chats}
           activeId={id}
           filter={filter}
           query={query}
@@ -172,6 +250,7 @@ export function MessengerPage() {
               topSentinelRef={topSentinelRef}
               bottomRef={bottomRef}
               onSend={handleSend}
+              onRetry={handleRetry}
               onHeaderClick={() => meta.group
                 ? setGroupModalOpen(true)
                 : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
@@ -191,7 +270,7 @@ export function MessengerPage() {
       {/* Mobile bottom nav */}
       <nav className={`${s.bottomNav}${id ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
-          <span className={s.bnGlyph}>💬<span className={s.bnBadge}>12</span></span>
+          <span className={s.bnGlyph}>💬{chats.reduce((s, c) => s + c.unread, 0) > 0 && <span className={s.bnBadge}>{chats.reduce((s, c) => s + c.unread, 0)}</span>}</span>
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>

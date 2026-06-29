@@ -82,7 +82,7 @@ export function ChatListPanel({ chats, activeId, filter, query, onFilterChange, 
               </div>
               <div className={s.clMeta}>
                 <span className={s.clTime}>{chat.time}</span>
-                {chat.unread && <span className={s.clUnread}>{chat.unread}</span>}
+                {chat.unread > 0 && <span className={s.clUnread}>{chat.unread}</span>}
               </div>
             </div>
           ))
