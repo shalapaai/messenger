@@ -2,9 +2,10 @@ import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback } fr
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, Message, ModalUser } from '../../shared/types/messenger'
 import {
-  CHATS, CHAT_META, GROUP_MEMBERS, USER_PROFILES, STUB_USER,
+  CHATS, CHAT_META, GROUP_MEMBERS, USER_PROFILES,
   getInitialMessages, makeOlderBatch, getModalUserFromMsg,
 } from '../../shared/lib/messenger/stubData'
+import { useUserProfile } from '../../shared/context/UserProfileContext'
 import { IconNav }          from '../../widgets/IconNav'
 import { ChatListPanel }    from '../../widgets/ChatListPanel'
 import { ChatWindow }       from '../../widgets/ChatWindow'
@@ -14,11 +15,10 @@ import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
 import s from './MessengerPage.module.css'
 
-const ME_SENDER = { own: true, senderId: 'me', senderName: 'Анна', senderInitials: 'АС', senderColor: '#2C5BF0' }
-
 export function MessengerPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { profile, setProfile } = useUserProfile()
 
   const [filter, setFilter]   = useState<Filter>('all')
   const [query, setQuery]     = useState('')
@@ -109,6 +109,23 @@ export function MessengerPage() {
     return () => document.removeEventListener('keydown', onKey)
   }, [modalUser, groupModalOpen, editOpen, profileOpen])
 
+  const profileInitials = profile
+    ? (() => {
+        const parts = profile.displayName.trim().split(/\s+/)
+        return parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : profile.displayName.slice(0, 2).toUpperCase()
+      })()
+    : '...'
+
+  const meSender = {
+    own:            true,
+    senderId:       profile?.userId    ?? 'me',
+    senderName:     profile?.displayName ?? '',
+    senderInitials: profileInitials,
+    senderColor:    '#2C5BF0',
+  }
+
   function triggerTypingIndicator(chatId: string) {
     clearTimeout(typingTimers.current[`${chatId}:on`])
     clearTimeout(typingTimers.current[`${chatId}:off`])
@@ -123,7 +140,7 @@ export function MessengerPage() {
   function handleSend(text: string) {
     if (!id) return
     const newMsg: Message = {
-      ...ME_SENDER, id: Date.now(), text,
+      ...meSender, id: Date.now(), text,
       time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
       date: 'Сегодня',
     }
@@ -143,11 +160,15 @@ export function MessengerPage() {
           ? <button className={s.topBarBack} onClick={() => navigate('/chats')}>‹</button>
           : <div className={s.topBarLogo}>TL:MESSENGER</div>
         }
-        <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>АС</button>
+        <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>{profileInitials}</button>
       </header>
 
       <div className={s.body}>
-        <IconNav onProfileOpen={() => setProfileOpen(true)} />
+        <IconNav
+          onProfileOpen={() => setProfileOpen(true)}
+          userInitials={profileInitials}
+          userAvatarUrl={profile?.avatarUrl}
+        />
 
         <ChatListPanel
           chats={CHATS}
@@ -195,24 +216,29 @@ export function MessengerPage() {
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
-          <span className={s.bnAvatarMini}>АС</span>
+          <span className={s.bnAvatarMini}>{profileInitials}</span>
           <span>Профиль</span>
         </button>
       </nav>
 
-      <ProfilePanel
-        isOpen={profileOpen}
-        stubUser={STUB_USER}
-        onClose={() => setProfileOpen(false)}
-        onEdit={() => { setProfileOpen(false); setEditOpen(true) }}
-        onChats={() => navigate('/chats')}
-      />
+      {profile && (
+        <ProfilePanel
+          isOpen={profileOpen}
+          profile={profile}
+          onClose={() => setProfileOpen(false)}
+          onEdit={() => { setProfileOpen(false); setEditOpen(true) }}
+          onChats={() => navigate('/chats')}
+        />
+      )}
 
-      <EditProfileModal
-        isOpen={editOpen}
-        stubUser={STUB_USER}
-        onClose={() => setEditOpen(false)}
-      />
+      {profile && editOpen && (
+        <EditProfileModal
+          isOpen={editOpen}
+          profile={profile}
+          onClose={() => setEditOpen(false)}
+          onSave={(updated) => { setProfile(updated); setEditOpen(false) }}
+        />
+      )}
 
       <UserProfileModal
         user={modalUser}

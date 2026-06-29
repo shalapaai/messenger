@@ -4,10 +4,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
+import { useUserProfile } from '../../../shared/context/UserProfileContext'
 import styles from './LoginForm.module.css'
 
 function LoginForm() {
   const navigate = useNavigate()
+  const { refetchProfile } = useUserProfile()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -36,7 +38,10 @@ function LoginForm() {
       })
 
       saveAuthTokens(tokens)
-      navigate('/chats')
+      console.log('[Login] tokens saved:', tokens)
+      const profile = await refetchProfile()
+      console.log('[Login] profile after fetch:', profile)
+      navigate(profile ? '/chats' : '/profile/setup')
     } catch {
       setError('Не удалось войти. Проверьте почту и пароль')
     } finally {

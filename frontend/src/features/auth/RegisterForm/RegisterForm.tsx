@@ -45,7 +45,6 @@ function RegisterForm() {
         email: email.trim(),
         password,
       })
-
       saveAuthTokens(tokens)
       navigate('/profile/setup')
     } catch {

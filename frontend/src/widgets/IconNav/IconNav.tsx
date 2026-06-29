@@ -6,9 +6,11 @@ import s from './IconNav.module.css'
 
 interface IconNavProps {
   onProfileOpen: () => void
+  userInitials: string
+  userAvatarUrl?: string | null
 }
 
-export function IconNav({ onProfileOpen }: IconNavProps) {
+export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavProps) {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -32,7 +34,12 @@ export function IconNav({ onProfileOpen }: IconNavProps) {
               <button className={`${s.avatarMenuItem} ${s.avatarMenuItemDanger}`} onClick={() => { setMenuOpen(false); handleLogout() }}>Выйти</button>
             </div>
           )}
-          <button className={s.userAvatarBtn} onClick={() => setMenuOpen(v => !v)}>АС</button>
+          <button className={s.userAvatarBtn} onClick={() => setMenuOpen(v => !v)}>
+            {userAvatarUrl
+              ? <img src={userAvatarUrl} alt={userInitials} className={s.userAvatarImg} />
+              : userInitials
+            }
+          </button>
         </div>
       </div>
       {menuOpen && <div className={s.avatarMenuBg} onClick={() => setMenuOpen(false)} />}
