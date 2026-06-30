@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
 import styles from './AuthLayout.module.css'
 
 type AuthLayoutProps = {
@@ -18,6 +19,9 @@ function AuthLayout({ title, description, children, isTitleWrapped = false}: Aut
       </section>
 
       <section className={styles.card}>
+        <div className={styles.cardActions}>
+          <ThemeModeToggle />
+        </div>
         {children}
       </section>
     </main>

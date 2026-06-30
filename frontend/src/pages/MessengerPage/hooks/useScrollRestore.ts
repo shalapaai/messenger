@@ -12,12 +12,14 @@ export function useScrollRestore(messages: Message[]) {
 
   const savedScrollHeight = useRef(0)
   const savedScrollTop    = useRef(0)
+  const bottomSmooth      = useRef(false)
 
   const [restoreSignal, setRestoreSignal] = useState(0)
-  const [bottomSignal,  setBottomSignal]  = useState<{ smooth: boolean } | null>(null)
+  const [bottomSignal,  setBottomSignal]  = useState(0)
 
   const scrollToBottomNow = useCallback((smooth: boolean) => {
-    setBottomSignal({ smooth })
+    bottomSmooth.current = smooth
+    setBottomSignal(s => s + 1)
   }, [])
 
   const prepareRestoreBeforePrepend = useCallback(() => {
@@ -29,9 +31,8 @@ export function useScrollRestore(messages: Message[]) {
   const triggerRestore = useCallback(() => setRestoreSignal(s => s + 1), [])
 
   useEffect(() => {
-    if (!bottomSignal) return
-    bottomRef.current?.scrollIntoView({ behavior: bottomSignal.smooth ? 'smooth' : 'instant' })
-    setBottomSignal(null)
+    if (bottomSignal === 0) return
+    bottomRef.current?.scrollIntoView({ behavior: bottomSmooth.current ? 'smooth' : 'instant' })
   }, [messages, bottomSignal])
 
   useLayoutEffect(() => {

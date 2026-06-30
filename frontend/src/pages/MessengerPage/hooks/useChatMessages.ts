@@ -57,7 +57,15 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   useEffect(() => {
     if (!id) return
     if (chatMessages[id] || loadingInitial[id]) return
-    loadInitial(id)
+
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) loadInitial(id)
+    })
+
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
