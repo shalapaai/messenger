@@ -14,18 +14,24 @@ interface ChatWindowProps {
   typingChats: Record<string, boolean>
   loadingHistory: boolean
   historyLoaded: boolean
+  loadingInitial: boolean
+  loadError: boolean
+  onRetryLoad: () => void
   messagesRef: RefObject<HTMLDivElement | null>
   topSentinelRef: RefObject<HTMLDivElement | null>
   bottomRef: RefObject<HTMLDivElement | null>
   onSend: (text: string) => void
+  onRetry: (msg: Message) => void
+  onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
 }
 
 export function ChatWindow({
   chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
+  loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onHeaderClick, onAvatarClick,
+  onSend, onRetry, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -81,7 +87,17 @@ export function ChatWindow({
         </button>
       </div>
 
-      {messages.length === 0 ? (
+      {loadingInitial ? (
+        <div className={s.emptyChat}>
+          <div className={s.historySpinner} />
+        </div>
+      ) : loadError ? (
+        <div className={s.emptyChat}>
+          <div className={s.emptyChatIcon}>⚠️</div>
+          <h3 className={s.emptyChatTitle}>Не удалось загрузить переписку</h3>
+          <button className={s.loadErrorRetryBtn} onClick={onRetryLoad}>Повторить</button>
+        </div>
+      ) : messages.length === 0 ? (
         <div className={s.emptyChat}>
           <div className={s.emptyChatIcon}>💬</div>
           <h3 className={s.emptyChatTitle}>Начните общение</h3>
@@ -123,11 +139,26 @@ export function ChatWindow({
                   >
                     {item.msg.senderInitials}
                   </div>
-                  <div className={`${s.bubble} ${item.msg.own ? s.bubbleOwn : s.bubbleOther} ${item.showAvatar ? s.bubbleTail : ''}`}>
+                  <div className={[
+                    s.bubble,
+                    item.msg.own ? s.bubbleOwn : s.bubbleOther,
+                    item.showAvatar ? s.bubbleTail : '',
+                    item.msg.status === 'pending' ? s.bubblePending : '',
+                    item.msg.status === 'failed'  ? s.bubbleFailed  : '',
+                  ].join(' ')}>
                     {item.msg.text}
                   </div>
                 </div>
-                <span className={s.msgTime}>{item.msg.time}</span>
+                <span className={s.msgTime}>
+                  {item.msg.own && item.msg.status === 'pending' && <span className={`${s.msgStatusIcon} ${s.msgStatusPending}`}>●</span>}
+                  {item.msg.own && item.msg.status === 'sent'    && <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>}
+                  {item.msg.time}
+                </span>
+                {item.msg.status === 'failed' && (
+                  <button className={s.msgRetry} onClick={() => onRetry(item.msg)}>
+                    ⚠ Не отправлено · Повторить
+                  </button>
+                )}
               </div>
             )
           )}
@@ -156,7 +187,7 @@ export function ChatWindow({
           placeholder="Написать сообщение…"
           value={text}
           rows={1}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}
           onKeyDown={handleKeyDown}
         />
         <button className={s.sendBtn} disabled={!text.trim()} onClick={send}>

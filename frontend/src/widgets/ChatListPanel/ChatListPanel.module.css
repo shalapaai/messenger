@@ -117,6 +117,31 @@
 
 .clEmpty { padding: 40px 16px; text-align: center; color: #8a93a6; font-size: 14px; font-weight: 500; }
 
+.clError {
+  padding: 40px 16px;
+  text-align: center;
+  color: #8a93a6;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.clRetryBtn {
+  background: #2c5bf0;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.clRetryBtn:hover { background: #1f4bdd; }
+
 .clRow {
   display: flex;
   align-items: center;
@@ -186,6 +211,41 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
+}
+
+.clSkeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+}
+
+.clSkeletonAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #eceef4;
+  flex-shrink: 0;
+  animation: clSkeletonPulse 1.4s ease-in-out infinite;
+}
+
+.clSkeletonLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clSkeletonLine {
+  height: 11px;
+  border-radius: 6px;
+  background: #eceef4;
+  animation: clSkeletonPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes clSkeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
 }
 
 @media (max-width: 819px) {

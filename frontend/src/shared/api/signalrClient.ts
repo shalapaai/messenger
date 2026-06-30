@@ -12,6 +12,8 @@ export interface IncomingMessage {
   messageId: string
   chatId: string
   senderId: string
+  senderName: string
+  senderAvatarUrl: string | null
   content: string
   sentAt: string
 }
@@ -37,6 +39,9 @@ export interface UserOnlineEvent {
 
 export class SignalRClient {
   private connection: HubConnection
+  private _onReconnecting: (() => void) | null = null
+  private _onReconnected:  (() => void) | null = null
+  private _onDisconnected: (() => void) | null = null
 
   constructor() {
     this.connection = new HubConnectionBuilder()
@@ -55,6 +60,13 @@ export class SignalRClient {
       })
       .configureLogging(LogLevel.Warning)
       .build()
+
+    // Регистрируем один раз — внутри вызываем заменяемый колбэк,
+    // чтобы внешние вызовы onReconnecting/onReconnected/onDisconnected
+    // не накапливали обработчики, а заменяли друг друга.
+    this.connection.onreconnecting(() => this._onReconnecting?.())
+    this.connection.onreconnected(() => this._onReconnected?.())
+    this.connection.onclose(() => this._onDisconnected?.())
   }
 
   // ── Подключение ───────────────────────────────────────────────────────────
@@ -123,15 +135,15 @@ export class SignalRClient {
   }
 
   onReconnecting(handler: () => void): void {
-    this.connection.onreconnecting(() => handler())
+    this._onReconnecting = handler
   }
 
   onReconnected(handler: () => void): void {
-    this.connection.onreconnected(() => handler())
+    this._onReconnected = handler
   }
 
   onDisconnected(handler: () => void): void {
-    this.connection.onclose(() => handler())
+    this._onDisconnected = handler
   }
 }
 

@@ -1,13 +1,15 @@
 export interface Chat {
-  id: number
+  id: string
   name: string
   initials: string
   color: string
   preview: string
   time: string
-  unread: string
+  unread: number
   online: boolean
   group: boolean
+  /** userId собеседника — только для личных чатов, нужен для онлайн-статуса */
+  otherUserId?: string
 }
 
 export interface ChatMeta {
@@ -28,6 +30,7 @@ export interface GroupMember {
 
 export interface Message {
   id: number
+  messageId?: string
   text: string
   own: boolean
   senderId: string
@@ -36,6 +39,7 @@ export interface Message {
   senderColor: string
   time: string
   date: string
+  status?: 'pending' | 'sent' | 'failed'
 }
 
 export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>

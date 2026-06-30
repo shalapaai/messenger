@@ -10,5 +10,6 @@ public interface IFilesModule
         string      contentType,
         long        fileSizeBytes,
         Guid        uploadedBy,
+        Guid        chatId,
         CancellationToken ct = default);
 }

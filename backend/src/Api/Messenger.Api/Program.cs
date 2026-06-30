@@ -9,6 +9,7 @@ using Messenger.Modules.Notifications;
 using Messenger.Modules.Realtime;
 using Messenger.Modules.Users;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Presence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -24,6 +25,7 @@ builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configurati
 var redisConnectionString = builder.Configuration["Redis:ConnectionString"]!;
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisConnectionString));
+builder.Services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 IModuleInstaller[] modules =

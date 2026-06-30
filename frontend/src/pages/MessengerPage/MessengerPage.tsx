@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect, useMemo, useLayoutEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { Filter, Message, ModalUser } from '../../shared/types/messenger'
-import {
-  CHATS, CHAT_META, GROUP_MEMBERS, USER_PROFILES,
-  getInitialMessages, makeOlderBatch, getModalUserFromMsg,
-} from '../../shared/lib/messenger/stubData'
+import type { Filter, ModalUser } from '../../shared/types/messenger'
+import { CHAT_META, GROUP_MEMBERS, USER_PROFILES, getModalUserFromMsg } from '../../shared/lib/messenger/stubData'
 import { useUserProfile } from '../../shared/context/useUserProfile'
+import { useSignalR } from '../../shared/api/useSignalR'
+import { useChatsStore } from '../../shared/api/chatsStore'
+import { useIsOnline } from '../../shared/api/onlineStore'
+import { useScrollRestore } from './hooks/useScrollRestore'
+import { useTypingIndicator } from './hooks/useTypingIndicator'
+import { useChatMessages } from './hooks/useChatMessages'
 import { IconNav }          from '../../widgets/IconNav'
 import { ChatListPanel }    from '../../widgets/ChatListPanel'
 import { ChatWindow }       from '../../widgets/ChatWindow'
@@ -20,82 +23,83 @@ export function MessengerPage() {
   const navigate = useNavigate()
   const { profile, setProfile } = useUserProfile()
 
-  const [filter, setFilter]   = useState<Filter>('all')
-  const [query, setQuery]     = useState('')
-
-  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>(() =>
-    Object.fromEntries(Object.keys(CHAT_META).map(cid => [cid, getInitialMessages(cid)]))
-  )
-  const messages = useMemo(() => id ? (chatMessages[id] ?? []) : [], [chatMessages, id])
-
-  const [typingChats,   setTypingChats]   = useState<Record<string, boolean>>({})
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [historyLoaded,  setHistoryLoaded]  = useState<Record<string, boolean>>({ '8': true })
-  const [restoreSignal,  setRestoreSignal]  = useState(0)
+  const [filter, setFilter] = useState<Filter>('all')
+  const [query,  setQuery]  = useState('')
 
   const [profileOpen,    setProfileOpen]    = useState(false)
   const [editOpen,       setEditOpen]       = useState(false)
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
 
-  const bottomRef      = useRef<HTMLDivElement>(null)
-  const messagesRef    = useRef<HTMLDivElement>(null)
-  const topSentinelRef = useRef<HTMLDivElement>(null)
+  // ── Реальный профиль (вместо мок-"Анны Соколовой") ─────────────────────────
+  const profileInitials = profile
+    ? (() => {
+        const parts = profile.displayName.trim().split(/\s+/)
+        return parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : profile.displayName.slice(0, 2).toUpperCase()
+      })()
+    : '...'
 
-  const scrollToBottom   = useRef(true)
-  const smoothScroll     = useRef(false)
-  const savedScrollHeight = useRef(0)
-  const savedScrollTop    = useRef(0)
-  const typingTimers     = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const meSender = {
+    own:            true,
+    senderId:       profile?.userId      ?? 'me',
+    senderName:     profile?.displayName ?? '',
+    senderInitials: profileInitials,
+    senderColor:    '#2C5BF0',
+  }
 
+  // ── Zustand чаты ─────────────────────────────────────────────────────────
+  const chats       = useChatsStore((s) => s.chats)
+  const chatsLoaded = useChatsStore((s) => s.chatsLoaded)
+  const chatsError  = useChatsStore((s) => s.chatsError)
+  const loadChats   = useChatsStore((s) => s.loadChats)
+  const resetUnread = useChatsStore((s) => s.resetUnread)
+
+  useEffect(() => { loadChats() }, [loadChats])
+  useEffect(() => { if (id) resetUnread(id) }, [id, resetUnread])
+
+  // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
+  const {
+    messages, loadingInitial, loadError, retryLoadInitial,
+    handleIncomingMessage, loadMoreHistory, loadingHistory, historyLoaded,
+    send, retry,
+  } = useChatMessages(id, {
+    onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
+  })
+
+  const scroll = useScrollRestore(messages)
+
+  // ── SignalR: чужая печать, своя печать (дебаунс), отправка ─────────────────
+  const typingIndicator = useTypingIndicator(
+    () => startTyping(),
+    () => stopTyping(),
+  )
+
+  const { sendMessage: signalRSend, startTyping, stopTyping } = useSignalR({
+    chatId: id,
+    onMessage: handleIncomingMessage,
+    onTyping: typingIndicator.handleUserTyping,
+    onStoppedTyping: typingIndicator.handleUserStoppedTyping,
+  })
+
+  // ── Подгрузка истории вверх по скроллу ──────────────────────────────────────
   useEffect(() => {
-    scrollToBottom.current = true
-    smoothScroll.current   = false
-  }, [id])
-
-  useEffect(() => {
-    if (!scrollToBottom.current) return
-    bottomRef.current?.scrollIntoView({ behavior: smoothScroll.current ? 'smooth' : 'instant' })
-    scrollToBottom.current = false
-  }, [messages])
-
-  useLayoutEffect(() => {
-    if (restoreSignal === 0 || !messagesRef.current) return
-    messagesRef.current.scrollTop =
-      savedScrollTop.current + (messagesRef.current.scrollHeight - savedScrollHeight.current)
-  }, [restoreSignal])
-
-  const loadMoreHistory = useCallback(() => {
-    if (!id || loadingHistory || historyLoaded[id]) return
-    setLoadingHistory(true)
-    setTimeout(() => {
-      const batch = makeOlderBatch(id)
-      if (batch.length > 0 && messagesRef.current) {
-        savedScrollHeight.current = messagesRef.current.scrollHeight
-        savedScrollTop.current    = messagesRef.current.scrollTop
-        setChatMessages(prev => ({ ...prev, [id]: [...batch, ...(prev[id] ?? [])] }))
-        setRestoreSignal(s => s + 1)
-      }
-      setHistoryLoaded(prev => ({ ...prev, [id]: true }))
-      setLoadingHistory(false)
-    }, 700)
-  }, [id, loadingHistory, historyLoaded])
-
-  useEffect(() => {
-    const el       = messagesRef.current
-    const sentinel = topSentinelRef.current
-    if (!el || !sentinel || !id || messages.length === 0 || historyLoaded[id]) return
+    const el       = scroll.messagesRef.current
+    const sentinel = scroll.topSentinelRef.current
+    if (!el || !sentinel || !id || messages.length === 0 || historyLoaded) return
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMoreHistory() },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadMoreHistory(scroll.prepareRestoreBeforePrepend, scroll.triggerRestore)
+        }
+      },
       { root: el, threshold: 0 }
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [id, messages.length, historyLoaded, loadMoreHistory])
-
-  useEffect(() => () => {
-    Object.values(typingTimers.current).forEach(clearTimeout)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, messages.length, historyLoaded])
 
   useEffect(() => {
     const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen
@@ -109,48 +113,25 @@ export function MessengerPage() {
     return () => document.removeEventListener('keydown', onKey)
   }, [modalUser, groupModalOpen, editOpen, profileOpen])
 
-  const profileInitials = profile
-    ? (() => {
-        const parts = profile.displayName.trim().split(/\s+/)
-        return parts.length >= 2
-          ? (parts[0][0] + parts[1][0]).toUpperCase()
-          : profile.displayName.slice(0, 2).toUpperCase()
-      })()
-    : '...'
-
-  const meSender = {
-    own:            true,
-    senderId:       profile?.userId    ?? 'me',
-    senderName:     profile?.displayName ?? '',
-    senderInitials: profileInitials,
-    senderColor:    '#2C5BF0',
-  }
-
-  function triggerTypingIndicator(chatId: string) {
-    clearTimeout(typingTimers.current[`${chatId}:on`])
-    clearTimeout(typingTimers.current[`${chatId}:off`])
-    typingTimers.current[`${chatId}:on`] = setTimeout(() => {
-      setTypingChats(prev => ({ ...prev, [chatId]: true }))
-      typingTimers.current[`${chatId}:off`] = setTimeout(() => {
-        setTypingChats(prev => ({ ...prev, [chatId]: false }))
-      }, 2200)
-    }, 900)
-  }
-
   function handleSend(text: string) {
     if (!id) return
-    const newMsg: Message = {
-      ...meSender, id: Date.now(), text,
-      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-      date: 'Сегодня',
-    }
-    scrollToBottom.current = true
-    smoothScroll.current   = true
-    setChatMessages(prev => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }))
-    if (!CHAT_META[id]?.group) triggerTypingIndicator(id)
+    typingIndicator.stopOwnTyping()
+    send(id, text, signalRSend, meSender)
   }
 
-  const meta = id ? (CHAT_META[id] ?? CHAT_META['1']) : null
+  function handleRetrySend(msg: Parameters<typeof retry>[1]) {
+    if (!id) return
+    retry(id, msg, signalRSend)
+  }
+
+  const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
+  const activeChat = id ? chats.find(c => c.id === id) : undefined
+  const activeChatOnline = useIsOnline(activeChat?.otherUserId)
+  const meta = id
+    ? (activeChat
+        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, online: activeChatOnline, group: activeChat.group }
+        : (CHAT_META[id] ?? CHAT_META['1']))
+    : null
 
   return (
     <div className={s.root}>
@@ -171,7 +152,10 @@ export function MessengerPage() {
         />
 
         <ChatListPanel
-          chats={CHATS}
+          chats={chats}
+          loading={!chatsLoaded}
+          error={chatsError}
+          onRetry={loadChats}
           activeId={id}
           filter={filter}
           query={query}
@@ -186,13 +170,18 @@ export function MessengerPage() {
               chatId={id}
               meta={meta}
               messages={messages}
-              typingChats={typingChats}
+              typingChats={typingIndicator.typingChats}
               loadingHistory={loadingHistory}
-              historyLoaded={!!historyLoaded[id]}
-              messagesRef={messagesRef}
-              topSentinelRef={topSentinelRef}
-              bottomRef={bottomRef}
+              historyLoaded={historyLoaded}
+              loadingInitial={loadingInitial}
+              loadError={loadError}
+              onRetryLoad={retryLoadInitial}
+              messagesRef={scroll.messagesRef}
+              topSentinelRef={scroll.topSentinelRef}
+              bottomRef={scroll.bottomRef}
               onSend={handleSend}
+              onRetry={handleRetrySend}
+              onTyping={typingIndicator.handleOwnTyping}
               onHeaderClick={() => meta.group
                 ? setGroupModalOpen(true)
                 : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
@@ -212,7 +201,7 @@ export function MessengerPage() {
       {/* Mobile bottom nav */}
       <nav className={`${s.bottomNav}${id ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
-          <span className={s.bnGlyph}>💬<span className={s.bnBadge}>12</span></span>
+          <span className={s.bnGlyph}>💬{totalUnread > 0 && <span className={s.bnBadge}>{totalUnread}</span>}</span>
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
