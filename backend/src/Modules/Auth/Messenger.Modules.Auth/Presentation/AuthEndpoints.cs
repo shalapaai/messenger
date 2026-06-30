@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Hosting;
 
 public static class AuthEndpoints
 {
@@ -59,6 +60,7 @@ public static class AuthEndpoints
         RegisterRequest request,
         ISender sender,
         HttpContext httpContext,
+        IHostEnvironment environment,
         CancellationToken ct)
     {
         var command = new RegisterCommand(request.Email, request.Password);
@@ -70,7 +72,7 @@ public static class AuthEndpoints
         }
 
         var tokens = result.Value!;
-        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken);
+        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
         return Results.Created("/api/auth/register", tokens);
     }
 
@@ -79,6 +81,7 @@ public static class AuthEndpoints
         ISender sender,
         IStringLocalizer<SharedMessages> localizer,
         HttpContext httpContext,
+        IHostEnvironment environment,
         CancellationToken ct)
     {
         var result = await sender.Send(command, ct);
@@ -92,7 +95,7 @@ public static class AuthEndpoints
         }
 
         var tokens = result.Value!;
-        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken);
+        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
         return Results.Ok(tokens);
     }
 
@@ -100,6 +103,7 @@ public static class AuthEndpoints
         RefreshTokenRequest? request,
         ISender sender,
         HttpContext httpContext,
+        IHostEnvironment environment,
         CancellationToken ct)
     {
         var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.Token;
@@ -116,7 +120,7 @@ public static class AuthEndpoints
         }
 
         var tokens = result.Value!;
-        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken);
+        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
         return Results.Ok(tokens);
     }
 
@@ -124,6 +128,7 @@ public static class AuthEndpoints
         LogoutRequest? request,
         ISender sender,
         HttpContext httpContext,
+        IHostEnvironment environment,
         CancellationToken ct)
     {
         var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.RefreshToken;
@@ -131,35 +136,40 @@ public static class AuthEndpoints
         {
             await sender.Send(new LogoutCommand(refreshToken), ct);
         }
-        DeleteRefreshTokenCookie(httpContext.Response);
+        DeleteRefreshTokenCookie(httpContext.Response, environment);
         return Results.NoContent();
     }
 
-    private static void AppendRefreshTokenCookie(HttpResponse response, string refreshToken)
+    private static void AppendRefreshTokenCookie(
+        HttpResponse response,
+        string refreshToken,
+        IHostEnvironment environment)
     {
         response.Cookies.Append(
             RefreshTokenCookieName,
             refreshToken,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddDays(7),
-                Path = "/api/auth"
-            });
+            CreateRefreshTokenCookieOptions(environment, DateTimeOffset.UtcNow.AddDays(7)));
     }
 
-    private static void DeleteRefreshTokenCookie(HttpResponse response)
+    private static void DeleteRefreshTokenCookie(HttpResponse response, IHostEnvironment environment)
     {
         response.Cookies.Delete(
             RefreshTokenCookieName,
-            new CookieOptions
-            {
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Path = "/api/auth"
-            });
+            CreateRefreshTokenCookieOptions(environment));
+    }
+
+    private static CookieOptions CreateRefreshTokenCookieOptions(
+        IHostEnvironment environment,
+        DateTimeOffset? expires = null)
+    {
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !environment.IsDevelopment(),
+            SameSite = environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Expires = expires,
+            Path = "/api/auth"
+        };
     }
 }
 

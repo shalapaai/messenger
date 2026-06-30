@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
+import { useUserProfile } from '../../shared/context/useUserProfile'
 import s from './IconNav.module.css'
 
 interface IconNavProps {
@@ -12,6 +13,7 @@ interface IconNavProps {
 
 export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavProps) {
   const navigate = useNavigate()
+  const { clearProfile } = useUserProfile()
   const [menuOpen, setMenuOpen] = useState(false)
 
   async function handleLogout() {
@@ -19,6 +21,7 @@ export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavP
       await logout()
     } finally {
       clearAuthTokens()
+      clearProfile()
       navigate('/login')
     }
   }

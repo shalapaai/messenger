@@ -8,6 +8,11 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(() => hasAuthTokens())
 
+  function clearProfile() {
+    setProfile(null)
+    setIsLoading(false)
+  }
+
   async function fetchProfile(): Promise<UserProfile | null> {
     try {
       const data = await profileApi.getMe()
@@ -38,7 +43,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserProfileContext.Provider
-      value={{ profile, isLoading, setProfile, refetchProfile: fetchProfile }}
+      value={{ profile, isLoading, setProfile, clearProfile, refetchProfile: fetchProfile }}
     >
       {children}
     </UserProfileContext.Provider>

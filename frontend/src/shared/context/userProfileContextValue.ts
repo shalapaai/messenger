@@ -5,6 +5,7 @@ export interface UserProfileContextValue {
   profile: UserProfile | null
   isLoading: boolean
   setProfile: (profile: UserProfile | null) => void
+  clearProfile: () => void
   refetchProfile: () => Promise<UserProfile | null>
 }
 
