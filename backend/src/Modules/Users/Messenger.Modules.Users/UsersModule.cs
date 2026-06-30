@@ -34,7 +34,7 @@ public sealed class UsersModule : IModuleInstaller
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
-        await db.Database.EnsureCreatedAsync(ct);
+        await db.Database.MigrateAsync(ct);
     }
 }
 
