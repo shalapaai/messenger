@@ -25,6 +25,11 @@ export interface MessageEdited {
   editedAt: string
 }
 
+export interface MessageDeleted {
+  messageId: string
+  chatId: string
+}
+
 export interface TypingEvent {
   userId: string
   chatId: string
@@ -117,6 +122,11 @@ export class SignalRClient {
   onMessageEdited(handler: (event: MessageEdited) => void): () => void {
     this.connection.on('MessageEdited', handler)
     return () => this.connection.off('MessageEdited', handler)
+  }
+
+  onMessageDeleted(handler: (event: MessageDeleted) => void): () => void {
+    this.connection.on('MessageDeleted', handler)
+    return () => this.connection.off('MessageDeleted', handler)
   }
 
   onUserTyping(handler: (event: TypingEvent) => void): () => void {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { signalR, type IncomingMessage, type MessageEdited, type TypingEvent, type UserOnlineEvent } from './signalrClient'
+import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type TypingEvent, type UserOnlineEvent } from './signalrClient'
 import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
 export type { ConnectionStatus }
@@ -8,6 +8,7 @@ interface UseSignalROptions {
   chatId?: string
   onMessage?: (msg: IncomingMessage) => void
   onMessageEdited?: (event: MessageEdited) => void
+  onMessageDeleted?: (event: MessageDeleted) => void
   onTyping?: (event: TypingEvent) => void
   onStoppedTyping?: (event: TypingEvent) => void
   onUserOnline?: (event: UserOnlineEvent) => void
@@ -34,14 +35,15 @@ export function useSignalR(options: UseSignalROptions = {}) {
   useEffect(() => {
     const off = [
       options.onMessage       && signalR.onReceiveMessage(options.onMessage),
-      options.onMessageEdited && signalR.onMessageEdited(options.onMessageEdited),
+      options.onMessageEdited  && signalR.onMessageEdited(options.onMessageEdited),
+      options.onMessageDeleted && signalR.onMessageDeleted(options.onMessageDeleted),
       options.onTyping        && signalR.onUserTyping(options.onTyping),
       options.onStoppedTyping && signalR.onUserStoppedTyping(options.onStoppedTyping),
       options.onUserOnline    && signalR.onUserOnline(options.onUserOnline),
     ].filter(Boolean) as Array<() => void>
 
     return () => off.forEach(fn => fn())
-  }, [options.onMessage, options.onMessageEdited, options.onTyping, options.onStoppedTyping, options.onUserOnline])
+  }, [options.onMessage, options.onMessageEdited, options.onMessageDeleted, options.onTyping, options.onStoppedTyping, options.onUserOnline])
 
   const sendMessage = useCallback((content: string, replyToMessageId?: string) => {
     const { chatId } = optionsRef.current

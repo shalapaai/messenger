@@ -39,7 +39,8 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
 
   const onMessage = useCallback((msg: IncomingMessage) => {
     if (msg.senderId === getMyUserId()) return
-    const activeChatId = pathname.match(/\/chats\/(.+)/)?.[1] ?? null
+    // строго GUID — чтобы не зацепить /chats/new/:userId (черновик ещё не существующего чата)
+    const activeChatId = pathname.match(/^\/chats\/([0-9a-f-]{36})$/i)?.[1] ?? null
     handleNewMessage(msg, activeChatId)
   }, [pathname, handleNewMessage])
 
@@ -99,6 +100,7 @@ export function AppRouter() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/profile/setup" element={<ProfileSetupPage />} />
           <Route path="/chats" element={<MessengerPage />} />
+          <Route path="/chats/new/:newUserId" element={<MessengerPage />} />
           <Route path="/chats/:id" element={<MessengerPage />} />
           <Route path="*" element={<Navigate to="/chats" replace />} />
         </Route>

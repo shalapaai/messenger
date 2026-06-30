@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { CHAT_META, getInitialMessages } from '../../../shared/lib/messenger/stubData'
 import { fetchMessages, colorFromId, initials, nextMessageId } from '../../../shared/api/chatsApi'
+import { deleteMessage as deleteMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage } from '../../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted } from '../../../shared/api/signalrClient'
 
 type SendFn = (content: string) => Promise<{ messageId: string }>
 
@@ -95,6 +96,30 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
+  const handleDeletedMessage = useCallback((event: MessageDeleted) => {
+    setChatMessages(prev => {
+      const chatMsgs = prev[event.chatId]
+      if (!chatMsgs) return prev
+      return {
+        ...prev,
+        [event.chatId]: chatMsgs.map(m =>
+          m.messageId === event.messageId ? { ...m, text: '', deleted: true } : m
+        ),
+      }
+    })
+  }, [])
+
+  const deleteMessage = useCallback(async (chatId: string, msg: Message) => {
+    if (!msg.messageId) return
+    await deleteMessageApi(chatId, msg.messageId)
+    setChatMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] ?? []).map(m =>
+        m.id === msg.id ? { ...m, text: '', deleted: true } : m
+      ),
+    }))
+  }, [])
+
   const loadMoreHistory = useCallback((
     onBeforePrepend: () => void,
     onAfterPrepend: () => void,
@@ -162,10 +187,12 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     loadError:      id ? !!loadError[id] : false,
     retryLoadInitial: () => id && loadInitial(id),
     handleIncomingMessage,
+    handleDeletedMessage,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
     send,
     retry,
+    deleteMessage,
   }
 }

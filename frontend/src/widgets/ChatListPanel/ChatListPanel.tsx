@@ -13,6 +13,7 @@ interface ChatListPanelProps {
   onFilterChange: (f: Filter) => void
   onQueryChange: (q: string) => void
   onSelect: (id: string) => void
+  onNewChat: () => void
 }
 
 const TABS: { id: Filter; label: string }[] = [
@@ -21,7 +22,7 @@ const TABS: { id: Filter; label: string }[] = [
   { id: 'group', label: 'Группы' },
 ]
 
-export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect }: ChatListPanelProps) {
+export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect, onNewChat }: ChatListPanelProps) {
   const onlineStatuses = useOnlineStore((s) => s.statuses)
 
   const counts = {
@@ -41,7 +42,7 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
     <aside className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}>
       <div className={s.clHeader}>
         <h2 className={s.clTitle}>Сообщения</h2>
-        <button className={s.clNewBtn} onClick={() => alert('Новый чат')}>＋</button>
+        <button className={s.clNewBtn} onClick={onNewChat}>＋</button>
       </div>
 
       <div className={s.clSearch}>

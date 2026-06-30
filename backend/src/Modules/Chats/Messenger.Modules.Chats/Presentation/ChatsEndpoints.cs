@@ -4,6 +4,7 @@ using MediatR;
 using Messenger.Modules.Chats.Application.Features.AddChatMember;
 using Messenger.Modules.Chats.Application.Features.CreateDirectChat;
 using Messenger.Modules.Chats.Application.Features.CreateGroupChat;
+using Messenger.Modules.Chats.Application.Features.DeleteChat;
 using Messenger.Modules.Chats.Application.Features.RemoveChatMember;
 using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
@@ -61,6 +62,16 @@ public static class ChatsEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{id:guid}", DeleteChat)
+            .WithName("DeleteChat")
+            .WithSummary("Удалить личный чат")
+            .WithDescription("Полностью удаляет личный (direct) чат вместе со всеми сообщениями — для обоих участников. " +
+                             "Для групповых чатов используй выход из группы (DELETE /chats/{id}/members/{userId}).")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesValidationProblem();
 
         group.MapPost("/direct", CreateDirectChat)
             .WithName("CreateDirectChat")
@@ -149,6 +160,21 @@ public static class ChatsEndpoints
     {
         var requesterId = httpContext.GetUserId();
         var command = new RemoveChatMemberCommand(id, requesterId, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> DeleteChat(
+        Guid              id,
+        HttpContext        httpContext,
+        ISender            sender,
+        CancellationToken  ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var command = new DeleteChatCommand(id, requesterId);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess

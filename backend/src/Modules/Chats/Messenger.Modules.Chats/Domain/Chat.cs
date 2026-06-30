@@ -123,6 +123,17 @@ public sealed class Chat : AggregateRoot<ChatId>
         _members.Remove(target);
         return Result.Success();
     }
+
+    public Result EnsureCanBeDeletedBy(Guid requesterId)
+    {
+        if (Type != ChatType.Direct)
+            return Result.Failure(Error.Validation("ChatType", "Use leave/remove member to exit a group chat"));
+
+        if (_members.All(m => m.UserId != requesterId))
+            return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        return Result.Success();
+    }
 }
 
 // ── Repository contract ───────────────────────────────────────────────────────

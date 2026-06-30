@@ -94,7 +94,31 @@ export async function fetchMessages(
     senderColor:    colorFromId(dto.senderId),
     time:           formatTime(dto.sentAt),
     date:           formatDate(dto.sentAt),
+    deleted:        dto.status === 'deleted',
   }))
 
   return { messages, nextCursor: res.data.nextCursor }
+}
+
+/** Создаёт (или возвращает существующий) личный чат с пользователем — идемпотентно. */
+export async function createDirectChat(otherUserId: string): Promise<string> {
+  const res = await apiClient.post<string>('/chats/direct', { otherUserId })
+  return res.data
+}
+
+/** Полностью удаляет личный чат — для обеих сторон. */
+export async function deleteChat(chatId: string): Promise<void> {
+  await apiClient.delete(`/chats/${chatId}`)
+}
+
+/** Выйти из группового чата (или удалить участника, если передан другой userId). */
+export async function leaveGroupChat(chatId: string, userId: string): Promise<void> {
+  await apiClient.delete(`/chats/${chatId}/members/${userId}`)
+}
+
+/** Отправка сообщения через REST (а не SignalR) — нужна, чтобы отправить самое первое
+ *  сообщение в только что созданный чат до того, как клиент вступит в его SignalR-группу. */
+export async function sendMessageRest(chatId: string, content: string): Promise<string> {
+  const res = await apiClient.post<string>(`/chats/${chatId}/messages`, { content })
+  return res.data
 }

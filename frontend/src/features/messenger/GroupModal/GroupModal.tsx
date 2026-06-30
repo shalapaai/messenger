@@ -8,9 +8,10 @@ interface GroupModalProps {
   members: GroupMember[]
   onClose: () => void
   onMemberClick: (user: ModalUser) => void
+  onLeave: () => void
 }
 
-export function GroupModal({ isOpen, chatId, meta, members, onClose, onMemberClick }: GroupModalProps) {
+export function GroupModal({ isOpen, chatId, meta, members, onClose, onMemberClick, onLeave }: GroupModalProps) {
   if (!isOpen) return null
   void chatId
 
@@ -44,7 +45,13 @@ export function GroupModal({ isOpen, chatId, meta, members, onClose, onMemberCli
         </div>
         <div className={s.umGroupActions}>
           <button type="button" className={s.umEditGroupBtn} onClick={() => alert('Изменить группу')}>Изменить группу</button>
-          <button type="button" className={s.umLeaveGroupBtn} onClick={() => alert('Выйти из группы')}>Выйти из группы</button>
+          <button
+            type="button"
+            className={s.umLeaveGroupBtn}
+            onClick={() => { if (window.confirm('Выйти из группы?')) onLeave() }}
+          >
+            Выйти из группы
+          </button>
         </div>
       </div>
     </div>
