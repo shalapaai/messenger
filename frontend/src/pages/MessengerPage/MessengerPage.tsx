@@ -160,7 +160,12 @@ export function MessengerPage() {
           ? <button className={s.topBarBack} onClick={() => navigate('/chats')}>‹</button>
           : <div className={s.topBarLogo}>TL:MESSENGER</div>
         }
-        <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>{profileInitials}</button>
+        <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>
+    {profile?.avatarUrl
+      ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
+      : profileInitials
+    }
+  </button>
       </header>
 
       <div className={s.body}>
@@ -216,7 +221,12 @@ export function MessengerPage() {
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
-          <span className={s.bnAvatarMini}>{profileInitials}</span>
+          <span className={s.bnAvatarMini}>
+      {profile?.avatarUrl
+        ? <img src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
+        : profileInitials
+      }
+    </span>
           <span>Профиль</span>
         </button>
       </nav>

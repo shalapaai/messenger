@@ -56,8 +56,9 @@
 .topBarBack { width: 36px; height: 36px; border-radius: 10px; border: none; background: #f5f6fa; cursor: pointer; font-size: 20px; color: #56607a; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
 .topBarBack:hover { background: #eceef4; }
 
-.topBarUserBtn { width: 36px; height: 36px; border-radius: 50%; border: none; background: #2c5bf0; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.15s; }
+.topBarUserBtn { position: relative; width: 36px; height: 36px; border-radius: 50%; border: none; background: #2c5bf0; color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: opacity 0.15s; }
 .topBarUserBtn:hover { opacity: 0.85; }
+.topBarUserImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 /* ── Mobile bottom nav ───────────────────────────────────────── */
 .bottomNav {
@@ -74,7 +75,8 @@
 .bnItemActive { color: #2c5bf0; }
 .bnGlyph { position: relative; font-size: 20px; line-height: 1; }
 .bnBadge { position: absolute; top: -5px; right: -9px; background: #2c5bf0; color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
-.bnAvatarMini { width: 22px; height: 22px; border-radius: 50%; background: #2c5bf0; color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.bnAvatarMini { position: relative; width: 22px; height: 22px; border-radius: 50%; background: #2c5bf0; color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.bnAvatarMiniImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 819px) {
