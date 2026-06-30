@@ -137,10 +137,13 @@ export function ChatWindow({
                 <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
                   <div
                     className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
-                    style={{ background: item.msg.senderColor }}
+                    style={item.msg.senderAvatarUrl ? undefined : { background: item.msg.senderColor }}
                     onClick={() => item.showAvatar ? onAvatarClick(item.msg) : undefined}
                   >
-                    {item.msg.senderInitials}
+                    {item.msg.senderAvatarUrl
+                      ? <img src={item.msg.senderAvatarUrl} alt={item.msg.senderInitials} className={s.msgAvatarImg} />
+                      : item.msg.senderInitials
+                    }
                   </div>
                   <div className={[
                     s.bubble,

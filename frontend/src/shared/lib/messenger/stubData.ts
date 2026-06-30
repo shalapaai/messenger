@@ -71,10 +71,10 @@ export const STUB_USER: StubUser = {
 
 /* ── Message factories ──────────────────────────────────────────────────── */
 
-const ME: Sender    = { own: true,  senderId: 'me',    senderName: 'Анна',   senderInitials: 'АС', senderColor: '#2C5BF0' }
-const KATYA: Sender = { own: false, senderId: 'katya', senderName: 'Катя',   senderInitials: 'КА', senderColor: '#E0556E' }
-const SLAVA: Sender = { own: false, senderId: 'slava', senderName: 'Слава',  senderInitials: 'СВ', senderColor: '#22B07D' }
-const MISHA: Sender = { own: false, senderId: 'misha', senderName: 'Михаил', senderInitials: 'МИ', senderColor: '#F0902C' }
+const ME: Sender    = { own: true,  senderId: 'me',    senderName: 'Анна',   senderInitials: 'АС', senderColor: '#2C5BF0', senderAvatarUrl: null }
+const KATYA: Sender = { own: false, senderId: 'katya', senderName: 'Катя',   senderInitials: 'КА', senderColor: '#E0556E', senderAvatarUrl: null }
+const SLAVA: Sender = { own: false, senderId: 'slava', senderName: 'Слава',  senderInitials: 'СВ', senderColor: '#22B07D', senderAvatarUrl: null }
+const MISHA: Sender = { own: false, senderId: 'misha', senderName: 'Михаил', senderInitials: 'МИ', senderColor: '#F0902C', senderAvatarUrl: null }
 
 let _mid = 1
 const m = (sender: Sender, text: string, time: string, date = 'Сегодня'): Message =>
@@ -115,7 +115,7 @@ export function getInitialMessages(chatId: string): Message[] {
   const meta = CHAT_META[chatId] ?? CHAT_META['1']
   const other: Sender = {
     own: false, senderId: `other-${chatId}`,
-    senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color,
+    senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color, senderAvatarUrl: null,
   }
   return directMessages(other)
 }
@@ -128,7 +128,7 @@ export function makeOlderBatch(chatId: string): Message[] {
   const h = (s: Sender, t: string, time: string): Message => ({ id: _hid++, ...s, text: t, time, date: 'Вчера' })
   const other: Sender = {
     own: false, senderId: `hist-${chatId}`,
-    senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color,
+    senderName: meta.name.split(' ')[0], senderInitials: meta.initials, senderColor: meta.color, senderAvatarUrl: null,
   }
   if (chatId === '2') {
     return [

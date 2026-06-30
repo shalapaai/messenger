@@ -93,6 +93,7 @@ export async function fetchMessages(
     senderName:     dto.senderName,
     senderInitials: initials(dto.senderName),
     senderColor:    colorFromId(dto.senderId),
+    senderAvatarUrl: dto.senderAvatarUrl,
     time:           formatTime(dto.sentAt),
     date:           formatDate(dto.sentAt),
   }))

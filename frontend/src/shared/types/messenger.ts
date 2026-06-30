@@ -40,6 +40,7 @@ export interface Message {
   senderName: string
   senderInitials: string
   senderColor: string
+  senderAvatarUrl: string | null
   time: string
   date: string
   status?: 'pending' | 'sent' | 'failed'

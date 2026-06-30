@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, ModalUser } from '../../shared/types/messenger'
-import { CHAT_META, GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
+import { GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
 import { colorFromId, initials as getInitials } from '../../shared/api/chatsApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -43,11 +43,12 @@ export function MessengerPage() {
     : '...'
 
   const meSender = {
-    own:            true,
-    senderId:       profile?.userId      ?? 'me',
-    senderName:     profile?.displayName ?? '',
-    senderInitials: profileInitials,
-    senderColor:    '#2C5BF0',
+    own:             true,
+    senderId:        profile?.userId      ?? 'me',
+    senderName:      profile?.displayName ?? '',
+    senderInitials:  profileInitials,
+    senderColor:     '#2C5BF0',
+    senderAvatarUrl: profile?.avatarUrl ?? null,
   }
 
   // ── Zustand чаты ─────────────────────────────────────────────────────────
@@ -130,10 +131,8 @@ export function MessengerPage() {
   const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
   const activeChat = id ? chats.find(c => c.id === id) : undefined
   const activeChatOnline = useIsOnline(activeChat?.otherUserId)
-  const meta = id
-    ? (activeChat
-        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, avatarUrl: activeChat.avatarUrl, online: activeChatOnline, group: activeChat.group, otherUserId: activeChat.otherUserId }
-        : (CHAT_META[id] ?? CHAT_META['1']))
+  const meta = id && activeChat
+    ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, avatarUrl: activeChat.avatarUrl, online: activeChatOnline, group: activeChat.group, otherUserId: activeChat.otherUserId }
     : null
 
   function openUserModal(userId: string, name: string, online: boolean) {
