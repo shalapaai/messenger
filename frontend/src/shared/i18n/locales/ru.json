@@ -87,6 +87,9 @@
     "fallbackLabel": "Аватар пользователя",
     "choose": "Выбрать фото",
     "replace": "Заменить фото",
+    "remove": "Удалить фото",
+    "color": "Цвет аватарки",
+    "chooseColor": "Цвет {{color}}",
     "hint": "PNG, JPG или WEBP",
     "cropTitle": "Обрезать фото",
     "zoom": "Масштаб",
@@ -108,7 +111,18 @@
   "messenger": {
     "messages": "Сообщения",
     "newChat": "Новый чат",
+    "createGroup": "Создать группу",
+    "groupCreationInProgress": "Создание групп пока в разработке",
     "search": "Поиск",
+    "searchOrNewChat": "Поиск или новый чат",
+    "newUsers": "Новые пользователи",
+    "searching": "Поиск…",
+    "searchFailed": "Не удалось выполнить поиск",
+    "searchStartHint": "Начните вводить имя, @login или почту",
+    "searchPlaceholder": "Имя, @login или почта",
+    "contacts": "Контакты",
+    "users": "Пользователи",
+    "newChatDraftName": "Новый чат",
     "tabs": {
       "all": "Все",
       "direct": "Личные",
@@ -130,7 +144,17 @@
     "firstMessage": "Напишите первое сообщение {{name}} 👋",
     "historyStart": "Начало переписки",
     "sendFailedRetry": "⚠ Не отправлено · Повторить",
-    "messagePlaceholder": "Написать сообщение…"
+    "messagePlaceholder": "Написать сообщение…",
+    "deletedMessage": "Сообщение удалено",
+    "deleteMessage": "Удалить сообщение",
+    "confirmDeleteMessage": "Удалить сообщение?",
+    "sendFailed": "Не удалось отправить сообщение. Попробуйте ещё раз.",
+    "deleteMessageFailed": "Не удалось удалить сообщение.",
+    "deleteChat": "Удалить чат",
+    "deleteChatTitle": "Удалить чат?",
+    "deleteChatText": "Вся переписка с {{name}} будет удалена безвозвратно.",
+    "deleteChatFailed": "Не удалось удалить чат.",
+    "leaveGroupFailed": "Не удалось выйти из группы."
   },
   "group": {
     "members_one": "Участник ({{count}})",
@@ -144,6 +168,8 @@
     "addMember": "Добавить участника",
     "editGroup": "Изменить группу",
     "leaveGroup": "Выйти из группы",
+    "leaveConfirm": "Выйти из группы?",
+    "label": "группа",
     "roles": {
       "admin": "Администратор",
       "member": "Участник"

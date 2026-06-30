@@ -6,8 +6,8 @@ import type { Chat, Message } from '../types/messenger'
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
 
 interface LastMessageDto { messageId: string; senderId: string; content: string; sentAt: string }
-interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean }
-interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null }
+interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean }
+interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 
 // ── Вспомогательные ──────────────────────────────────────────────────────────
@@ -66,7 +66,8 @@ export async function fetchChats(): Promise<Chat[]> {
     id:          dto.id,
     name:        dto.name ?? i18n.t('messenger.tabs.direct'),
     initials:    initials(dto.name),
-    color:       colorFromId(dto.id),
+    color:       dto.avatarColor ?? colorFromId(dto.id),
+    avatarUrl:   dto.avatarUrl,
     preview:     dto.lastMessage?.content ?? '',
     time:        dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
     unread:      0,
@@ -94,10 +95,35 @@ export async function fetchMessages(
     senderId:       dto.senderId,
     senderName:     dto.senderName,
     senderInitials: initials(dto.senderName),
-    senderColor:    colorFromId(dto.senderId),
+    senderColor:     dto.senderAvatarColor,
+    senderAvatarUrl: dto.senderAvatarUrl,
     time:           formatTime(dto.sentAt),
     date:           formatDate(dto.sentAt),
+    deleted:        dto.status === 'deleted',
   }))
 
   return { messages, nextCursor: res.data.nextCursor }
+}
+
+/** Создаёт (или возвращает существующий) личный чат с пользователем — идемпотентно. */
+export async function createDirectChat(otherUserId: string): Promise<string> {
+  const res = await apiClient.post<string>('/chats/direct', { otherUserId })
+  return res.data
+}
+
+/** Полностью удаляет личный чат — для обеих сторон. */
+export async function deleteChat(chatId: string): Promise<void> {
+  await apiClient.delete(`/chats/${chatId}`)
+}
+
+/** Выйти из группового чата (или удалить участника, если передан другой userId). */
+export async function leaveGroupChat(chatId: string, userId: string): Promise<void> {
+  await apiClient.delete(`/chats/${chatId}/members/${userId}`)
+}
+
+/** Отправка сообщения через REST (а не SignalR) — нужна, чтобы отправить самое первое
+ *  сообщение в только что созданный чат до того, как клиент вступит в его SignalR-группу. */
+export async function sendMessageRest(chatId: string, content: string): Promise<string> {
+  const res = await apiClient.post<string>(`/chats/${chatId}/messages`, { content })
+  return res.data
 }

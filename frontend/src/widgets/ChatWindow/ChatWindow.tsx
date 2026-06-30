@@ -1,17 +1,29 @@
 import { useState, useRef, type RefObject, type KeyboardEvent, type ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ChatMeta, Message, ModalUser } from '../../shared/types/messenger'
-import { GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
+import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
 type RenderedItem =
   | { type: 'sep'; label: string }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
 
+function TrashIcon({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  )
+}
+
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
+  meSender: Sender
   typingChats: Record<string, boolean>
   loadingHistory: boolean
   historyLoaded: boolean
@@ -23,16 +35,17 @@ interface ChatWindowProps {
   bottomRef: RefObject<HTMLDivElement | null>
   onSend: (text: string) => void
   onRetry: (msg: Message) => void
+  onDelete: (msg: Message) => void
   onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
 }
 
 export function ChatWindow({
-  chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
+  chatId, meta, messages, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onRetry, onTyping, onHeaderClick, onAvatarClick,
+  onSend, onRetry, onDelete, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -64,14 +77,16 @@ export function ChatWindow({
   }
 
   const isTyping = typingChats[chatId] && !meta.group
-  const memberCount = (GROUP_MEMBERS[chatId] ?? []).length
 
   return (
     <>
       <div className={s.chatHeader}>
         <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
-          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={{ background: meta.color }}>
-            {meta.initials}
+          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
+            {meta.avatarUrl
+              ? <img src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
+              : meta.initials
+            }
           </div>
           <div className={s.chatHeaderInfo}>
             <div className={s.chatHeaderName}>{meta.name}</div>
@@ -81,7 +96,7 @@ export function ChatWindow({
                 : meta.online
                   ? <><span className={s.chatHeaderOnlineDot} />{t('common.online')}</>
                   : meta.group
-                    ? t('messenger.memberCount', { count: memberCount })
+                    ? t('group.label')
                     : t('common.recently')
               }
             </div>
@@ -122,24 +137,31 @@ export function ChatWindow({
               <div key={`sep-${i}`} className={s.dateSep}>
                 <span className={s.dateSepLabel}>{item.label}</span>
               </div>
-            ) : (
+            ) : (() => {
+              const displaySender = item.msg.own
+                ? { ...item.msg, senderColor: meSender.senderColor, senderAvatarUrl: meSender.senderAvatarUrl, senderInitials: meSender.senderInitials, senderName: meSender.senderName }
+                : item.msg
+              return (
               <div key={item.msg.id}>
                 {item.showName && (
                   <div
                     className={`${s.senderName} ${s.senderNameClickable}`}
-                    style={{ color: item.msg.senderColor }}
+                    style={{ color: displaySender.senderColor }}
                     onClick={() => onAvatarClick(item.msg)}
                   >
-                    {item.msg.senderName}
+                    {displaySender.senderName}
                   </div>
                 )}
                 <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
                   <div
                     className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
-                    style={{ background: item.msg.senderColor }}
+                    style={displaySender.senderAvatarUrl ? undefined : { background: displaySender.senderColor }}
                     onClick={() => item.showAvatar ? onAvatarClick(item.msg) : undefined}
                   >
-                    {item.msg.senderInitials}
+                    {displaySender.senderAvatarUrl
+                      ? <img src={displaySender.senderAvatarUrl} alt={displaySender.senderInitials} className={s.msgAvatarImg} />
+                      : displaySender.senderInitials
+                    }
                   </div>
                   <div className={[
                     s.bubble,
@@ -147,9 +169,20 @@ export function ChatWindow({
                     item.showAvatar ? s.bubbleTail : '',
                     item.msg.status === 'pending' ? s.bubblePending : '',
                     item.msg.status === 'failed'  ? s.bubbleFailed  : '',
+                    item.msg.deleted              ? s.bubbleDeleted : '',
                   ].join(' ')}>
-                    {item.msg.text}
+                    {item.msg.deleted ? t('messenger.deletedMessage') : item.msg.text}
                   </div>
+                  {item.msg.own && !item.msg.deleted && item.msg.status !== 'pending' && item.msg.status !== 'failed' && (
+                    <button
+                      type="button"
+                      className={s.msgDeleteBtn}
+                      title={t('messenger.deleteMessage')}
+                      onClick={() => { if (window.confirm(t('messenger.confirmDeleteMessage'))) onDelete(item.msg) }}
+                    >
+                      <TrashIcon className={s.msgDeleteIcon} />
+                    </button>
+                  )}
                 </div>
                 <span className={s.msgTime}>
                   {item.msg.own && item.msg.status === 'pending' && <span className={`${s.msgStatusIcon} ${s.msgStatusPending}`}>●</span>}
@@ -162,20 +195,8 @@ export function ChatWindow({
                   </button>
                 )}
               </div>
-            )
-          )}
-
-          {isTyping && (
-            <div className={`${s.msgRow} ${s.typingRow}`}>
-              <div className={s.msgAvatar} style={{ background: meta.color }}>{meta.initials}</div>
-              <div className={`${s.bubble} ${s.bubbleOther} ${s.bubbleTail}`}>
-                <span className={s.typingDots}>
-                  <span className={s.typingDot} />
-                  <span className={s.typingDot} />
-                  <span className={s.typingDot} />
-                </span>
-              </div>
-            </div>
+              )
+            })()
           )}
 
           <div ref={bottomRef} />

@@ -8,6 +8,8 @@ import { profileApi } from '../../../shared/api/profileApi'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
 import { AvatarCropModal } from '../AvatarCropModal'
 import { AvatarUpload } from '../AvatarUpload'
+import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
+import { randomAvatarColor } from '../../../shared/lib/avatarColors'
 import styles from './ProfileSetupForm.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
@@ -24,6 +26,7 @@ function ProfileSetupForm() {
   const [phone, setPhone]             = useState('')
   const [city, setCity]               = useState('')
   const [department, setDepartment]   = useState('')
+  const [avatarColor, setAvatarColor]     = useState(() => randomAvatarColor())
   const [avatarPreview, setAvatarPreview] = useState<string>()
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
   const [croppedAvatarFile, setCroppedAvatarFile]   = useState<File | null>(null)
@@ -87,7 +90,7 @@ function ProfileSetupForm() {
     try {
       // Создаём профиль; 409 ProfileAlreadyExists — игнорируем и продолжаем
       try {
-        await profileApi.create({ displayName: displayName.trim(), login: trimmedLogin })
+        await profileApi.create({ displayName: displayName.trim(), login: trimmedLogin, avatarColor })
       } catch (createErr) {
         if (!axios.isAxiosError(createErr) || createErr.response?.status !== 409) {
           throw createErr
@@ -131,8 +134,14 @@ function ProfileSetupForm() {
           <AvatarUpload
             name={displayName}
             avatarPreview={avatarPreview}
+            color={avatarColor}
             onChange={handleAvatarChange}
+            onRemove={() => { setAvatarPreview(undefined); setCroppedAvatarFile(null) }}
           />
+          <div className={styles.colorPickerWrap}>
+            <span className={styles.colorPickerLabel}>{t('avatar.color')}</span>
+            <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+          </div>
         </div>
 
         <div className={styles.fields}>

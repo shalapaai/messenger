@@ -25,8 +25,12 @@ export function useTypingIndicator(startTyping: () => void, stopTyping: () => vo
   }, [])
 
   const handleOwnTyping = useCallback(() => {
-    if (!ownDebounce.current) startTyping()
-    else clearTimeout(ownDebounce.current)
+    // Шлём StartTyping на каждое нажатие, а не только при первом — иначе после
+    // паузы (когда дебаунс уже сбросил "печатает" и обнулил ownDebounce) повторный
+    // вызов мог зависеть от устаревшего состояния. StartTyping — дешёвый вызов,
+    // получатель просто продлевает себе индикатор по новому событию.
+    startTyping()
+    if (ownDebounce.current) clearTimeout(ownDebounce.current)
     ownDebounce.current = setTimeout(() => {
       stopTyping()
       ownDebounce.current = null

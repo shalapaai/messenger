@@ -87,6 +87,9 @@
     "fallbackLabel": "User avatar",
     "choose": "Choose photo",
     "replace": "Replace photo",
+    "remove": "Remove photo",
+    "color": "Avatar color",
+    "chooseColor": "Color {{color}}",
     "hint": "PNG, JPG, or WEBP",
     "cropTitle": "Crop photo",
     "zoom": "Zoom",
@@ -108,7 +111,18 @@
   "messenger": {
     "messages": "Messages",
     "newChat": "New chat",
+    "createGroup": "Create group",
+    "groupCreationInProgress": "Group creation is still in development",
     "search": "Search",
+    "searchOrNewChat": "Search or new chat",
+    "newUsers": "New users",
+    "searching": "Searching…",
+    "searchFailed": "Could not search",
+    "searchStartHint": "Start typing a name, @username, or email",
+    "searchPlaceholder": "Name, @username, or email",
+    "contacts": "Contacts",
+    "users": "Users",
+    "newChatDraftName": "New chat",
     "tabs": {
       "all": "All",
       "direct": "Direct",
@@ -128,7 +142,17 @@
     "firstMessage": "Write the first message to {{name}} 👋",
     "historyStart": "Start of conversation",
     "sendFailedRetry": "⚠ Not sent · Retry",
-    "messagePlaceholder": "Write a message…"
+    "messagePlaceholder": "Write a message…",
+    "deletedMessage": "Message deleted",
+    "deleteMessage": "Delete message",
+    "confirmDeleteMessage": "Delete message?",
+    "sendFailed": "Could not send the message. Please try again.",
+    "deleteMessageFailed": "Could not delete the message.",
+    "deleteChat": "Delete chat",
+    "deleteChatTitle": "Delete chat?",
+    "deleteChatText": "The entire conversation with {{name}} will be permanently deleted.",
+    "deleteChatFailed": "Could not delete chat.",
+    "leaveGroupFailed": "Could not leave group."
   },
   "group": {
     "members_one": "Member ({{count}})",
@@ -138,6 +162,8 @@
     "addMember": "Add member",
     "editGroup": "Edit group",
     "leaveGroup": "Leave group",
+    "leaveConfirm": "Leave group?",
+    "label": "group",
     "roles": {
       "admin": "Admin",
       "member": "Member"

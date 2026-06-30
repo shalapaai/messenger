@@ -1,10 +1,11 @@
 import { useState, type ChangeEvent } from 'react'
-import { useTranslation } from 'react-i18next'
 import axios from 'axios'
+import { useTranslation } from 'react-i18next'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { getCroppedImage, type CroppedAreaPixels } from '../../../shared/lib/image'
 import { profileApi } from '../../../shared/api/profileApi'
+import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
 import type { UserProfile } from '../../../shared/types/user'
 import s from './EditProfileModal.module.css'
 
@@ -26,13 +27,15 @@ export function EditProfileModal(props: EditProfileModalProps) {
 
 function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalProps) {
   const { t } = useTranslation()
-  const [displayName, setDisplayName] = useState(profile.displayName)
-  const [editLogin,   setEditLogin]   = useState(profile.login?.replace(/^@/, '') ?? '')
+  const [displayName,  setDisplayName]  = useState(profile.displayName)
+  const [avatarColor,  setAvatarColor]  = useState(profile.avatarColor)
+  const [editLogin,    setEditLogin]    = useState(profile.login?.replace(/^@/, '') ?? '')
   const [editStatus,  setEditStatus]  = useState(profile.status ?? '')
   const [editPhone,   setEditPhone]   = useState(profile.phone ?? '')
   const [editCity,    setEditCity]    = useState(profile.city ?? '')
   const [editDept,    setEditDept]    = useState(profile.department ?? '')
   const [avatarPreview,      setAvatarPreview]      = useState<string | undefined>(undefined)
+  const [avatarRemoved,      setAvatarRemoved]      = useState(false)
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
   const [croppedAvatarFile,  setCroppedAvatarFile]  = useState<File | null>(null)
   const [cropImageSrc,       setCropImageSrc]       = useState<string | undefined>(undefined)
@@ -85,9 +88,12 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
         phone:       editPhone.trim(),
         city:        editCity.trim(),
         department:  editDept.trim(),
+        avatarColor,
       })
 
-      if (croppedAvatarFile) {
+      if (avatarRemoved && !croppedAvatarFile) {
+        await profileApi.removeAvatar()
+      } else if (croppedAvatarFile) {
         await profileApi.uploadAvatar(croppedAvatarFile)
       }
 
@@ -118,9 +124,15 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
             <div className={s.modalAvatarBlock}>
               <AvatarUpload
                 name={displayName}
-                avatarPreview={avatarPreview ?? profile.avatarUrl ?? undefined}
-                onChange={handleAvatarChange}
+                avatarPreview={avatarRemoved ? undefined : (avatarPreview ?? profile.avatarUrl ?? undefined)}
+                color={avatarColor}
+                onChange={(file) => { setAvatarRemoved(false); handleAvatarChange(file) }}
+                onRemove={() => { setAvatarPreview(undefined); setAvatarRemoved(true); setCroppedAvatarFile(null) }}
               />
+              <div className={s.colorPickerWrap}>
+                <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
+                <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+              </div>
             </div>
             <div className={s.modalFields}>
               <label className={s.modalField}>

@@ -42,6 +42,8 @@
 .modalClose:hover { background: var(--color-border); }
 
 .umAvatar { width: 80px; height: 80px; border-radius: 50%; color: var(--color-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
+.umAvatarImg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; display: block; }
+.umLoading { font-size: 13px; color: var(--color-text-faint); text-align: center; margin-bottom: 16px; }
 .umName { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
 .umStatus { font-size: 14px; color: var(--color-text-subtle); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; }
 .umStatusDot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); flex-shrink: 0; display: inline-block; }
@@ -50,3 +52,104 @@
 .umField { display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px; }
 .umFieldLabel { font-size: 12px; font-weight: 600; color: var(--color-text-faint); }
 .umFieldValue { font-size: 15px; font-weight: 600; color: var(--color-text); }
+
+.umDeleteChatBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+.umDeleteChatBtn:hover { background: var(--color-danger-soft-hover); }
+
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+  padding: 20px;
+}
+
+.confirmPanel {
+  background: var(--color-surface-raised);
+  border-radius: 20px;
+  padding: 32px 28px 28px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.confirmIcon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.confirmTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.confirmText {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.confirmCancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.confirmCancel:hover { background: var(--color-border); }
+
+.confirmDelete {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  border: none;
+  background: var(--color-danger, #e03b3b);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.confirmDelete:hover { opacity: 0.88; }

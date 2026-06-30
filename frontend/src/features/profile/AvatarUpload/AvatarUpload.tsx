@@ -7,10 +7,12 @@ import styles from './AvatarUpload.module.css'
 type AvatarUploadProps = {
   name: string
   avatarPreview?: string
+  color?: string
   onChange: (file: File) => void
+  onRemove?: () => void
 }
 
-function AvatarUpload({ name, avatarPreview, onChange }: AvatarUploadProps) {
+function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: AvatarUploadProps) {
   const { t } = useTranslation()
   const inputId = useId()
 
@@ -27,12 +29,25 @@ function AvatarUpload({ name, avatarPreview, onChange }: AvatarUploadProps) {
 
   return (
     <div className={styles.upload}>
-      <Avatar src={avatarPreview} name={name} size="large" />
+      <Avatar src={avatarPreview} name={name} size="large" color={color} />
 
       <div className={styles.actions}>
-        <label className={styles.uploadButton} htmlFor={inputId}>
-          {avatarPreview ? t('avatar.replace') : t('avatar.choose')}
-        </label>
+        <div className={styles.buttonsRow}>
+          <label className={styles.uploadButton} htmlFor={inputId}>
+            {avatarPreview ? t('avatar.replace') : t('avatar.choose')}
+          </label>
+
+          {avatarPreview && onRemove && (
+            <button
+              type="button"
+              className={styles.removeButton}
+              onClick={onRemove}
+              aria-label={t('avatar.remove')}
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         <p className={styles.hint}>{t('avatar.hint')}</p>
       </div>

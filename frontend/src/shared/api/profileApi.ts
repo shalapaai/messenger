@@ -1,9 +1,23 @@
 import { apiClient } from './apiClient'
 import type { UserProfile } from '../types/user'
 
+export interface PublicUserProfile {
+  userId: string
+  displayName: string
+  login: string | null
+  status: string | null
+  avatarUrl: string | null
+  avatarColor: string
+  phone: string | null
+  city: string | null
+  department: string | null
+  email: string
+}
+
 export interface CreateProfileData {
   displayName: string
   login?: string
+  avatarColor?: string
 }
 
 export interface UpdateProfileData {
@@ -13,6 +27,7 @@ export interface UpdateProfileData {
   phone?: string
   city?: string
   department?: string
+  avatarColor?: string
 }
 
 export const profileApi = {
@@ -30,6 +45,11 @@ export const profileApi = {
     return res.data
   },
 
+  async getUserById(userId: string): Promise<PublicUserProfile> {
+    const res = await apiClient.get<PublicUserProfile>(`/users/${userId}`)
+    return res.data
+  },
+
   async uploadAvatar(file: File): Promise<string> {
     const formData = new FormData()
     formData.append('file', file)
@@ -37,5 +57,9 @@ export const profileApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return res.data.avatarUrl
+  },
+
+  async removeAvatar(): Promise<void> {
+    await apiClient.delete('/users/me/avatar')
   },
 }

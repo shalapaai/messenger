@@ -14,4 +14,5 @@ public sealed record UserSearchResultDto(
     string  Email,
     string  DisplayName,
     string? Login,
-    string? AvatarUrl);
+    string? AvatarUrl,
+    string? AvatarColor);

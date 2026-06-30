@@ -41,6 +41,7 @@ public sealed class GetMessagesQueryHandler(
                     m.SenderId,
                     summary?.DisplayName ?? "Пользователь",
                     summary?.AvatarUrl,
+                    summary?.AvatarColor ?? "#2C5BF0",
                     m.Content,
                     m.FileUrl,
                     m.Status.ToString().ToLower(),

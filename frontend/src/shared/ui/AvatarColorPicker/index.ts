@@ -1,0 +1,1 @@
+export { AvatarColorPicker } from './AvatarColorPicker'

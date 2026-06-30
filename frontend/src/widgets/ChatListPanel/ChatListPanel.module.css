@@ -120,7 +120,7 @@
 .clError {
   padding: 40px 16px;
   text-align: center;
-  color: #8a93a6;
+  color: var(--color-text-subtle);
   font-size: 14px;
   font-weight: 500;
   display: flex;
@@ -130,8 +130,8 @@
 }
 
 .clRetryBtn {
-  background: #2c5bf0;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   border: none;
   border-radius: 10px;
   padding: 9px 18px;
@@ -140,7 +140,7 @@
   cursor: pointer;
   font-family: inherit;
 }
-.clRetryBtn:hover { background: #1f4bdd; }
+.clRetryBtn:hover { background: var(--color-primary-hover); }
 
 .clRow {
   display: flex;
@@ -162,6 +162,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
+  border: none;
+  padding: 0;
   color: var(--color-on-primary);
   display: flex;
   align-items: center;
@@ -169,6 +171,16 @@
   font-weight: 800;
   font-size: 14px;
   flex-shrink: 0;
+  cursor: pointer;
+}
+
+.clAvatarImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
 }
 
 .clAvatarGroup { border-radius: 13px; }
@@ -224,7 +236,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #eceef4;
+  background: var(--color-border);
   flex-shrink: 0;
   animation: clSkeletonPulse 1.4s ease-in-out infinite;
 }
@@ -239,8 +251,36 @@
 .clSkeletonLine {
   height: 11px;
   border-radius: 6px;
-  background: #eceef4;
+  background: var(--color-border);
   animation: clSkeletonPulse 1.4s ease-in-out infinite;
+}
+
+.clUserDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.clUserDivider::before,
+.clUserDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.clUserSearching {
+  padding: 16px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-faint);
+  text-align: center;
 }
 
 @keyframes clSkeletonPulse {

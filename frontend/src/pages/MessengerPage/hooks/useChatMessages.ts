@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
-import { CHAT_META, getInitialMessages } from '../../../shared/lib/messenger/stubData'
-import { fetchMessages, colorFromId, initials, nextMessageId } from '../../../shared/api/chatsApi'
+import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
+import { deleteMessage as deleteMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage } from '../../../shared/api/signalrClient'
-import i18n from '../../../shared/i18n'
+import type { IncomingMessage, MessageDeleted } from '../../../shared/api/signalrClient'
+import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
 type SendFn = (content: string) => Promise<{ messageId: string }>
 
@@ -17,9 +17,7 @@ interface UseChatMessagesOptions {
  * Владеет содержимым переписок: загрузка истории (с реальной cursor-пагинацией),
  * приём realtime-сообщений, отправка с оптимистичным UI и ретраем.
  *
- * Если реальный чат (GUID, есть в сторе чатов) не загрузился — отдаёт loadError,
- * UI должен показать ошибку и кнопку "Повторить", а НЕ молча подставлять моковые данные.
- * Мок-фоллбэк (getInitialMessages) — только для старых демо-ID из CHAT_META.
+ * Если чат не загрузился — отдаёт loadError; UI показывает ошибку с кнопкой «Повторить».
  */
 export function useChatMessages(id: string | undefined, opts: UseChatMessagesOptions = {}) {
   const [chatMessages,   setChatMessages]   = useState<Record<string, Message[]>>({})
@@ -42,14 +40,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))
       opts.onAppend?.(false)
     }).catch(() => {
-      if (CHAT_META[chatId]) {
-        // известный демо-чат (старые мок-ID) — стаб-фоллбэк уместен
-        setChatMessages(prev => ({ ...prev, [chatId]: getInitialMessages(chatId) }))
-        setHistoryLoaded(prev => ({ ...prev, [chatId]: true }))
-      } else {
-        // реальный чат, API недоступен — честная ошибка, не подсовываем чужой мок-диалог
-        setLoadError(prev => ({ ...prev, [chatId]: true }))
-      }
+      setLoadError(prev => ({ ...prev, [chatId]: true }))
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,15 +70,16 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       return {
         ...prev,
         [msg.chatId]: [...prev[msg.chatId], {
-          id:             nextMessageId(),
-          text:           msg.content,
-          own:            false,
-          senderId:       msg.senderId,
-          senderName:     msg.senderName,
-          senderInitials: initials(msg.senderName),
-          senderColor:    colorFromId(msg.senderId),
-          time:           new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-          date:           i18n.t('common.today'),
+          id:              nextMessageId(),
+          text:            msg.content,
+          own:             false,
+          senderId:        msg.senderId,
+          senderName:      msg.senderName,
+          senderInitials:  initials(msg.senderName),
+          senderColor:     msg.senderAvatarColor,
+          senderAvatarUrl: msg.senderAvatarUrl,
+          time:            new Date(msg.sentAt).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+          date:            i18n.t('common.today'),
         }],
       }
     })
@@ -95,6 +87,30 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     if (msg.chatId === id) opts.onAppend?.(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
+
+  const handleDeletedMessage = useCallback((event: MessageDeleted) => {
+    setChatMessages(prev => {
+      const chatMsgs = prev[event.chatId]
+      if (!chatMsgs) return prev
+      return {
+        ...prev,
+        [event.chatId]: chatMsgs.map(m =>
+          m.messageId === event.messageId ? { ...m, text: '', deleted: true } : m
+        ),
+      }
+    })
+  }, [])
+
+  const deleteMessage = useCallback(async (chatId: string, msg: Message) => {
+    if (!msg.messageId) return
+    await deleteMessageApi(chatId, msg.messageId)
+    setChatMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] ?? []).map(m =>
+        m.id === msg.id ? { ...m, text: '', deleted: true } : m
+      ),
+    }))
+  }, [])
 
   const loadMoreHistory = useCallback((
     onBeforePrepend: () => void,
@@ -137,7 +153,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     const tempId = nextMessageId()
     const newMsg: Message = {
       ...meSender, id: tempId, text,
-      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+      time: new Date().toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
       date: i18n.t('common.today'),
       status: 'pending',
     }
@@ -163,10 +179,12 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     loadError:      id ? !!loadError[id] : false,
     retryLoadInitial: () => id && loadInitial(id),
     handleIncomingMessage,
+    handleDeletedMessage,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
     send,
     retry,
+    deleteMessage,
   }
 }

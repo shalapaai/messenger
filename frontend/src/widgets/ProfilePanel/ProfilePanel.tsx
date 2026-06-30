@@ -64,7 +64,7 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
             {profile.avatarUrl ? (
               <img className={s.ppAvatar} src={profile.avatarUrl} alt={profile.displayName} />
             ) : (
-              <div className={s.ppAvatar}>{initials}</div>
+              <div className={s.ppAvatar} style={{ background: profile.avatarColor, color: '#fff' }}>{initials}</div>
             )}
             <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />{t('common.online')}</div>
             <h2 className={s.ppName}>{profile.displayName}</h2>
@@ -115,7 +115,7 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
             <span>{t('profile.chats')}</span>
           </button>
           <button className={`${s.bnItem} ${s.bnItemActive}`}>
-            <span className={s.bnAvatarMini}>{initials}</span>
+            <span className={s.bnAvatarMini} style={{ background: profile.avatarColor }}>{initials}</span>
             <span>{t('profile.profile')}</span>
           </button>
         </nav>

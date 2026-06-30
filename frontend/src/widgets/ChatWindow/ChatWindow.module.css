@@ -28,6 +28,7 @@
 .chatHeaderTrigger:hover { background: var(--color-surface-muted); }
 
 .chatHeaderAvatar {
+  position: relative;
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -38,9 +39,18 @@
   font-weight: 800;
   font-size: 14px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .chatHeaderAvatarGroup { border-radius: 13px; }
+
+.chatHeaderAvatarImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .chatHeaderInfo { flex: 1; min-width: 0; }
 
@@ -78,31 +88,61 @@
 .senderSwitch { margin-top: 12px; }
 
 .msgAvatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   color: var(--color-on-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 11px;
+  font-size: 12px;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.msgAvatarImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .msgAvatarHidden { visibility: hidden; }
 .msgAvatarClickable { cursor: pointer; transition: opacity 0.15s; }
 .msgAvatarClickable:hover { opacity: 0.78; }
 
-.senderName { font-size: 12px; font-weight: 700; padding-left: 42px; margin-bottom: 3px; margin-top: 12px; }
+.senderName { font-size: 12px; font-weight: 700; padding-left: 46px; margin-bottom: 3px; margin-top: 12px; }
 .senderNameClickable { cursor: pointer; }
 
 .bubble { padding: 11px 16px; border-radius: 18px; font-size: 15px; font-weight: 500; line-height: 1.5; word-break: break-word; }
 .bubbleOwn { background: var(--color-primary); color: var(--color-on-primary); }
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
+.bubbleDeleted { background: #f1f2f7 !important; color: #a6aebf !important; border: 1px solid #eceef4; font-style: italic; }
 
-.msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 42px; }
+.msgDeleteBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: #f1f2f7;
+  color: #56607a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.msgRow:hover .msgDeleteBtn { opacity: 1; }
+.msgDeleteBtn:hover { background: #fee2e2; color: #e03b3b; }
+.msgDeleteIcon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 46px; }
 
 /* ── Input bar ────────────────────────────────────────────────────────────── */
 .inputBar {
