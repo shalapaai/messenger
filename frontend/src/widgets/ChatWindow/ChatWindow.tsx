@@ -169,19 +169,6 @@ export function ChatWindow({
             )
           )}
 
-          {isTyping && (
-            <div className={`${s.msgRow} ${s.typingRow}`}>
-              <div className={s.msgAvatar} style={{ background: meta.color }}>{meta.initials}</div>
-              <div className={`${s.bubble} ${s.bubbleOther} ${s.bubbleTail}`}>
-                <span className={s.typingDots}>
-                  <span className={s.typingDot} />
-                  <span className={s.typingDot} />
-                  <span className={s.typingDot} />
-                </span>
-              </div>
-            </div>
-          )}
-
           <div ref={bottomRef} />
         </div>
       )}
