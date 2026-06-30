@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { signalR, type IncomingMessage, type MessageEdited, type TypingEvent, type UserOnlineEvent } from './signalrClient'
 import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
@@ -43,11 +43,20 @@ export function useSignalR(options: UseSignalROptions = {}) {
     return () => off.forEach(fn => fn())
   }, [options.onMessage, options.onMessageEdited, options.onTyping, options.onStoppedTyping, options.onUserOnline])
 
-  return {
-    status,
-    sendMessage:  (content: string, replyToMessageId?: string) =>
-      options.chatId ? signalR.sendMessage(options.chatId, content, replyToMessageId) : Promise.reject(),
-    startTyping:  () => options.chatId && signalR.startTyping(options.chatId),
-    stopTyping:   () => options.chatId && signalR.stopTyping(options.chatId),
-  }
+  const sendMessage = useCallback((content: string, replyToMessageId?: string) => {
+    const { chatId } = optionsRef.current
+    return chatId ? signalR.sendMessage(chatId, content, replyToMessageId) : Promise.reject()
+  }, [])
+
+  const startTyping = useCallback(() => {
+    const { chatId } = optionsRef.current
+    if (chatId) signalR.startTyping(chatId)
+  }, [])
+
+  const stopTyping = useCallback(() => {
+    const { chatId } = optionsRef.current
+    if (chatId) signalR.stopTyping(chatId)
+  }, [])
+
+  return { status, sendMessage, startTyping, stopTyping }
 }
