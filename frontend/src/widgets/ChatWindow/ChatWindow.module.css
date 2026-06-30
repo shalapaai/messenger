@@ -88,15 +88,15 @@
 .senderSwitch { margin-top: 12px; }
 
 .msgAvatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   color: var(--color-on-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 11px;
+  font-size: 12px;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
@@ -114,7 +114,7 @@
 .msgAvatarClickable { cursor: pointer; transition: opacity 0.15s; }
 .msgAvatarClickable:hover { opacity: 0.78; }
 
-.senderName { font-size: 12px; font-weight: 700; padding-left: 42px; margin-bottom: 3px; margin-top: 12px; }
+.senderName { font-size: 12px; font-weight: 700; padding-left: 46px; margin-bottom: 3px; margin-top: 12px; }
 .senderNameClickable { cursor: pointer; }
 
 .bubble { padding: 11px 16px; border-radius: 18px; font-size: 15px; font-weight: 500; line-height: 1.5; word-break: break-word; }
@@ -142,7 +142,7 @@
 .msgDeleteBtn:hover { background: #fee2e2; color: #e03b3b; }
 .msgDeleteIcon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-.msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 42px; }
+.msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 46px; }
 
 /* ── Input bar ────────────────────────────────────────────────────────────── */
 .inputBar {
