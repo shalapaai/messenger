@@ -1,25 +1,25 @@
 import type { Chat, ChatMeta, GroupMember, Message, ModalUser, Sender, StubUser } from '../../types/messenger'
 
 export const CHATS: Chat[] = [
-  { id: '1', name: 'Михаил Орлов',        initials: 'МО', color: '#2C5BF0', preview: 'Отправил макеты, посмотри когда будет время',  time: '12:48', unread: 3, online: true,  group: false },
-  { id: '2', name: 'Дизайн-команда',      initials: 'ДК', color: '#7A5BF0', preview: 'Катя: согласовали финальную палитру 🎨',       time: '12:31', unread: 8, online: false, group: true  },
-  { id: '3', name: 'Елена Власова',       initials: 'ЕВ', color: '#22B07D', preview: 'Спасибо! Жду созвон в 15:00',                  time: '11:05', unread: 0, online: true,  group: false },
-  { id: '4', name: 'TravelLine — Релизы', initials: 'TL', color: '#F0902C', preview: 'Денис: выкатили обновление 4.2 на прод',       time: '10:52', unread: 0, online: false, group: true  },
-  { id: '5', name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', preview: 'Ты: ок, договорились 👍',                     time: 'Вчера', unread: 0, online: false, group: false },
-  { id: '6', name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', preview: 'Ольга: накидайте идей к понедельнику',         time: 'Вчера', unread: 0, online: false, group: true  },
-  { id: '7', name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', preview: 'Голосовое сообщение · 0:42',                  time: 'Пн',    unread: 0, online: true,  group: false },
-  { id: '8', name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', preview: '',                                             time: '',      unread: 0, online: false, group: false },
+  { id: '1', name: 'Михаил Орлов',        initials: 'МО', color: '#2C5BF0', avatarUrl: null, preview: 'Отправил макеты, посмотри когда будет время',  time: '12:48', unread: 3, online: true,  group: false },
+  { id: '2', name: 'Дизайн-команда',      initials: 'ДК', color: '#7A5BF0', avatarUrl: null, preview: 'Катя: согласовали финальную палитру 🎨',       time: '12:31', unread: 8, online: false, group: true  },
+  { id: '3', name: 'Елена Власова',       initials: 'ЕВ', color: '#22B07D', avatarUrl: null, preview: 'Спасибо! Жду созвон в 15:00',                  time: '11:05', unread: 0, online: true,  group: false },
+  { id: '4', name: 'TravelLine — Релизы', initials: 'TL', color: '#F0902C', avatarUrl: null, preview: 'Денис: выкатили обновление 4.2 на прод',       time: '10:52', unread: 0, online: false, group: true  },
+  { id: '5', name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', avatarUrl: null, preview: 'Ты: ок, договорились 👍',                     time: 'Вчера', unread: 0, online: false, group: false },
+  { id: '6', name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', avatarUrl: null, preview: 'Ольга: накидайте идей к понедельнику',         time: 'Вчера', unread: 0, online: false, group: true  },
+  { id: '7', name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', avatarUrl: null, preview: 'Голосовое сообщение · 0:42',                  time: 'Пн',    unread: 0, online: true,  group: false },
+  { id: '8', name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', avatarUrl: null, preview: '',                                             time: '',      unread: 0, online: false, group: false },
 ]
 
 export const CHAT_META: Record<string, ChatMeta> = {
-  '1': { name: 'Михаил Орлов',        initials: 'МО', color: '#2C5BF0', online: true,  group: false },
-  '2': { name: 'Дизайн-команда',      initials: 'ДК', color: '#7A5BF0', online: false, group: true  },
-  '3': { name: 'Елена Власова',       initials: 'ЕВ', color: '#22B07D', online: true,  group: false },
-  '4': { name: 'TravelLine — Релизы', initials: 'TL', color: '#F0902C', online: false, group: true  },
-  '5': { name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', online: false, group: false },
-  '6': { name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', online: false, group: true  },
-  '7': { name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', online: true,  group: false },
-  '8': { name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', online: false, group: false },
+  '1': { name: 'Михаил Орлов',        initials: 'МО', color: '#2C5BF0', avatarUrl: null, online: true,  group: false },
+  '2': { name: 'Дизайн-команда',      initials: 'ДК', color: '#7A5BF0', avatarUrl: null, online: false, group: true  },
+  '3': { name: 'Елена Власова',       initials: 'ЕВ', color: '#22B07D', avatarUrl: null, online: true,  group: false },
+  '4': { name: 'TravelLine — Релизы', initials: 'TL', color: '#F0902C', avatarUrl: null, online: false, group: true  },
+  '5': { name: 'Артём Кузнецов',      initials: 'АК', color: '#E0556E', avatarUrl: null, online: false, group: false },
+  '6': { name: 'Маркетинг',           initials: 'МР', color: '#2CA6C9', avatarUrl: null, online: false, group: true  },
+  '7': { name: 'Софья Белова',        initials: 'СБ', color: '#9B59B6', avatarUrl: null, online: true,  group: false },
+  '8': { name: 'Павел Громов',        initials: 'ПГ', color: '#56607a', avatarUrl: null, online: false, group: false },
 }
 
 export const GROUP_MEMBERS: Record<string, GroupMember[]> = {
@@ -59,6 +59,7 @@ const SENDER_DETAILS: Record<string, { phone: string; email: string; department:
 export const ME_PROFILE: ModalUser = {
   name: 'Анна Соколова', initials: 'АС', color: '#2C5BF0', online: true,
   phone: '+7 905 •• •• 12', email: 'anna.sokolova@travelline.tech', department: 'Дизайн',
+  userId: undefined,
 }
 
 export const STUB_USER: StubUser = {
@@ -156,6 +157,7 @@ export function getModalUserFromMsg(msg: Message): ModalUser {
   }
   const d = SENDER_DETAILS[msg.senderId]
   return {
+    userId: msg.senderId,
     name: msg.senderName, initials: msg.senderInitials, color: msg.senderColor,
     online: d?.online ?? false, phone: d?.phone, email: d?.email, department: d?.department,
   }

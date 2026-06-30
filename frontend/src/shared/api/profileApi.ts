@@ -1,6 +1,18 @@
 import { apiClient } from './apiClient'
 import type { UserProfile } from '../types/user'
 
+export interface PublicUserProfile {
+  userId: string
+  displayName: string
+  login: string | null
+  status: string | null
+  avatarUrl: string | null
+  phone: string | null
+  city: string | null
+  department: string | null
+  email: string
+}
+
 export interface CreateProfileData {
   displayName: string
   login?: string
@@ -27,6 +39,11 @@ export const profileApi = {
 
   async update(data: UpdateProfileData): Promise<UserProfile> {
     const res = await apiClient.patch<UserProfile>('/users/me', data)
+    return res.data
+  },
+
+  async getUserById(userId: string): Promise<PublicUserProfile> {
+    const res = await apiClient.get<PublicUserProfile>(`/users/${userId}`)
     return res.data
   },
 

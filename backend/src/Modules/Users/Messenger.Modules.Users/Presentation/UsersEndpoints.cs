@@ -3,6 +3,7 @@ namespace Messenger.Modules.Users.Presentation;
 using MediatR;
 using Messenger.Modules.Users.Application.Features.CreateUserProfile;
 using Messenger.Modules.Users.Application.Features.GetMe;
+using Messenger.Modules.Users.Application.Features.GetUserById;
 using Messenger.Modules.Users.Application.Features.SearchUsers;
 using Messenger.Modules.Users.Application.Features.UpdateUserProfile;
 using Messenger.Modules.Users.Application.Features.UploadAvatar;
@@ -56,6 +57,12 @@ public static class UsersEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .DisableAntiforgery();
+
+        group.MapGet("/{userId:guid}", GetUserById)
+            .WithName("GetUserById")
+            .WithSummary("Получить профиль пользователя по ID")
+            .Produces<PublicUserDto>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapGet("/search", SearchUsers)
             .WithName("SearchUsers")
@@ -112,6 +119,16 @@ public static class UsersEndpoints
             ctx.GetUserId(), stream, file.FileName, file.ContentType, file.Length);
         var result = await sender.Send(command, ct);
         return result.IsSuccess ? Results.Ok(new AvatarUrlDto(result.Value!)) : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> GetUserById(
+        Guid userId,
+        ISender sender,
+        HttpContext ctx,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new GetUserByIdQuery(ctx.GetUserId(), userId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
     }
 
     private static async Task<IResult> SearchUsers(

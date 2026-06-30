@@ -68,8 +68,11 @@ export function ChatWindow({
     <>
       <div className={s.chatHeader}>
         <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
-          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={{ background: meta.color }}>
-            {meta.initials}
+          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
+            {meta.avatarUrl
+              ? <img src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
+              : meta.initials
+            }
           </div>
           <div className={s.chatHeaderInfo}>
             <div className={s.chatHeaderName}>{meta.name}</div>

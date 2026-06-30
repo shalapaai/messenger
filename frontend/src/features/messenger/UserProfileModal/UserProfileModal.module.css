@@ -42,6 +42,8 @@
 .modalClose:hover { background: #eceef4; }
 
 .umAvatar { width: 80px; height: 80px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
+.umAvatarImg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; display: block; }
+.umLoading { font-size: 13px; color: #a6aebf; text-align: center; margin-bottom: 16px; }
 .umName { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
 .umStatus { font-size: 14px; color: #8a93a6; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; }
 .umStatusDot { width: 8px; height: 8px; border-radius: 50%; background: #22b07d; flex-shrink: 0; display: inline-block; }

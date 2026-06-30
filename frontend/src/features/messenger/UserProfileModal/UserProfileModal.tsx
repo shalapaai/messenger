@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import { profileApi, type PublicUserProfile } from '../../../shared/api/profileApi'
+import { initials as getInitials, colorFromId } from '../../../shared/api/chatsApi'
 import type { ModalUser } from '../../../shared/types/messenger'
 import s from './UserProfileModal.module.css'
 
@@ -7,24 +10,65 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ user, onClose }: UserProfileModalProps) {
+  const [full, setFull] = useState<PublicUserProfile | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!user?.userId) { setFull(null); setLoading(false); return }
+    setFull(null)
+    setLoading(true)
+    profileApi.getUserById(user.userId)
+      .then(setFull)
+      .catch(() => setFull(null))
+      .finally(() => setLoading(false))
+  }, [user?.userId])
+
   if (!user) return null
+
+  const avatarUrl  = full?.avatarUrl ?? user.avatarUrl
+  const name       = full?.displayName ?? user.name
+  const login      = full?.login ?? user.login
+  const status     = full?.status ?? user.status
+  const initials   = getInitials(name)
+  const color      = colorFromId(user.userId ?? '')
+
+  const phone      = full?.phone
+  const email      = full?.email
+  const department = full?.department
+  const city       = full?.city
+
+  const hasContact = !!(phone || email || department || city || login || status)
 
   return (
     <div className={s.modalOverlay} onClick={onClose}>
       <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
         <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
-        <div className={s.umAvatar} style={{ background: user.color }}>{user.initials}</div>
-        <div className={s.umName}>{user.name}</div>
+
+        {avatarUrl
+          ? <img src={avatarUrl} alt={name} className={s.umAvatarImg} />
+          : <div className={s.umAvatar} style={{ background: color }}>{initials}</div>
+        }
+
+        <div className={s.umName}>{name}</div>
         <div className={s.umStatus}>
-          {user.online ? <><span className={s.umStatusDot} />в сети</> : 'был(а) недавно'}
+          {user.online
+            ? <><span className={s.umStatusDot} />в сети</>
+            : 'был(а) недавно'
+          }
         </div>
-        {(user.phone || user.email || user.department) && (
+
+        {loading && <div className={s.umLoading}>Загрузка...</div>}
+
+        {!loading && hasContact && (
           <>
             <div className={s.umDivider} />
             <div className={s.umSection}>Контакт</div>
-            {user.phone      && <div className={s.umField}><span className={s.umFieldLabel}>Телефон</span><span className={s.umFieldValue}>{user.phone}</span></div>}
-            {user.email      && <div className={s.umField}><span className={s.umFieldLabel}>Email</span><span className={s.umFieldValue}>{user.email}</span></div>}
-            {user.department && <div className={s.umField}><span className={s.umFieldLabel}>Отдел</span><span className={s.umFieldValue}>{user.department}</span></div>}
+            {login      && <div className={s.umField}><span className={s.umFieldLabel}>Логин</span><span className={s.umFieldValue}>{login}</span></div>}
+            {status     && <div className={s.umField}><span className={s.umFieldLabel}>Статус</span><span className={s.umFieldValue}>{status}</span></div>}
+            {email      && <div className={s.umField}><span className={s.umFieldLabel}>Email</span><span className={s.umFieldValue}>{email}</span></div>}
+            {phone      && <div className={s.umField}><span className={s.umFieldLabel}>Телефон</span><span className={s.umFieldValue}>{phone}</span></div>}
+            {city       && <div className={s.umField}><span className={s.umFieldLabel}>Город</span><span className={s.umFieldValue}>{city}</span></div>}
+            {department && <div className={s.umField}><span className={s.umFieldLabel}>Отдел</span><span className={s.umFieldValue}>{department}</span></div>}
           </>
         )}
       </div>

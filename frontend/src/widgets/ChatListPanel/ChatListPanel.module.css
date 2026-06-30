@@ -162,6 +162,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
+  border: none;
+  padding: 0;
   color: #fff;
   display: flex;
   align-items: center;
@@ -169,6 +171,16 @@
   font-weight: 800;
   font-size: 14px;
   flex-shrink: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.clAvatarImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .clAvatarGroup { border-radius: 13px; }

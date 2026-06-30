@@ -64,6 +64,7 @@ export async function fetchChats(): Promise<Chat[]> {
     name:        dto.name ?? 'Личный чат',
     initials:    initials(dto.name),
     color:       colorFromId(dto.id),
+    avatarUrl:   dto.avatarUrl,
     preview:     dto.lastMessage?.content ?? '',
     time:        dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
     unread:      0,

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, ModalUser } from '../../shared/types/messenger'
-import { CHAT_META, GROUP_MEMBERS, USER_PROFILES, getModalUserFromMsg } from '../../shared/lib/messenger/stubData'
+import { CHAT_META, GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
+import { colorFromId, initials as getInitials } from '../../shared/api/chatsApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
-import { useIsOnline } from '../../shared/api/onlineStore'
+import { useIsOnline, useOnlineStore } from '../../shared/api/onlineStore'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
 import { useChatMessages } from './hooks/useChatMessages'
@@ -124,14 +125,20 @@ export function MessengerPage() {
     retry(id, msg, signalRSend)
   }
 
+  const onlineStatuses = useOnlineStore(s => s.statuses)
+
   const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
   const activeChat = id ? chats.find(c => c.id === id) : undefined
   const activeChatOnline = useIsOnline(activeChat?.otherUserId)
   const meta = id
     ? (activeChat
-        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, online: activeChatOnline, group: activeChat.group }
+        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, avatarUrl: activeChat.avatarUrl, online: activeChatOnline, group: activeChat.group, otherUserId: activeChat.otherUserId }
         : (CHAT_META[id] ?? CHAT_META['1']))
     : null
+
+  function openUserModal(userId: string, name: string, online: boolean) {
+    setModalUser({ userId, name, initials: getInitials(name), color: colorFromId(userId), online })
+  }
 
   return (
     <div className={s.root}>
@@ -167,6 +174,10 @@ export function MessengerPage() {
           onFilterChange={setFilter}
           onQueryChange={setQuery}
           onSelect={cid => navigate(`/chats/${cid}`)}
+          onUserClick={userId => {
+            const chat = chats.find(c => c.otherUserId === userId)
+            openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
+          }}
         />
 
         <main className={`${s.content}${!id ? ` ${s.contentMobileHidden}` : ''}`}>
@@ -187,11 +198,11 @@ export function MessengerPage() {
               onSend={handleSend}
               onRetry={handleRetrySend}
               onTyping={typingIndicator.handleOwnTyping}
-              onHeaderClick={() => meta.group
-                ? setGroupModalOpen(true)
-                : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
-              }
-              onAvatarClick={msg => setModalUser(getModalUserFromMsg(msg))}
+              onHeaderClick={() => {
+                if (meta.group) setGroupModalOpen(true)
+                else if (meta.otherUserId) openUserModal(meta.otherUserId, meta.name, meta.online)
+              }}
+              onAvatarClick={msg => openUserModal(msg.senderId, msg.senderName, onlineStatuses[msg.senderId] ?? false)}
             />
           ) : (
             <div className={s.placeholder}>
