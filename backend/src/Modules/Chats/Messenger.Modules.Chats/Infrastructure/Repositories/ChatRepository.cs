@@ -24,5 +24,10 @@ public sealed class ChatRepository(ChatsDbContext dbContext) : IChatRepository
             .Where(c => c.Members.Any(m => m.UserId == userId))
             .ToListAsync(ct);
 
+    public async Task<bool> IsMemberAsync(ChatId chatId, Guid userId, CancellationToken ct = default) =>
+        await dbContext.Members.AnyAsync(m => m.ChatId == chatId && m.UserId == userId, ct);
+
     public void Add(Chat chat) => dbContext.Chats.Add(chat);
+
+    public void Delete(Chat chat) => dbContext.Chats.Remove(chat);
 }

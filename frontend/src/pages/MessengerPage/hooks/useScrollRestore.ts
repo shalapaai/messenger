@@ -1,0 +1,48 @@
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { Message } from '../../../shared/types/messenger'
+
+/**
+ * Управляет скроллом окна сообщений: автоскролл вниз на новое/своё сообщение,
+ * и восстановление позиции при подгрузке истории вверх (чтобы не "прыгало").
+ */
+export function useScrollRestore(messages: Message[]) {
+  const bottomRef      = useRef<HTMLDivElement>(null)
+  const messagesRef    = useRef<HTMLDivElement>(null)
+  const topSentinelRef = useRef<HTMLDivElement>(null)
+
+  const savedScrollHeight = useRef(0)
+  const savedScrollTop    = useRef(0)
+  const bottomSmooth      = useRef(false)
+
+  const [restoreSignal, setRestoreSignal] = useState(0)
+  const [bottomSignal,  setBottomSignal]  = useState(0)
+
+  const scrollToBottomNow = useCallback((smooth: boolean) => {
+    bottomSmooth.current = smooth
+    setBottomSignal(s => s + 1)
+  }, [])
+
+  const prepareRestoreBeforePrepend = useCallback(() => {
+    if (!messagesRef.current) return
+    savedScrollHeight.current = messagesRef.current.scrollHeight
+    savedScrollTop.current    = messagesRef.current.scrollTop
+  }, [])
+
+  const triggerRestore = useCallback(() => setRestoreSignal(s => s + 1), [])
+
+  useEffect(() => {
+    if (bottomSignal === 0) return
+    bottomRef.current?.scrollIntoView({ behavior: bottomSmooth.current ? 'smooth' : 'instant' })
+  }, [messages, bottomSignal])
+
+  useLayoutEffect(() => {
+    if (restoreSignal === 0 || !messagesRef.current) return
+    messagesRef.current.scrollTop =
+      savedScrollTop.current + (messagesRef.current.scrollHeight - savedScrollHeight.current)
+  }, [restoreSignal])
+
+  return {
+    bottomRef, messagesRef, topSentinelRef,
+    scrollToBottomNow, prepareRestoreBeforePrepend, triggerRestore,
+  }
+}

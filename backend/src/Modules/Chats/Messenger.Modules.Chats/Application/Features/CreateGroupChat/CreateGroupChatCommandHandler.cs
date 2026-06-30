@@ -1,17 +1,14 @@
-namespace Messenger.Modules.Chats.Application;
+namespace Messenger.Modules.Chats.Application.Features.CreateGroupChat;
 
+using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
 
-public sealed record CreateGroupChatCommand(
-    Guid CreatorId,
-    string Name,
-    IReadOnlyList<Guid> MemberIds) : ICommand<Guid>;
-
 public sealed class CreateGroupChatCommandHandler(
     IChatRepository chatRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<CreateGroupChatCommand, Guid>
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<CreateGroupChatCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateGroupChatCommand command, CancellationToken ct)
     {

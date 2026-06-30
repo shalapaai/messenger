@@ -9,7 +9,7 @@ public sealed class FileUpload : Entity<Guid>
     private FileUpload(
         Guid id, Guid uploadedBy, string fileKey,
         string originalName, string contentType,
-        long sizeBytes, FileCategory category) : base(id)
+        long sizeBytes, FileCategory category, Guid? chatId) : base(id)
     {
         UploadedBy   = uploadedBy;
         FileKey      = fileKey;
@@ -17,6 +17,7 @@ public sealed class FileUpload : Entity<Guid>
         ContentType  = contentType;
         SizeBytes    = sizeBytes;
         Category     = category;
+        ChatId       = chatId;
         UploadedAt   = DateTime.UtcNow;
     }
 
@@ -29,8 +30,12 @@ public sealed class FileUpload : Entity<Guid>
     public DateTime UploadedAt { get; private set; }
     public FileCategory Category { get; private set; }
 
+    // Заполнено только для ChatCategory.ChatAttachment — нужно при скачивании,
+    // чтобы проверить, что скачивающий состоит в этом чате (см. DownloadFile)
+    public Guid? ChatId { get; private set; }
+
     public static FileUpload Create(
         Guid uploadedBy, string fileKey, string originalName,
-        string contentType, long sizeBytes, FileCategory category) =>
-        new(Guid.NewGuid(), uploadedBy, fileKey, originalName, contentType, sizeBytes, category);
+        string contentType, long sizeBytes, FileCategory category, Guid? chatId = null) =>
+        new(Guid.NewGuid(), uploadedBy, fileKey, originalName, contentType, sizeBytes, category, chatId);
 }
