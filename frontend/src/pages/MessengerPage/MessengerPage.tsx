@@ -223,7 +223,7 @@ export function MessengerPage() {
           name: draftUser?.displayName ?? 'Новый чат',
           initials: getInitials(draftUser?.displayName ?? null),
           color: colorFromId(newUserId),
-          avatarUrl: draftUser?.avatarUrl ?? undefined,
+          avatarUrl: draftUser?.avatarUrl ?? null,
           online: draftOnline,
           group: false,
           otherUserId: newUserId,
