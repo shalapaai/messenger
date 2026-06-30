@@ -15,6 +15,7 @@ interface ChatsState {
   loadChats: () => Promise<void>
   handleNewMessage: (msg: IncomingMessage, activeChatId: string | null) => void
   resetUnread: (chatId: string) => void
+  removeChat: (chatId: string) => void
 }
 
 export const useChatsStore = create<ChatsState>((set) => ({
@@ -63,5 +64,9 @@ export const useChatsStore = create<ChatsState>((set) => ({
     chats: state.chats.map(chat =>
       chat.id === chatId ? { ...chat, unread: 0 } : chat
     ),
+  })),
+
+  removeChat: (chatId) => set((state) => ({
+    chats: state.chats.filter(chat => chat.id !== chatId),
   })),
 }))

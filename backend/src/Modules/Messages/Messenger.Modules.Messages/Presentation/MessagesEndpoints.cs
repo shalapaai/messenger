@@ -1,6 +1,7 @@
 namespace Messenger.Modules.Messages.Presentation;
 
 using MediatR;
+using Messenger.Modules.Messages.Application.Features.DeleteMessage;
 using Messenger.Modules.Messages.Application.Features.EditMessage;
 using Messenger.Modules.Messages.Application.Features.GetMessages;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
@@ -40,6 +41,13 @@ public static class MessagesEndpoints
 
         group.MapPatch("/{messageId:guid}", EditMessage)
             .WithName("EditMessage")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem();
+
+        group.MapDelete("/{messageId:guid}", DeleteMessage)
+            .WithName("DeleteMessage")
+            .WithSummary("Удалить сообщение")
+            .WithDescription("Удаляет (soft-delete) сообщение. Доступно только автору сообщения.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem();
 
@@ -111,6 +119,22 @@ public static class MessagesEndpoints
     {
         var userId = httpContext.GetUserId();
         var command = new EditMessageCommand(messageId, userId, request.NewContent);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> DeleteMessage(
+        Guid chatId,
+        Guid messageId,
+        HttpContext httpContext,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var userId = httpContext.GetUserId();
+        var command = new DeleteMessageCommand(messageId, userId);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess

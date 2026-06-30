@@ -40,6 +40,7 @@ export interface Message {
   time: string
   date: string
   status?: 'pending' | 'sent' | 'failed'
+  deleted?: boolean
 }
 
 export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>

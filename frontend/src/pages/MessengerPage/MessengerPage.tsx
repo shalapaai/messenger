@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import type { Filter, ModalUser } from '../../shared/types/messenger'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import type { Filter, ModalUser, Message } from '../../shared/types/messenger'
 import { CHAT_META, GROUP_MEMBERS, USER_PROFILES, getModalUserFromMsg } from '../../shared/lib/messenger/stubData'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
 import { useIsOnline } from '../../shared/api/onlineStore'
+import { createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, colorFromId, initials } from '../../shared/api/chatsApi'
+import type { UserSearchResult } from '../../shared/api/usersApi'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
 import { useChatMessages } from './hooks/useChatMessages'
@@ -16,10 +18,18 @@ import { ProfilePanel }     from '../../widgets/ProfilePanel'
 import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
+import { NewChatModal }     from '../../features/messenger/NewChatModal'
 import s from './MessengerPage.module.css'
 
+interface DraftUserState {
+  displayName: string
+  avatarUrl: string | null
+  login: string | null
+}
+
 export function MessengerPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id, newUserId } = useParams<{ id?: string; newUserId?: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const { profile, setProfile } = useUserProfile()
 
@@ -29,7 +39,12 @@ export function MessengerPage() {
   const [profileOpen,    setProfileOpen]    = useState(false)
   const [editOpen,       setEditOpen]       = useState(false)
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
+  const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
+  const [newChatOpen,    setNewChatOpen]    = useState(false)
+
+  const inChatView = !!id || !!newUserId
+  const draftUser  = newUserId ? (location.state as DraftUserState | null) : null
 
   // ── Реальный профиль (вместо мок-"Анны Соколовой") ─────────────────────────
   const profileInitials = profile
@@ -55,6 +70,7 @@ export function MessengerPage() {
   const chatsError  = useChatsStore((s) => s.chatsError)
   const loadChats   = useChatsStore((s) => s.loadChats)
   const resetUnread = useChatsStore((s) => s.resetUnread)
+  const removeChat  = useChatsStore((s) => s.removeChat)
 
   useEffect(() => { loadChats() }, [loadChats])
   useEffect(() => { if (id) resetUnread(id) }, [id, resetUnread])
@@ -62,8 +78,8 @@ export function MessengerPage() {
   // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
-    handleIncomingMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, retry,
+    handleIncomingMessage, handleDeletedMessage, loadMoreHistory, loadingHistory, historyLoaded,
+    send, retry, deleteMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
   })
@@ -79,6 +95,7 @@ export function MessengerPage() {
   const { sendMessage: signalRSend, startTyping, stopTyping } = useSignalR({
     chatId: id,
     onMessage: handleIncomingMessage,
+    onMessageDeleted: handleDeletedMessage,
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
   })
@@ -113,9 +130,24 @@ export function MessengerPage() {
     return () => document.removeEventListener('keydown', onKey)
   }, [modalUser, groupModalOpen, editOpen, profileOpen])
 
-  function handleSend(text: string) {
-    if (!id) return
+  async function handleSend(text: string) {
     typingIndicator.stopOwnTyping()
+
+    // Черновик (чат с этим пользователем ещё не создан) — создаём чат и шлём
+    // первое сообщение через REST, затем переходим на его реальный URL.
+    if (newUserId) {
+      try {
+        const newChatId = await createDirectChat(newUserId)
+        await sendMessageRest(newChatId, text)
+        await loadChats()
+        navigate(`/chats/${newChatId}`, { replace: true })
+      } catch {
+        window.alert('Не удалось отправить сообщение. Попробуйте ещё раз.')
+      }
+      return
+    }
+
+    if (!id) return
     send(id, text, signalRSend, meSender)
   }
 
@@ -124,20 +156,74 @@ export function MessengerPage() {
     retry(id, msg, signalRSend)
   }
 
+  async function handleDeleteMessage(msg: Message) {
+    if (!id) return
+    try {
+      await deleteMessage(id, msg)
+    } catch {
+      window.alert('Не удалось удалить сообщение.')
+    }
+  }
+
+  async function handleDeleteChat() {
+    if (!id) return
+    try {
+      await deleteChat(id)
+      removeChat(id)
+      navigate('/chats')
+    } catch {
+      window.alert('Не удалось удалить чат.')
+    }
+  }
+
+  async function handleLeaveGroup() {
+    if (!id || !profile) return
+    try {
+      await leaveGroupChat(id, profile.userId)
+      removeChat(id)
+      setGroupModalOpen(false)
+      navigate('/chats')
+    } catch {
+      window.alert('Не удалось выйти из группы.')
+    }
+  }
+
+  function handleSelectSearchUser(user: UserSearchResult) {
+    setNewChatOpen(false)
+    const existing = chats.find(c => c.otherUserId === user.userId)
+    if (existing) {
+      navigate(`/chats/${existing.id}`)
+      return
+    }
+    navigate(`/chats/new/${user.userId}`, {
+      state: { displayName: user.displayName, avatarUrl: user.avatarUrl, login: user.login } satisfies DraftUserState,
+    })
+  }
+
   const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
   const activeChat = id ? chats.find(c => c.id === id) : undefined
   const activeChatOnline = useIsOnline(activeChat?.otherUserId)
+  const draftOnline = useIsOnline(newUserId)
   const meta = id
     ? (activeChat
         ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, online: activeChatOnline, group: activeChat.group }
         : (CHAT_META[id] ?? CHAT_META['1']))
-    : null
+    : newUserId
+      ? {
+          name: draftUser?.displayName ?? 'Новый чат',
+          initials: initials(draftUser?.displayName ?? null),
+          color: colorFromId(newUserId),
+          online: draftOnline,
+          group: false,
+        }
+      : null
+  const chatId = id ?? newUserId
 
   return (
     <div className={s.root}>
       {/* Mobile top bar */}
       <header className={s.topBar}>
-        {id
+        {inChatView
           ? <button className={s.topBarBack} onClick={() => navigate('/chats')}>‹</button>
           : <div className={s.topBarLogo}>TL:MESSENGER</div>
         }
@@ -162,12 +248,13 @@ export function MessengerPage() {
           onFilterChange={setFilter}
           onQueryChange={setQuery}
           onSelect={cid => navigate(`/chats/${cid}`)}
+          onNewChat={() => setNewChatOpen(true)}
         />
 
-        <main className={`${s.content}${!id ? ` ${s.contentMobileHidden}` : ''}`}>
-          {id && meta ? (
+        <main className={`${s.content}${!inChatView ? ` ${s.contentMobileHidden}` : ''}`}>
+          {chatId && meta ? (
             <ChatWindow
-              chatId={id}
+              chatId={chatId}
               meta={meta}
               messages={messages}
               typingChats={typingIndicator.typingChats}
@@ -181,12 +268,14 @@ export function MessengerPage() {
               bottomRef={scroll.bottomRef}
               onSend={handleSend}
               onRetry={handleRetrySend}
+              onDelete={handleDeleteMessage}
               onTyping={typingIndicator.handleOwnTyping}
-              onHeaderClick={() => meta.group
-                ? setGroupModalOpen(true)
-                : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
-              }
-              onAvatarClick={msg => setModalUser(getModalUserFromMsg(msg))}
+              onHeaderClick={() => {
+                if (meta.group) { setGroupModalOpen(true); return }
+                setModalUserIsChatPartner(true)
+                setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...(id ? USER_PROFILES[id] : {}) })
+              }}
+              onAvatarClick={msg => { setModalUserIsChatPartner(false); setModalUser(getModalUserFromMsg(msg)) }}
             />
           ) : (
             <div className={s.placeholder}>
@@ -199,7 +288,7 @@ export function MessengerPage() {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className={`${s.bottomNav}${id ? ` ${s.bottomNavHidden}` : ''}`}>
+      <nav className={`${s.bottomNav}${inChatView ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
           <span className={s.bnGlyph}>💬{totalUnread > 0 && <span className={s.bnBadge}>{totalUnread}</span>}</span>
           <span>Чаты</span>
@@ -232,18 +321,26 @@ export function MessengerPage() {
       <UserProfileModal
         user={modalUser}
         onClose={() => setModalUser(null)}
+        onDeleteChat={id && modalUserIsChatPartner ? handleDeleteChat : undefined}
       />
 
-      {meta && (
+      {id && meta && (
         <GroupModal
           isOpen={groupModalOpen}
-          chatId={id!}
+          chatId={id}
           meta={meta}
-          members={GROUP_MEMBERS[id!] ?? []}
+          members={GROUP_MEMBERS[id] ?? []}
           onClose={() => setGroupModalOpen(false)}
-          onMemberClick={user => { setGroupModalOpen(false); setModalUser(user) }}
+          onMemberClick={user => { setGroupModalOpen(false); setModalUserIsChatPartner(false); setModalUser(user) }}
+          onLeave={handleLeaveGroup}
         />
       )}
+
+      <NewChatModal
+        isOpen={newChatOpen}
+        onClose={() => setNewChatOpen(false)}
+        onSelect={handleSelectSearchUser}
+      />
     </div>
   )
 }

@@ -50,3 +50,19 @@
 .umField { display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px; }
 .umFieldLabel { font-size: 12px; font-weight: 600; color: #a6aebf; }
 .umFieldValue { font-size: 15px; font-weight: 600; color: #141b2e; }
+
+.umDeleteChatBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: #fff0f0;
+  color: #e03b3b;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+.umDeleteChatBtn:hover { background: #ffd8d8; }

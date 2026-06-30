@@ -81,6 +81,7 @@ public sealed class Message : AggregateRoot<MessageId>
         Status = MessageStatus.Deleted;
         Content = string.Empty;
         DeletedAt = DateTime.UtcNow;
+        RaiseDomainEvent(new MessageDeletedDomainEvent(Id.Value, ChatId));
         return Result.Success();
     }
 
