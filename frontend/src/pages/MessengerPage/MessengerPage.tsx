@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, ModalUser } from '../../shared/types/messenger'
 import { CHAT_META, GROUP_MEMBERS, USER_PROFILES, getModalUserFromMsg } from '../../shared/lib/messenger/stubData'
@@ -20,6 +21,7 @@ import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
 import s from './MessengerPage.module.css'
 
 export function MessengerPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { profile, setProfile } = useUserProfile()
@@ -207,8 +209,8 @@ export function MessengerPage() {
           ) : (
             <div className={s.placeholder}>
               <div className={s.placeholderIcon}>💬</div>
-              <h3 className={s.placeholderTitle}>Выберите чат</h3>
-              <p className={s.placeholderText}>Выберите чат из списка слева, чтобы начать общение</p>
+              <h3 className={s.placeholderTitle}>{t('messenger.selectChatTitle')}</h3>
+              <p className={s.placeholderText}>{t('messenger.selectChatText')}</p>
             </div>
           )}
         </main>
@@ -218,7 +220,7 @@ export function MessengerPage() {
       <nav className={`${s.bottomNav}${id ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
           <span className={s.bnGlyph}>💬{totalUnread > 0 && <span className={s.bnBadge}>{totalUnread}</span>}</span>
-          <span>Чаты</span>
+          <span>{t('profile.chats')}</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
           <span className={s.bnAvatarMini}>
@@ -227,7 +229,7 @@ export function MessengerPage() {
         : profileInitials
       }
     </span>
-          <span>Профиль</span>
+          <span>{t('profile.profile')}</span>
         </button>
       </nav>
 

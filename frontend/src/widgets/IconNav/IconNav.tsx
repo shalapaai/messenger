@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
@@ -13,6 +14,7 @@ interface IconNavProps {
 }
 
 export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { clearProfile } = useUserProfile()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -35,8 +37,8 @@ export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavP
         <div className={s.avatarMenuWrap}>
           {menuOpen && (
             <div className={s.avatarMenu}>
-              <button className={s.avatarMenuItem} onClick={() => { setMenuOpen(false); onProfileOpen() }}>Открыть профиль</button>
-              <button className={`${s.avatarMenuItem} ${s.avatarMenuItemDanger}`} onClick={() => { setMenuOpen(false); handleLogout() }}>Выйти</button>
+              <button className={s.avatarMenuItem} onClick={() => { setMenuOpen(false); onProfileOpen() }}>{t('profile.open')}</button>
+              <button className={`${s.avatarMenuItem} ${s.avatarMenuItemDanger}`} onClick={() => { setMenuOpen(false); handleLogout() }}>{t('profile.logout')}</button>
             </div>
           )}
           <button className={s.userAvatarBtn} onClick={() => setMenuOpen(v => !v)}>

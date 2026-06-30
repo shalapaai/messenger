@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
@@ -5,6 +6,8 @@ import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useTheme } from '../../shared/context/useTheme'
 import { accentColors, type AccentColor } from '../../shared/context/themeContextValue'
 import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
+import { LanguageSwitcher } from '../../shared/ui/LanguageSwitcher'
+import { getCurrentLocale } from '../../shared/i18n'
 import type { UserProfile } from '../../shared/types/user'
 import s from './ProfilePanel.module.css'
 
@@ -22,11 +25,12 @@ function getInitials(displayName: string): string {
   return displayName.slice(0, 2).toUpperCase()
 }
 
-function formatDate(isoDate: string): string {
-  return new Date(isoDate).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long' })
+function formatDate(isoDate: string, locale: string): string {
+  return new Date(isoDate).toLocaleDateString(locale, { year: 'numeric', month: 'long' })
 }
 
 export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: ProfilePanelProps) {
+  const { i18n, t } = useTranslation()
   const navigate = useNavigate()
   const { clearProfile } = useUserProfile()
   const { accentColor, setAccentColor } = useTheme()
@@ -62,27 +66,27 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
             ) : (
               <div className={s.ppAvatar}>{initials}</div>
             )}
-            <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />В сети</div>
+            <div className={s.ppStatusBadge}><span className={s.ppStatusDot} />{t('common.online')}</div>
             <h2 className={s.ppName}>{profile.displayName}</h2>
             {profile.login && <div className={s.ppUsername}>{profile.login}</div>}
             {profile.status && <p className={s.ppBio}>{profile.status}</p>}
             <div className={s.ppTags}>
               {profile.city && <span className={s.ppTag}>📍 {profile.city}</span>}
-              <span className={s.ppTag}>📅 {formatDate(profile.registeredAt)}</span>
+              <span className={s.ppTag}>📅 {formatDate(profile.registeredAt, getCurrentLocale(i18n.language))}</span>
             </div>
             <div className={s.ppDivider} />
             <div className={s.ppDetails}>
-              <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{profile.email}</span></div>
-              {profile.phone && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{profile.phone}</span></div>}
-              {profile.department && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Отдел</span><span className={s.ppDetailValue}>{profile.department}</span></div>}
+              <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>{t('profile.email')}</span><span className={s.ppDetailValue}>{profile.email}</span></div>
+              {profile.phone && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>{t('common.phone')}</span><span className={s.ppDetailValue}>{profile.phone}</span></div>}
+              {profile.department && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>{t('common.department')}</span><span className={s.ppDetailValue}>{profile.department}</span></div>}
             </div>
             <div className={s.ppDivider} />
             <div className={s.ppThemeSettings}>
               <div className={s.ppSettingsHeader}>
-                <span className={s.ppSettingsTitle}>Оформление</span>
+                <span className={s.ppSettingsTitle}>{t('theme.appearance')}</span>
                 <ThemeModeToggle />
               </div>
-              <div className={s.ppAccentList} aria-label="Цвет интерфейса">
+              <div className={s.ppAccentList} aria-label={t('theme.accentColor')}>
                 {accentColors.map((color: AccentColor) => (
                   <button
                     key={color}
@@ -90,25 +94,29 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
                     className={`${s.ppAccentSwatch} ${accentColor === color ? s.ppAccentSwatchActive : ''}`}
                     data-accent-color={color}
                     onClick={() => setAccentColor(color)}
-                    aria-label={`Выбрать цвет ${color}`}
+                    aria-label={t('theme.chooseAccent', { color })}
                     aria-pressed={accentColor === color}
                   />
                 ))}
               </div>
+              <div className={s.ppSettingsHeader}>
+                <span className={s.ppSettingsTitle}>{t('language.label')}</span>
+                <LanguageSwitcher />
+              </div>
             </div>
-            <button className={s.ppEditBtn} onClick={onEdit}>✎ Изменить профиль</button>
-            <button className={s.ppLogoutBtn} onClick={handleLogout}>Выйти из аккаунта</button>
+            <button className={s.ppEditBtn} onClick={onEdit}>✎ {t('profile.edit')}</button>
+            <button className={s.ppLogoutBtn} onClick={handleLogout}>{t('profile.logoutAccount')}</button>
           </div>
         </div>
 
         <nav className={s.ppBottomNav}>
           <button className={s.bnItem} onClick={() => { onClose(); onChats() }}>
             <span className={s.bnGlyph}>💬</span>
-            <span>Чаты</span>
+            <span>{t('profile.chats')}</span>
           </button>
           <button className={`${s.bnItem} ${s.bnItemActive}`}>
             <span className={s.bnAvatarMini}>{initials}</span>
-            <span>Профиль</span>
+            <span>{t('profile.profile')}</span>
           </button>
         </nav>
       </div>

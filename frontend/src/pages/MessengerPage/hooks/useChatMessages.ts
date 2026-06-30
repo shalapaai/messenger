@@ -4,6 +4,7 @@ import { CHAT_META, getInitialMessages } from '../../../shared/lib/messenger/stu
 import { fetchMessages, colorFromId, initials, nextMessageId } from '../../../shared/api/chatsApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage } from '../../../shared/api/signalrClient'
+import i18n from '../../../shared/i18n'
 
 type SendFn = (content: string) => Promise<{ messageId: string }>
 
@@ -86,7 +87,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           senderInitials: initials(msg.senderName),
           senderColor:    colorFromId(msg.senderId),
           time:           new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-          date:           'Сегодня',
+          date:           i18n.t('common.today'),
         }],
       }
     })
@@ -137,7 +138,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     const newMsg: Message = {
       ...meSender, id: tempId, text,
       time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-      date: 'Сегодня',
+      date: i18n.t('common.today'),
       status: 'pending',
     }
     setChatMessages(prev => ({ ...prev, [chatId]: [...(prev[chatId] ?? []), newMsg] }))

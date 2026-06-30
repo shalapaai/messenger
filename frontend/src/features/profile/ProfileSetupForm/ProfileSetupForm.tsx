@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getCroppedImage } from '../../../shared/lib/image'
@@ -13,6 +14,7 @@ const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
 function ProfileSetupForm() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { setProfile } = useUserProfile()
 
@@ -74,7 +76,7 @@ function ProfileSetupForm() {
     if (!displayName.trim() || !LOGIN_REGEX.test(trimmedLogin)) return
 
     if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
-      setError('Размер аватарки не должен превышать 5 МБ')
+      setError(t('profileSetup.errors.avatarTooLarge'))
       return
     }
 
@@ -91,7 +93,7 @@ function ProfileSetupForm() {
           throw createErr
         }
         if (createErr.response?.data?.code !== 'Users.ProfileAlreadyExists') {
-          setLoginError('Логин уже занят')
+          setLoginError(t('profileSetup.errors.loginTaken'))
           return
         }
       }
@@ -116,7 +118,7 @@ function ProfileSetupForm() {
       navigate('/chats')
     } catch (err) {
       console.error('Profile setup error:', err)
-      setError('Не удалось сохранить профиль. Попробуйте еще раз.')
+      setError(t('profileSetup.errors.saveFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -136,7 +138,7 @@ function ProfileSetupForm() {
         <div className={styles.fields}>
           <label className={styles.field}>
             <span className={styles.label}>
-              Имя пользователя
+              {t('common.displayName')}
               <span className={styles.required}>*</span>
             </span>
             <input
@@ -145,20 +147,20 @@ function ProfileSetupForm() {
               name="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Например, Николай"
+              placeholder={t('profileSetup.displayNamePlaceholder')}
               aria-invalid={isDisplayNameInvalid}
               aria-describedby={isDisplayNameInvalid ? 'display-name-error' : undefined}
             />
             {isDisplayNameInvalid && (
               <span id="display-name-error" className={styles.fieldError}>
-                Введите имя пользователя
+                {t('profileSetup.errors.displayNameRequired')}
               </span>
             )}
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>
-              Логин
+              {t('common.login')}
               <span className={styles.required}>*</span>
             </span>
             <div className={`${styles.loginInputWrapper} ${isLoginInvalid ? styles.loginInputWrapperError : ''}`}>
@@ -169,19 +171,19 @@ function ProfileSetupForm() {
                 name="login"
                 value={login}
                 onChange={(e) => { setLogin(e.target.value.replace(/^@+/, '')); setLoginError('') }}
-                placeholder="например, nikolay"
+                placeholder={t('profileSetup.loginPlaceholder')}
                 aria-invalid={isLoginInvalid}
                 aria-describedby={isLoginInvalid ? 'login-error' : undefined}
               />
             </div>
             {isLoginEmpty && (
               <span id="login-error" className={styles.fieldError}>
-                Введите логин
+                {t('profileSetup.errors.loginRequired')}
               </span>
             )}
             {isLoginBadFmt && (
               <span id="login-error" className={styles.fieldError}>
-                3–30 символов: буквы, цифры и _
+                {t('profileSetup.errors.loginFormat')}
               </span>
             )}
             {loginError && (
@@ -192,19 +194,19 @@ function ProfileSetupForm() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Статус</span>
+            <span className={styles.label}>{t('common.status')}</span>
             <input
               className={styles.input}
               type="text"
               name="status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              placeholder="Например, на связи"
+              placeholder={t('profileSetup.statusPlaceholder')}
             />
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Телефон</span>
+            <span className={styles.label}>{t('common.phone')}</span>
             <input
               className={styles.input}
               type="text"
@@ -216,26 +218,26 @@ function ProfileSetupForm() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Город</span>
+            <span className={styles.label}>{t('common.city')}</span>
             <input
               className={styles.input}
               type="text"
               name="city"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Например, Москва"
+              placeholder={t('profileSetup.cityPlaceholder')}
             />
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Отдел</span>
+            <span className={styles.label}>{t('common.department')}</span>
             <input
               className={styles.input}
               type="text"
               name="department"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              placeholder="Например, Разработка"
+              placeholder={t('profileSetup.departmentPlaceholder')}
             />
           </label>
         </div>
@@ -243,7 +245,7 @@ function ProfileSetupForm() {
         {error && <p className={styles.error}>{error}</p>}
 
         <button className={styles.submitButton} type="submit" disabled={isLoading}>
-          {isLoading ? 'Сохраняем...' : 'Продолжить'}
+          {isLoading ? t('common.saving') : t('common.continue')}
         </button>
       </form>
 

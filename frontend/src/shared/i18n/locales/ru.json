@@ -1,0 +1,162 @@
+{
+  "app": {
+    "brand": "TL:Messenger"
+  },
+  "language": {
+    "label": "Язык",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "theme": {
+    "enableLight": "Включить светлую тему",
+    "enableDark": "Включить тёмную тему",
+    "appearance": "Оформление",
+    "accentColor": "Цвет интерфейса",
+    "chooseAccent": "Выбрать цвет {{color}}"
+  },
+  "common": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saving": "Сохраняем...",
+    "retry": "Повторить",
+    "continue": "Продолжить",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "phone": "Телефон",
+    "city": "Город",
+    "department": "Отдел",
+    "status": "Статус",
+    "login": "Логин",
+    "displayName": "Имя пользователя",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "online": "в сети",
+    "recently": "был(а) недавно",
+    "loading": "Загрузка"
+  },
+  "auth": {
+    "loginTitle": "Вход",
+    "loginSubtitle": "Введите данные, чтобы продолжить общение.",
+    "loginButton": "Войти",
+    "loginLoading": "Входим...",
+    "loginFooter": "Нет аккаунта?",
+    "loginFooterLink": "Зарегистрироваться",
+    "loginHeroTitle": "Мессенджер для команды",
+    "loginHeroDescription": "Войдите в аккаунт, чтобы продолжить общение, открыть чаты и не потерять важные сообщения.",
+    "registerTitle": "Регистрация",
+    "registerSubtitle": "Создайте аккаунт, чтобы начать пользоваться мессенджером.",
+    "registerButton": "Зарегистрироваться",
+    "registerLoading": "Создаём аккаунт...",
+    "registerFooter": "Уже есть аккаунт?",
+    "registerFooterLink": "Войти",
+    "registerHeroTitle": "Начните общение",
+    "registerHeroDescription": "Создайте аккаунт, чтобы писать пользователям, создавать личные и групповые чаты.",
+    "emailPlaceholder": "Введите email",
+    "passwordPlaceholder": "Введите пароль",
+    "newPasswordPlaceholder": "Придумайте пароль",
+    "repeatPassword": "Повторите пароль",
+    "repeatPasswordPlaceholder": "Повторите пароль",
+    "errors": {
+      "requiredLogin": "Заполните электронную почту и пароль",
+      "requiredRegister": "Заполните все поля",
+      "invalidEmail": "Введите электронную почту в правильном формате",
+      "shortPassword": "Пароль должен быть не короче 8 символов",
+      "passwordMismatch": "Пароли не совпадают",
+      "loginFailed": "Не удалось войти. Проверьте почту и пароль",
+      "registerFailed": "Не удалось зарегистрироваться. Возможно, эта почта уже используется"
+    }
+  },
+  "profileSetup": {
+    "heroTitle": "Настройте профиль",
+    "heroDescription": "Добавьте имя, статус и аватар, чтобы собеседникам было проще узнать вас.",
+    "displayNamePlaceholder": "Например, Николай",
+    "loginPlaceholder": "например, nikolay",
+    "statusPlaceholder": "Например, на связи",
+    "cityPlaceholder": "Например, Москва",
+    "departmentPlaceholder": "Например, Разработка",
+    "errors": {
+      "avatarTooLarge": "Размер аватарки не должен превышать 5 МБ",
+      "loginTaken": "Логин уже занят",
+      "saveFailed": "Не удалось сохранить профиль. Попробуйте еще раз.",
+      "displayNameRequired": "Введите имя пользователя",
+      "loginRequired": "Введите логин",
+      "loginFormat": "3–30 символов: буквы, цифры и _"
+    }
+  },
+  "avatar": {
+    "fallbackLabel": "Аватар пользователя",
+    "choose": "Выбрать фото",
+    "replace": "Заменить фото",
+    "hint": "PNG, JPG или WEBP",
+    "cropTitle": "Обрезать фото",
+    "zoom": "Масштаб",
+    "savePhoto": "Сохранить фото",
+    "cropSave": "Сохранить"
+  },
+  "profile": {
+    "open": "Открыть профиль",
+    "logout": "Выйти",
+    "logoutAccount": "Выйти из аккаунта",
+    "edit": "Изменить профиль",
+    "email": "Эл. почта",
+    "chats": "Чаты",
+    "profile": "Профиль",
+    "editTitle": "Редактирование профиля",
+    "saveFailed": "Не удалось сохранить профиль. Попробуйте ещё раз.",
+    "contact": "Контакт"
+  },
+  "messenger": {
+    "messages": "Сообщения",
+    "newChat": "Новый чат",
+    "search": "Поиск",
+    "tabs": {
+      "all": "Все",
+      "direct": "Личные",
+      "group": "Группы"
+    },
+    "loadChatsFailed": "Не удалось загрузить чаты",
+    "emptySearch": "Ничего не найдено",
+    "groupBadge": "ГРУППА",
+    "noMessages": "Нет сообщений",
+    "selectChatTitle": "Выберите чат",
+    "selectChatText": "Выберите чат из списка слева, чтобы начать общение",
+    "typing": "печатает...",
+    "memberCount_one": "{{count}} участник",
+    "memberCount_few": "{{count}} участника",
+    "memberCount_many": "{{count}} участников",
+    "memberCount_other": "{{count}} участника",
+    "loadConversationFailed": "Не удалось загрузить переписку",
+    "startChat": "Начните общение",
+    "firstMessage": "Напишите первое сообщение {{name}} 👋",
+    "historyStart": "Начало переписки",
+    "sendFailedRetry": "⚠ Не отправлено · Повторить",
+    "messagePlaceholder": "Написать сообщение…"
+  },
+  "group": {
+    "members_one": "Участник ({{count}})",
+    "members_few": "Участники ({{count}})",
+    "members_many": "Участники ({{count}})",
+    "members_other": "Участники ({{count}})",
+    "memberCount_one": "{{count}} участник",
+    "memberCount_few": "{{count}} участника",
+    "memberCount_many": "{{count}} участников",
+    "memberCount_other": "{{count}} участника",
+    "addMember": "Добавить участника",
+    "editGroup": "Изменить группу",
+    "leaveGroup": "Выйти из группы",
+    "roles": {
+      "admin": "Администратор",
+      "member": "Участник"
+    }
+  },
+  "connection": {
+    "connected": "✓ Подключено",
+    "reconnecting": "⟳ Переподключение...",
+    "disconnected": "Нет соединения"
+  },
+  "errors": {
+    "imagePrepare": "Не удалось подготовить изображение",
+    "imageCrop": "Не удалось обрезать изображение",
+    "imageLoad": "Не удалось загрузить изображение"
+  }
+}

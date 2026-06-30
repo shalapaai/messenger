@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
@@ -24,6 +25,7 @@ export function EditProfileModal(props: EditProfileModalProps) {
 }
 
 function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalProps) {
+  const { t } = useTranslation()
   const [displayName, setDisplayName] = useState(profile.displayName)
   const [editLogin,   setEditLogin]   = useState(profile.login?.replace(/^@/, '') ?? '')
   const [editStatus,  setEditStatus]  = useState(profile.status ?? '')
@@ -69,7 +71,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
     setHasTriedSubmit(true)
     if (!displayName.trim() || !trimmedLogin || isLoginBadFmt) return
     if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
-      setFormError('Размер аватарки не должен превышать 5 МБ')
+      setFormError(t('profileSetup.errors.avatarTooLarge'))
       return
     }
     setFormError('')
@@ -94,10 +96,10 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
       onClose()
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setLoginError('Логин уже занят')
+        setLoginError(t('profileSetup.errors.loginTaken'))
       } else {
         console.error('Profile update error:', err)
-        setFormError('Не удалось сохранить профиль. Попробуйте ещё раз.')
+        setFormError(t('profile.saveFailed'))
       }
     } finally {
       setIsLoading(false)
@@ -109,7 +111,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
       <div className={s.modalOverlay} onClick={onClose}>
         <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
           <div className={s.modalHeader}>
-            <span className={s.modalTitle}>Редактирование профиля</span>
+            <span className={s.modalTitle}>{t('profile.editTitle')}</span>
             <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
           </div>
           <form onSubmit={handleSubmit} className={s.modalForm} noValidate>
@@ -122,17 +124,17 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
             </div>
             <div className={s.modalFields}>
               <label className={s.modalField}>
-                <span className={s.modalFieldLabel}>Имя пользователя <span className={s.required}>*</span></span>
+                <span className={s.modalFieldLabel}>{t('common.displayName')} <span className={s.required}>*</span></span>
                 <input
                   className={`${s.modalFieldInput} ${isNameInvalid ? s.modalFieldInputError : ''}`}
                   type="text" value={displayName}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
-                  placeholder="Например, Николай"
+                  placeholder={t('profileSetup.displayNamePlaceholder')}
                 />
-                {isNameInvalid && <span className={s.modalFieldError}>Введите имя пользователя</span>}
+                {isNameInvalid && <span className={s.modalFieldError}>{t('profileSetup.errors.displayNameRequired')}</span>}
               </label>
               <label className={s.modalField}>
-                <span className={s.modalFieldLabel}>Логин <span className={s.required}>*</span></span>
+                <span className={s.modalFieldLabel}>{t('common.login')} <span className={s.required}>*</span></span>
                 <div className={`${s.loginInputWrapper} ${isLoginInvalid ? s.loginInputWrapperError : ''}`}>
                   <span className={s.loginPrefix}>@</span>
                   <input
@@ -140,35 +142,35 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
                     type="text"
                     value={editLogin}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => { setEditLogin(e.target.value.replace(/^@+/, '')); setLoginError('') }}
-                    placeholder="например, nikolay"
+                    placeholder={t('profileSetup.loginPlaceholder')}
                     aria-invalid={isLoginInvalid}
                   />
                 </div>
-                {isLoginEmpty && <span className={s.modalFieldError}>Введите логин</span>}
-                {isLoginBadFmt && <span className={s.modalFieldError}>3–30 символов: буквы, цифры и _</span>}
+                {isLoginEmpty && <span className={s.modalFieldError}>{t('profileSetup.errors.loginRequired')}</span>}
+                {isLoginBadFmt && <span className={s.modalFieldError}>{t('profileSetup.errors.loginFormat')}</span>}
                 {loginError && <span className={s.modalFieldError}>{loginError}</span>}
               </label>
               <label className={s.modalField}>
-                <span className={s.modalFieldLabel}>Статус</span>
-                <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder="Например, на связи" />
+                <span className={s.modalFieldLabel}>{t('common.status')}</span>
+                <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder={t('profileSetup.statusPlaceholder')} />
               </label>
               <label className={s.modalField}>
-                <span className={s.modalFieldLabel}>Телефон</span>
+                <span className={s.modalFieldLabel}>{t('common.phone')}</span>
                 <input className={s.modalFieldInput} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
               </label>
               <label className={s.modalField}>
-                <span className={s.modalFieldLabel}>Город</span>
-                <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder="Например, Москва" />
+                <span className={s.modalFieldLabel}>{t('common.city')}</span>
+                <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder={t('profileSetup.cityPlaceholder')} />
               </label>
               <label className={s.modalField}>
-                <span className={s.modalFieldLabel}>Отдел</span>
-                <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder="Например, Разработка" />
+                <span className={s.modalFieldLabel}>{t('common.department')}</span>
+                <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder={t('profileSetup.departmentPlaceholder')} />
               </label>
             </div>
             {formError && <p className={s.modalFormError}>{formError}</p>}
             <div className={s.modalActions}>
-              <button type="button" className={s.modalCancelBtn} onClick={onClose}>Отмена</button>
-              <button type="submit" className={s.modalSaveBtn} disabled={isLoading}>{isLoading ? 'Сохраняем...' : 'Сохранить'}</button>
+              <button type="button" className={s.modalCancelBtn} onClick={onClose}>{t('common.cancel')}</button>
+              <button type="submit" className={s.modalSaveBtn} disabled={isLoading}>{isLoading ? t('common.saving') : t('common.save')}</button>
             </div>
           </form>
         </div>

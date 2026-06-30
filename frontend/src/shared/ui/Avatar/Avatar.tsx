@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import styles from './Avatar.module.css'
 
 type AvatarProps = {
@@ -23,6 +24,7 @@ function getRandomAvatarBackground() {
 }
 
 function Avatar({ src, name, size = 'medium' }: AvatarProps) {
+  const { t } = useTranslation()
   const avatarClassName = `${styles.avatar} ${styles[size]}`
   const fallbackLetter = name.trim().charAt(0).toUpperCase() || '?'
 
@@ -36,7 +38,7 @@ function Avatar({ src, name, size = 'medium' }: AvatarProps) {
     <div
       className={avatarClassName}
       role="img"
-      aria-label={name || 'Аватар пользователя'}
+      aria-label={name || t('avatar.fallbackLabel')}
       style={{ background: fallbackBackground }}
     >
       {fallbackLetter}

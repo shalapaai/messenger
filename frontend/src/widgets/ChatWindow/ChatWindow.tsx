@@ -1,4 +1,5 @@
 import { useState, useRef, type RefObject, type KeyboardEvent, type ChangeEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ChatMeta, Message, ModalUser } from '../../shared/types/messenger'
 import { GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
 import s from './ChatWindow.module.css'
@@ -33,6 +34,7 @@ export function ChatWindow({
   messagesRef, topSentinelRef, bottomRef,
   onSend, onRetry, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
+  const { t } = useTranslation()
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -75,12 +77,12 @@ export function ChatWindow({
             <div className={s.chatHeaderName}>{meta.name}</div>
             <div className={s.chatHeaderSub}>
               {isTyping
-                ? <span className={s.typingText}>печатает...</span>
+                ? <span className={s.typingText}>{t('messenger.typing')}</span>
                 : meta.online
-                  ? <><span className={s.chatHeaderOnlineDot} />в сети</>
+                  ? <><span className={s.chatHeaderOnlineDot} />{t('common.online')}</>
                   : meta.group
-                    ? `${memberCount} участника`
-                    : 'был(а) недавно'
+                    ? t('messenger.memberCount', { count: memberCount })
+                    : t('common.recently')
               }
             </div>
           </div>
@@ -94,14 +96,14 @@ export function ChatWindow({
       ) : loadError ? (
         <div className={s.emptyChat}>
           <div className={s.emptyChatIcon}>⚠️</div>
-          <h3 className={s.emptyChatTitle}>Не удалось загрузить переписку</h3>
-          <button className={s.loadErrorRetryBtn} onClick={onRetryLoad}>Повторить</button>
+          <h3 className={s.emptyChatTitle}>{t('messenger.loadConversationFailed')}</h3>
+          <button className={s.loadErrorRetryBtn} onClick={onRetryLoad}>{t('common.retry')}</button>
         </div>
       ) : messages.length === 0 ? (
         <div className={s.emptyChat}>
           <div className={s.emptyChatIcon}>💬</div>
-          <h3 className={s.emptyChatTitle}>Начните общение</h3>
-          <p className={s.emptyChatSub}>Напишите первое сообщение {meta.name.split(' ')[0]} 👋</p>
+          <h3 className={s.emptyChatTitle}>{t('messenger.startChat')}</h3>
+          <p className={s.emptyChatSub}>{t('messenger.firstMessage', { name: meta.name.split(' ')[0] })}</p>
         </div>
       ) : (
         <div className={s.messages} ref={messagesRef}>
@@ -112,7 +114,7 @@ export function ChatWindow({
           )}
 
           {!loadingHistory && historyLoaded && (
-            <div className={s.historyEnd}>Начало переписки</div>
+            <div className={s.historyEnd}>{t('messenger.historyStart')}</div>
           )}
 
           {rendered.map((item, i) =>
@@ -156,7 +158,7 @@ export function ChatWindow({
                 </span>
                 {item.msg.status === 'failed' && (
                   <button className={s.msgRetry} onClick={() => onRetry(item.msg)}>
-                    ⚠ Не отправлено · Повторить
+                    {t('messenger.sendFailedRetry')}
                   </button>
                 )}
               </div>
@@ -184,7 +186,7 @@ export function ChatWindow({
         <textarea
           ref={textareaRef}
           className={s.textInput}
-          placeholder="Написать сообщение…"
+          placeholder={t('messenger.messagePlaceholder')}
           value={text}
           rows={1}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}

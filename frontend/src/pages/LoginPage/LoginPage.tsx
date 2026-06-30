@@ -1,12 +1,15 @@
+import { useTranslation } from 'react-i18next'
 import { LoginForm } from '../../features/auth/LoginForm'
 import { AuthLayout } from '../../widgets/AuthLayout'
 
 function LoginPage() {
+  const { t } = useTranslation()
+
   return (
     <AuthLayout
       isTitleWrapped
-      title="Мессенджер для команды"
-      description="Войдите в аккаунт, чтобы продолжить общение, открыть чаты и не потерять важные сообщения."
+      title={t('auth.loginHeroTitle')}
+      description={t('auth.loginHeroDescription')}
     >
       <LoginForm />
     </AuthLayout>

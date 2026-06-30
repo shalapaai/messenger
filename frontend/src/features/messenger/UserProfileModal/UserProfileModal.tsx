@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { ModalUser } from '../../../shared/types/messenger'
 import s from './UserProfileModal.module.css'
 
@@ -7,6 +8,8 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ user, onClose }: UserProfileModalProps) {
+  const { t } = useTranslation()
+
   if (!user) return null
 
   return (
@@ -16,15 +19,15 @@ export function UserProfileModal({ user, onClose }: UserProfileModalProps) {
         <div className={s.umAvatar} style={{ background: user.color }}>{user.initials}</div>
         <div className={s.umName}>{user.name}</div>
         <div className={s.umStatus}>
-          {user.online ? <><span className={s.umStatusDot} />в сети</> : 'был(а) недавно'}
+          {user.online ? <><span className={s.umStatusDot} />{t('common.online')}</> : t('common.recently')}
         </div>
         {(user.phone || user.email || user.department) && (
           <>
             <div className={s.umDivider} />
-            <div className={s.umSection}>Контакт</div>
-            {user.phone      && <div className={s.umField}><span className={s.umFieldLabel}>Телефон</span><span className={s.umFieldValue}>{user.phone}</span></div>}
-            {user.email      && <div className={s.umField}><span className={s.umFieldLabel}>Email</span><span className={s.umFieldValue}>{user.email}</span></div>}
-            {user.department && <div className={s.umField}><span className={s.umFieldLabel}>Отдел</span><span className={s.umFieldValue}>{user.department}</span></div>}
+            <div className={s.umSection}>{t('profile.contact')}</div>
+            {user.phone      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.phone')}</span><span className={s.umFieldValue}>{user.phone}</span></div>}
+            {user.email      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.email')}</span><span className={s.umFieldValue}>{user.email}</span></div>}
+            {user.department && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.department')}</span><span className={s.umFieldValue}>{user.department}</span></div>}
           </>
         )}
       </div>
