@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { Filter, ModalUser, Message } from '../../shared/types/messenger'
-import { CHAT_META, GROUP_MEMBERS, USER_PROFILES, getModalUserFromMsg } from '../../shared/lib/messenger/stubData'
+import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest } from '../../shared/api/chatsApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
-import { useIsOnline } from '../../shared/api/onlineStore'
-import { createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, colorFromId, initials } from '../../shared/api/chatsApi'
+import { useIsOnline, useOnlineStore } from '../../shared/api/onlineStore'
 import type { UserSearchResult } from '../../shared/api/usersApi'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
@@ -60,11 +59,12 @@ export function MessengerPage() {
     : '...'
 
   const meSender = {
-    own:            true,
-    senderId:       profile?.userId      ?? 'me',
-    senderName:     profile?.displayName ?? '',
-    senderInitials: profileInitials,
-    senderColor:    'var(--color-primary)',
+    own:             true,
+    senderId:        profile?.userId      ?? 'me',
+    senderName:      profile?.displayName ?? '',
+    senderInitials:  profileInitials,
+    senderColor:     profile?.avatarColor ?? 'var(--color-primary)',
+    senderAvatarUrl: profile?.avatarUrl ?? null,
   }
 
   // ── Zustand чаты ─────────────────────────────────────────────────────────
@@ -208,24 +208,32 @@ export function MessengerPage() {
     })
   }
 
+  const onlineStatuses = useOnlineStore(s => s.statuses)
+
   const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
   const activeChat = id ? chats.find(c => c.id === id) : undefined
   const activeChatOnline = useIsOnline(activeChat?.otherUserId)
   const draftOnline = useIsOnline(newUserId)
   const meta = id
     ? (activeChat
-        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, online: activeChatOnline, group: activeChat.group }
-        : (CHAT_META[id] ?? CHAT_META['1']))
+        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, avatarUrl: activeChat.avatarUrl, online: activeChatOnline, group: activeChat.group, otherUserId: activeChat.otherUserId }
+        : null)
     : newUserId
       ? {
           name: draftUser?.displayName ?? 'Новый чат',
-          initials: initials(draftUser?.displayName ?? null),
+          initials: getInitials(draftUser?.displayName ?? null),
           color: colorFromId(newUserId),
+          avatarUrl: draftUser?.avatarUrl ?? undefined,
           online: draftOnline,
           group: false,
+          otherUserId: newUserId,
         }
       : null
   const chatId = id ?? newUserId
+
+  function openUserModal(userId: string, name: string, online: boolean) {
+    setModalUser({ userId, name, initials: getInitials(name), color: colorFromId(userId), online })
+  }
 
   return (
     <div className={s.root}>
@@ -237,7 +245,11 @@ export function MessengerPage() {
         }
         <div className={s.topBarActions}>
           <ThemeModeToggle />
-          <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>
+          <button
+            className={s.topBarUserBtn}
+            style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
+            onClick={() => setProfileOpen(true)}
+          >
             {profile?.avatarUrl
               ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
               : profileInitials
@@ -251,6 +263,7 @@ export function MessengerPage() {
           onProfileOpen={() => setProfileOpen(true)}
           userInitials={profileInitials}
           userAvatarUrl={profile?.avatarUrl}
+          userAvatarColor={profile?.avatarColor}
         />
 
         <ChatListPanel
@@ -265,6 +278,10 @@ export function MessengerPage() {
           onQueryChange={setQuery}
           onSelect={cid => navigate(`/chats/${cid}`)}
           onNewChat={() => setNewChatOpen(true)}
+          onUserClick={userId => {
+            const chat = chats.find(c => c.otherUserId === userId)
+            openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
+          }}
         />
 
         <main className={`${s.content}${!inChatView ? ` ${s.contentMobileHidden}` : ''}`}>
@@ -273,6 +290,7 @@ export function MessengerPage() {
               chatId={chatId}
               meta={meta}
               messages={messages}
+              meSender={meSender}
               typingChats={typingIndicator.typingChats}
               loadingHistory={loadingHistory}
               historyLoaded={historyLoaded}
@@ -288,10 +306,9 @@ export function MessengerPage() {
               onTyping={typingIndicator.handleOwnTyping}
               onHeaderClick={() => {
                 if (meta.group) { setGroupModalOpen(true); return }
-                setModalUserIsChatPartner(true)
-                setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...(id ? USER_PROFILES[id] : {}) })
+                if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }
               }}
-              onAvatarClick={msg => { setModalUserIsChatPartner(false); setModalUser(getModalUserFromMsg(msg)) }}
+              onAvatarClick={msg => { setModalUserIsChatPartner(false); openUserModal(msg.senderId, msg.senderName, onlineStatuses[msg.senderId] ?? false) }}
             />
           ) : (
             <div className={s.placeholder}>
@@ -310,12 +327,15 @@ export function MessengerPage() {
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
-          <span className={s.bnAvatarMini}>
-      {profile?.avatarUrl
-        ? <img src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
-        : profileInitials
-      }
-    </span>
+          <span
+            className={s.bnAvatarMini}
+            style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
+          >
+            {profile?.avatarUrl
+              ? <img src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
+              : profileInitials
+            }
+          </span>
           <span>Профиль</span>
         </button>
       </nav>
@@ -350,7 +370,7 @@ export function MessengerPage() {
           isOpen={groupModalOpen}
           chatId={id}
           meta={meta}
-          members={GROUP_MEMBERS[id] ?? []}
+          members={[]}
           onClose={() => setGroupModalOpen(false)}
           onMemberClick={user => { setGroupModalOpen(false); setModalUserIsChatPartner(false); setModalUser(user) }}
           onLeave={handleLeaveGroup}

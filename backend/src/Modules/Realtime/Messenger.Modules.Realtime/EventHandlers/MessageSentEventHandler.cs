@@ -20,13 +20,14 @@ public sealed class MessageSentEventHandler(IHubContext<MessengerHub> hubContext
 
         var payload = new
         {
-            messageId       = notification.MessageId,
-            chatId          = notification.ChatId,
-            senderId        = notification.SenderId,
-            senderName      = sender?.DisplayName ?? "Пользователь",
-            senderAvatarUrl = sender?.AvatarUrl,
-            content         = notification.Content,
-            sentAt          = notification.OccurredOn
+            messageId        = notification.MessageId,
+            chatId           = notification.ChatId,
+            senderId         = notification.SenderId,
+            senderName       = sender?.DisplayName ?? "Пользователь",
+            senderAvatarUrl  = sender?.AvatarUrl,
+            senderAvatarColor = sender?.AvatarColor ?? "#2C5BF0",
+            content          = notification.Content,
+            sentAt           = notification.OccurredOn
         };
 
         await hubContext.Clients

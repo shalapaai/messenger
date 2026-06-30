@@ -5,7 +5,8 @@ using Messenger.Shared.Kernel.Results;
 public sealed record UserSummaryDto(
     Guid    AuthUserId,
     string  DisplayName,
-    string? AvatarUrl);
+    string? AvatarUrl,
+    string  AvatarColor);
 
 // Публичный API модуля для межмодульного взаимодействия.
 // Chats вызывает этот интерфейс — не зависит от внутренностей модуля.

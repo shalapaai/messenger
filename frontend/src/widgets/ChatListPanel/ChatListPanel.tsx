@@ -14,6 +14,7 @@ interface ChatListPanelProps {
   onQueryChange: (q: string) => void
   onSelect: (id: string) => void
   onNewChat: () => void
+  onUserClick?: (userId: string) => void
 }
 
 const TABS: { id: Filter; label: string }[] = [
@@ -22,7 +23,7 @@ const TABS: { id: Filter; label: string }[] = [
   { id: 'group', label: 'Группы' },
 ]
 
-export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect, onNewChat }: ChatListPanelProps) {
+export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect, onNewChat, onUserClick }: ChatListPanelProps) {
   const onlineStatuses = useOnlineStore((s) => s.statuses)
 
   const counts = {
@@ -95,10 +96,23 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
                 className={`${s.clRow} ${activeId === String(chat.id) ? s.clRowActive : ''}`}
                 onClick={() => onSelect(String(chat.id))}
               >
-                <div className={`${s.clAvatar} ${chat.group ? s.clAvatarGroup : ''}`} style={{ background: chat.color }}>
-                  {chat.initials}
+                <button
+                  type="button"
+                  className={`${s.clAvatar} ${chat.group ? s.clAvatarGroup : ''}`}
+                  style={chat.avatarUrl ? undefined : { background: chat.color }}
+                  onClick={e => {
+                    if (!chat.group && chat.otherUserId && onUserClick) {
+                      e.stopPropagation()
+                      onUserClick(chat.otherUserId)
+                    }
+                  }}
+                >
+                  {chat.avatarUrl
+                    ? <img src={chat.avatarUrl} alt={chat.name} className={s.clAvatarImg} />
+                    : chat.initials
+                  }
                   {online && <span className={s.clOnlineDot} />}
-                </div>
+                </button>
                 <div className={s.clInfo}>
                   <div className={s.clNameRow}>
                     <span className={s.clName}>{chat.name}</span>

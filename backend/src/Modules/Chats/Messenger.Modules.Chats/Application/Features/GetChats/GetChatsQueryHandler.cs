@@ -48,17 +48,19 @@ public sealed class GetChatsQueryHandler(
             {
                 lastMessages.TryGetValue(c.Id.Value, out var lastMessage);
 
-                var name      = c.Name;
-                var avatarUrl = c.AvatarUrl;
+                var name        = c.Name;
+                var avatarUrl   = c.AvatarUrl;
+                string? avatarColor = null;
                 Guid? otherUserId = null;
 
                 if (c.Type == ChatType.Direct)
                 {
                     otherUserId = c.Members.Select(m => m.UserId).FirstOrDefault(uid => uid != query.CurrentUserId);
-                    if (name is null && userSummaries.TryGetValue(otherUserId.Value, out var summary))
+                    if (otherUserId.HasValue && userSummaries.TryGetValue(otherUserId.Value, out var summary))
                     {
-                        name      = summary.DisplayName;
-                        avatarUrl = summary.AvatarUrl;
+                        name        = name      ?? summary.DisplayName;
+                        avatarUrl   = avatarUrl ?? summary.AvatarUrl;
+                        avatarColor = summary.AvatarColor;
                     }
                 }
 
@@ -67,6 +69,7 @@ public sealed class GetChatsQueryHandler(
                     c.Type.ToString().ToLower(),
                     name,
                     avatarUrl,
+                    avatarColor,
                     lastMessage,
                     otherUserId,
                     otherUserId.HasValue && onlineUserIds.Contains(otherUserId.Value));

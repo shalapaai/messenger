@@ -10,9 +10,10 @@ interface IconNavProps {
   onProfileOpen: () => void
   userInitials: string
   userAvatarUrl?: string | null
+  userAvatarColor?: string
 }
 
-export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavProps) {
+export function IconNav({ onProfileOpen, userInitials, userAvatarUrl, userAvatarColor }: IconNavProps) {
   const navigate = useNavigate()
   const { clearProfile } = useUserProfile()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -39,7 +40,11 @@ export function IconNav({ onProfileOpen, userInitials, userAvatarUrl }: IconNavP
               <button className={`${s.avatarMenuItem} ${s.avatarMenuItemDanger}`} onClick={() => { setMenuOpen(false); handleLogout() }}>Выйти</button>
             </div>
           )}
-          <button className={s.userAvatarBtn} onClick={() => setMenuOpen(v => !v)}>
+          <button
+            className={s.userAvatarBtn}
+            style={userAvatarUrl ? undefined : { background: userAvatarColor }}
+            onClick={() => setMenuOpen(v => !v)}
+          >
             {userAvatarUrl
               ? <img src={userAvatarUrl} alt={userInitials} className={s.userAvatarImg} />
               : userInitials

@@ -1,6 +1,5 @@
 import { useState, useRef, type RefObject, type KeyboardEvent, type ChangeEvent } from 'react'
-import type { ChatMeta, Message, ModalUser } from '../../shared/types/messenger'
-import { GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
+import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
 type RenderedItem =
@@ -23,6 +22,7 @@ interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
+  meSender: Sender
   typingChats: Record<string, boolean>
   loadingHistory: boolean
   historyLoaded: boolean
@@ -41,7 +41,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({
-  chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
+  chatId, meta, messages, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
   onSend, onRetry, onDelete, onTyping, onHeaderClick, onAvatarClick,
@@ -75,14 +75,16 @@ export function ChatWindow({
   }
 
   const isTyping = typingChats[chatId] && !meta.group
-  const memberCount = (GROUP_MEMBERS[chatId] ?? []).length
 
   return (
     <>
       <div className={s.chatHeader}>
         <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
-          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={{ background: meta.color }}>
-            {meta.initials}
+          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
+            {meta.avatarUrl
+              ? <img src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
+              : meta.initials
+            }
           </div>
           <div className={s.chatHeaderInfo}>
             <div className={s.chatHeaderName}>{meta.name}</div>
@@ -92,7 +94,7 @@ export function ChatWindow({
                 : meta.online
                   ? <><span className={s.chatHeaderOnlineDot} />в сети</>
                   : meta.group
-                    ? `${memberCount} участника`
+                    ? 'группа'
                     : 'был(а) недавно'
               }
             </div>
@@ -133,24 +135,31 @@ export function ChatWindow({
               <div key={`sep-${i}`} className={s.dateSep}>
                 <span className={s.dateSepLabel}>{item.label}</span>
               </div>
-            ) : (
+            ) : (() => {
+              const displaySender = item.msg.own
+                ? { ...item.msg, senderColor: meSender.senderColor, senderAvatarUrl: meSender.senderAvatarUrl, senderInitials: meSender.senderInitials, senderName: meSender.senderName }
+                : item.msg
+              return (
               <div key={item.msg.id}>
                 {item.showName && (
                   <div
                     className={`${s.senderName} ${s.senderNameClickable}`}
-                    style={{ color: item.msg.senderColor }}
+                    style={{ color: displaySender.senderColor }}
                     onClick={() => onAvatarClick(item.msg)}
                   >
-                    {item.msg.senderName}
+                    {displaySender.senderName}
                   </div>
                 )}
                 <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
                   <div
                     className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
-                    style={{ background: item.msg.senderColor }}
+                    style={displaySender.senderAvatarUrl ? undefined : { background: displaySender.senderColor }}
                     onClick={() => item.showAvatar ? onAvatarClick(item.msg) : undefined}
                   >
-                    {item.msg.senderInitials}
+                    {displaySender.senderAvatarUrl
+                      ? <img src={displaySender.senderAvatarUrl} alt={displaySender.senderInitials} className={s.msgAvatarImg} />
+                      : displaySender.senderInitials
+                    }
                   </div>
                   <div className={[
                     s.bubble,
@@ -184,20 +193,8 @@ export function ChatWindow({
                   </button>
                 )}
               </div>
-            )
-          )}
-
-          {isTyping && (
-            <div className={`${s.msgRow} ${s.typingRow}`}>
-              <div className={s.msgAvatar} style={{ background: meta.color }}>{meta.initials}</div>
-              <div className={`${s.bubble} ${s.bubbleOther} ${s.bubbleTail}`}>
-                <span className={s.typingDots}>
-                  <span className={s.typingDot} />
-                  <span className={s.typingDot} />
-                  <span className={s.typingDot} />
-                </span>
-              </div>
-            </div>
+              )
+            })()
           )}
 
           <div ref={bottomRef} />

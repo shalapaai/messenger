@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
-import { CHAT_META, getInitialMessages } from '../../../shared/lib/messenger/stubData'
-import { fetchMessages, colorFromId, initials, nextMessageId } from '../../../shared/api/chatsApi'
+import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
 import { deleteMessage as deleteMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted } from '../../../shared/api/signalrClient'
@@ -17,9 +16,7 @@ interface UseChatMessagesOptions {
  * Владеет содержимым переписок: загрузка истории (с реальной cursor-пагинацией),
  * приём realtime-сообщений, отправка с оптимистичным UI и ретраем.
  *
- * Если реальный чат (GUID, есть в сторе чатов) не загрузился — отдаёт loadError,
- * UI должен показать ошибку и кнопку "Повторить", а НЕ молча подставлять моковые данные.
- * Мок-фоллбэк (getInitialMessages) — только для старых демо-ID из CHAT_META.
+ * Если чат не загрузился — отдаёт loadError; UI показывает ошибку с кнопкой «Повторить».
  */
 export function useChatMessages(id: string | undefined, opts: UseChatMessagesOptions = {}) {
   const [chatMessages,   setChatMessages]   = useState<Record<string, Message[]>>({})
@@ -42,14 +39,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))
       opts.onAppend?.(false)
     }).catch(() => {
-      if (CHAT_META[chatId]) {
-        // известный демо-чат (старые мок-ID) — стаб-фоллбэк уместен
-        setChatMessages(prev => ({ ...prev, [chatId]: getInitialMessages(chatId) }))
-        setHistoryLoaded(prev => ({ ...prev, [chatId]: true }))
-      } else {
-        // реальный чат, API недоступен — честная ошибка, не подсовываем чужой мок-диалог
-        setLoadError(prev => ({ ...prev, [chatId]: true }))
-      }
+      setLoadError(prev => ({ ...prev, [chatId]: true }))
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,15 +69,16 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       return {
         ...prev,
         [msg.chatId]: [...prev[msg.chatId], {
-          id:             nextMessageId(),
-          text:           msg.content,
-          own:            false,
-          senderId:       msg.senderId,
-          senderName:     msg.senderName,
-          senderInitials: initials(msg.senderName),
-          senderColor:    colorFromId(msg.senderId),
-          time:           new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-          date:           'Сегодня',
+          id:              nextMessageId(),
+          text:            msg.content,
+          own:             false,
+          senderId:        msg.senderId,
+          senderName:      msg.senderName,
+          senderInitials:  initials(msg.senderName),
+          senderColor:     msg.senderAvatarColor,
+          senderAvatarUrl: msg.senderAvatarUrl,
+          time:            new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+          date:            'Сегодня',
         }],
       }
     })

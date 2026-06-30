@@ -9,7 +9,8 @@ public sealed record UpdateUserProfileCommand(
     string? Login,
     string? Phone,
     string? City,
-    string? Department) : ICommand<UpdatedProfileDto>;
+    string? Department,
+    string? AvatarColor) : ICommand<UpdatedProfileDto>;
 
 public sealed record UpdatedProfileDto(
     Guid      UserId,

@@ -14,6 +14,42 @@
   gap: 6px;
 }
 
+.buttonsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: var(--color-danger-soft, #fff0f0);
+  color: var(--color-danger, #e03b3b);
+
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.removeButton:hover {
+  background: var(--color-danger-soft-hover, #ffe0e0);
+  transform: scale(1.08);
+}
+
 .uploadButton {
   display: inline-flex;
   align-items: center;

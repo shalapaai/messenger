@@ -3,6 +3,7 @@ export interface Chat {
   name: string
   initials: string
   color: string
+  avatarUrl: string | null
   preview: string
   time: string
   unread: number
@@ -16,8 +17,10 @@ export interface ChatMeta {
   name: string
   initials: string
   color: string
+  avatarUrl: string | null
   online: boolean
   group: boolean
+  otherUserId?: string
 }
 
 export interface GroupMember {
@@ -37,6 +40,7 @@ export interface Message {
   senderName: string
   senderInitials: string
   senderColor: string
+  senderAvatarUrl: string | null
   time: string
   date: string
   status?: 'pending' | 'sent' | 'failed'
@@ -46,13 +50,18 @@ export interface Message {
 export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>
 
 export interface ModalUser {
+  userId?: string
   name: string
   initials: string
   color: string
+  avatarUrl?: string | null
   online: boolean
-  phone?: string
+  login?: string | null
+  status?: string | null
+  phone?: string | null
   email?: string
-  department?: string
+  department?: string | null
+  city?: string | null
 }
 
 export interface StubUser {

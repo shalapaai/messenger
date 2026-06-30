@@ -44,7 +44,9 @@
 .modalHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .modalTitle { font-size: 18px; font-weight: 800; }
 .modalForm { display: flex; flex-direction: column; gap: 20px; }
-.modalAvatarBlock { display: flex; justify-content: center; }
+.modalAvatarBlock { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.colorPickerWrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.colorPickerLabel { font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
 .modalFields { display: flex; flex-direction: column; gap: 14px; }
 .modalField { display: flex; flex-direction: column; gap: 7px; }
 .modalFieldLabel { font-size: 14px; font-weight: 600; color: var(--color-text-muted); }

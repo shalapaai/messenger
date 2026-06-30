@@ -5,14 +5,20 @@ using Messenger.Shared.Kernel.Results;
 
 public sealed class UserProfile : AggregateRoot<Guid>
 {
+    private static readonly string[] Palette =
+    [
+        "#2C5BF0", "#7A5BF0", "#22B07D", "#F0902C", "#E0556E", "#2CA6C9", "#9B59B6"
+    ];
+
     private UserProfile() { } // EF Core
 
-    private UserProfile(Guid id, Guid authUserId, string email, string displayName, string? login) : base(id)
+    private UserProfile(Guid id, Guid authUserId, string email, string displayName, string? login, string? avatarColor) : base(id)
     {
         AuthUserId  = authUserId;
         Email       = email.ToLowerInvariant();
         DisplayName = displayName;
         Login       = login?.ToLowerInvariant();
+        AvatarColor = avatarColor ?? Palette[Random.Shared.Next(Palette.Length)];
         CreatedAt   = DateTime.UtcNow;
     }
 
@@ -22,14 +28,15 @@ public sealed class UserProfile : AggregateRoot<Guid>
     public string?   Login       { get; private set; }
     public string?   Status      { get; private set; }
     public string?   AvatarUrl   { get; private set; }
+    public string    AvatarColor { get; private set; } = "#2C5BF0";
     public string?   Phone       { get; private set; }
     public string?   City        { get; private set; }
     public string?   Department  { get; private set; }
     public DateTime  CreatedAt   { get; private set; }
     public DateTime? UpdatedAt   { get; private set; }
 
-    public static Result<UserProfile> Create(Guid authUserId, string email, string displayName, string? login = null) =>
-        Result.Success(new UserProfile(Guid.NewGuid(), authUserId, email, displayName, login));
+    public static Result<UserProfile> Create(Guid authUserId, string email, string displayName, string? login = null, string? avatarColor = null) =>
+        Result.Success(new UserProfile(Guid.NewGuid(), authUserId, email, displayName, login, avatarColor));
 
     public void Update(string? displayName, string? status, string? phone, string? city, string? department)
     {
@@ -51,5 +58,17 @@ public sealed class UserProfile : AggregateRoot<Guid>
     {
         AvatarUrl = avatarUrl;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearAvatarUrl()
+    {
+        AvatarUrl = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetAvatarColor(string color)
+    {
+        AvatarColor = color;
+        UpdatedAt   = DateTime.UtcNow;
     }
 }

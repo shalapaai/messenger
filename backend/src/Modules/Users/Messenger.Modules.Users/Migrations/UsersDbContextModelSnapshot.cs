@@ -61,6 +61,13 @@ namespace Messenger.Modules.Users.Migrations
                         .HasColumnType("character varying(2048)")
                         .HasColumnName("avatar_url");
 
+                    b.Property<string>("AvatarColor")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasColumnName("avatar_color")
+                        .HasDefaultValue("#2C5BF0");
+
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")

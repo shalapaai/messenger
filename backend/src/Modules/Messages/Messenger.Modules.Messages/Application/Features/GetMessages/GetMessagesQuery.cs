@@ -18,6 +18,7 @@ public sealed record MessageDto(
     Guid      SenderId,
     string    SenderName,
     string?   SenderAvatarUrl,
+    string    SenderAvatarColor,
     string    Content,
     string?   FileUrl,
     string    Status,
