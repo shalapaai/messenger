@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
+import { useUserProfile } from '../../shared/context/useUserProfile'
 import type { UserProfile } from '../../shared/types/user'
 import s from './ProfilePanel.module.css'
 
@@ -24,6 +25,7 @@ function formatDate(isoDate: string): string {
 
 export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: ProfilePanelProps) {
   const navigate = useNavigate()
+  const { clearProfile } = useUserProfile()
 
   if (!isOpen) return null
 
@@ -32,6 +34,7 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
       await logout()
     } finally {
       clearAuthTokens()
+      clearProfile()
       navigate('/login')
     }
   }

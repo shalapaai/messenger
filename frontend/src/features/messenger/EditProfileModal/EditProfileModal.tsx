@@ -8,6 +8,7 @@ import type { UserProfile } from '../../../shared/types/user'
 import s from './EditProfileModal.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
 interface EditProfileModalProps {
   isOpen: boolean
@@ -67,6 +68,10 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
     e.preventDefault()
     setHasTriedSubmit(true)
     if (!displayName.trim() || !trimmedLogin || isLoginBadFmt) return
+    if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
+      setFormError('Размер аватарки не должен превышать 5 МБ')
+      return
+    }
     setFormError('')
     setLoginError('')
     setIsLoading(true)

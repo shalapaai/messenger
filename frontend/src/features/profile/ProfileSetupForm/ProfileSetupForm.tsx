@@ -10,6 +10,7 @@ import { AvatarUpload } from '../AvatarUpload'
 import styles from './ProfileSetupForm.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
 function ProfileSetupForm() {
   const navigate = useNavigate()
@@ -71,6 +72,11 @@ function ProfileSetupForm() {
     setHasTriedSubmit(true)
 
     if (!displayName.trim() || !LOGIN_REGEX.test(trimmedLogin)) return
+
+    if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
+      setError('Размер аватарки не должен превышать 5 МБ')
+      return
+    }
 
     setError('')
     setLoginError('')
