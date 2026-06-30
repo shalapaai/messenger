@@ -200,6 +200,7 @@ export function MessengerPage() {
               chatId={id}
               meta={meta}
               messages={messages}
+              meSender={meSender}
               typingChats={typingIndicator.typingChats}
               loadingHistory={loadingHistory}
               historyLoaded={historyLoaded}

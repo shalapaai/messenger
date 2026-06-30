@@ -1,5 +1,5 @@
 import { useState, useRef, type RefObject, type KeyboardEvent, type ChangeEvent } from 'react'
-import type { ChatMeta, Message, ModalUser } from '../../shared/types/messenger'
+import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
 type RenderedItem =
@@ -10,6 +10,7 @@ interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
+  meSender: Sender
   typingChats: Record<string, boolean>
   loadingHistory: boolean
   historyLoaded: boolean
@@ -27,7 +28,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({
-  chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
+  chatId, meta, messages, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
   onSend, onRetry, onTyping, onHeaderClick, onAvatarClick,
@@ -121,26 +122,30 @@ export function ChatWindow({
               <div key={`sep-${i}`} className={s.dateSep}>
                 <span className={s.dateSepLabel}>{item.label}</span>
               </div>
-            ) : (
+            ) : (() => {
+              const displaySender = item.msg.own
+                ? { ...item.msg, senderColor: meSender.senderColor, senderAvatarUrl: meSender.senderAvatarUrl, senderInitials: meSender.senderInitials, senderName: meSender.senderName }
+                : item.msg
+              return (
               <div key={item.msg.id}>
                 {item.showName && (
                   <div
                     className={`${s.senderName} ${s.senderNameClickable}`}
-                    style={{ color: item.msg.senderColor }}
+                    style={{ color: displaySender.senderColor }}
                     onClick={() => onAvatarClick(item.msg)}
                   >
-                    {item.msg.senderName}
+                    {displaySender.senderName}
                   </div>
                 )}
                 <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
                   <div
                     className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
-                    style={item.msg.senderAvatarUrl ? undefined : { background: item.msg.senderColor }}
+                    style={displaySender.senderAvatarUrl ? undefined : { background: displaySender.senderColor }}
                     onClick={() => item.showAvatar ? onAvatarClick(item.msg) : undefined}
                   >
-                    {item.msg.senderAvatarUrl
-                      ? <img src={item.msg.senderAvatarUrl} alt={item.msg.senderInitials} className={s.msgAvatarImg} />
-                      : item.msg.senderInitials
+                    {displaySender.senderAvatarUrl
+                      ? <img src={displaySender.senderAvatarUrl} alt={displaySender.senderInitials} className={s.msgAvatarImg} />
+                      : displaySender.senderInitials
                     }
                   </div>
                   <div className={[
@@ -164,7 +169,8 @@ export function ChatWindow({
                   </button>
                 )}
               </div>
-            )
+              )
+            })()
           )}
 
           <div ref={bottomRef} />
