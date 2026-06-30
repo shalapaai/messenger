@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS users.user_profile (
     login        VARCHAR(30)   DEFAULT NULL,
     status       VARCHAR(200)  DEFAULT NULL,
     avatar_url   VARCHAR(2048) DEFAULT NULL,
+    avatar_color VARCHAR(7)    NOT NULL DEFAULT '#2C5BF0',
     phone        VARCHAR(20)   DEFAULT NULL,
     city         VARCHAR(100)  DEFAULT NULL,
     department   VARCHAR(100)  DEFAULT NULL,
