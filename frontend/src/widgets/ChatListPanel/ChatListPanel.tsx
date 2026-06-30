@@ -5,6 +5,8 @@ import s from './ChatListPanel.module.css'
 interface ChatListPanelProps {
   chats: Chat[]
   loading: boolean
+  error: boolean
+  onRetry: () => void
   activeId: string | undefined
   filter: Filter
   query: string
@@ -19,7 +21,7 @@ const TABS: { id: Filter; label: string }[] = [
   { id: 'group', label: 'Группы' },
 ]
 
-export function ChatListPanel({ chats, loading, activeId, filter, query, onFilterChange, onQueryChange, onSelect }: ChatListPanelProps) {
+export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect }: ChatListPanelProps) {
   const onlineStatuses = useOnlineStore((s) => s.statuses)
 
   const counts = {
@@ -32,7 +34,8 @@ export function ChatListPanel({ chats, loading, activeId, filter, query, onFilte
     .filter(c => filter === 'all' ? true : filter === 'group' ? c.group : !c.group)
     .filter(c => !q || c.name.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
 
-  const showSkeleton = loading && chats.length === 0
+  const showSkeleton = loading && chats.length === 0 && !error
+  const showError    = error && chats.length === 0
 
   return (
     <aside className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}>
@@ -65,7 +68,12 @@ export function ChatListPanel({ chats, loading, activeId, filter, query, onFilte
       </div>
 
       <div className={s.clList}>
-        {showSkeleton ? (
+        {showError ? (
+          <div className={s.clError}>
+            <p>Не удалось загрузить чаты</p>
+            <button className={s.clRetryBtn} onClick={onRetry}>Повторить</button>
+          </div>
+        ) : showSkeleton ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className={s.clSkeletonRow}>
               <div className={s.clSkeletonAvatar} />

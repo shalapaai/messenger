@@ -10,6 +10,7 @@ using Messenger.Modules.Chats.Infrastructure.Repositories;
 using Messenger.Modules.Chats.Presentation;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Behaviors;
+using Messenger.Shared.Kernel.Membership;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +29,7 @@ public sealed class ChatsModule : IModuleInstaller
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ChatsDbContext>());
         services.AddScoped<IChatRepository, ChatRepository>();
         services.AddScoped<IChatsModule, ChatsModuleApi>();
+        services.AddScoped<IChatMembershipChecker, ChatMembershipChecker>();
 
         services.AddMediatR(cfg =>
         {

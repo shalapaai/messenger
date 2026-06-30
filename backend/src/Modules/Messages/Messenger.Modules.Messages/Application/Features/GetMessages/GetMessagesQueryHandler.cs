@@ -3,15 +3,20 @@ namespace Messenger.Modules.Messages.Application.Features.GetMessages;
 using Messenger.Modules.Messages.Domain;
 using Messenger.Modules.Users.Application.Contracts;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Membership;
 using Messenger.Shared.Kernel.Results;
 
 public sealed class GetMessagesQueryHandler(
-    IMessageRepository messageRepository,
-    IUsersModule       usersModule)
+    IMessageRepository     messageRepository,
+    IUsersModule           usersModule,
+    IChatMembershipChecker membershipChecker)
     : IQueryHandler<GetMessagesQuery, MessagesPageDto>
 {
     public async Task<Result<MessagesPageDto>> Handle(GetMessagesQuery query, CancellationToken ct)
     {
+        if (!await membershipChecker.IsMemberAsync(query.ChatId, query.CurrentUserId, ct))
+            return Result.Failure<MessagesPageDto>(Error.Forbidden("You are not a member of this chat"));
+
         var limit = Math.Clamp(query.Limit, 1, 100);
 
         var raw = await messageRepository.GetByChatIdCursorAsync(query.ChatId, query.Before, limit + 1, ct);

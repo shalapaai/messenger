@@ -159,6 +159,9 @@ CREATE TABLE IF NOT EXISTS files.file_upload (
     uploaded_by   UUID         NOT NULL,
     uploaded_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     category      VARCHAR(30)  DEFAULT NULL,
+    -- Заполнено только для ChatAttachment — для проверки доступа при скачивании.
+    -- Без FK на chats.chat: модули не должны зависеть друг от друга на уровне схемы.
+    chat_id       UUID         DEFAULT NULL,
 
     CONSTRAINT fk_file_upload_uploaded_by
         FOREIGN KEY (uploaded_by) REFERENCES auth.user (id) ON DELETE CASCADE

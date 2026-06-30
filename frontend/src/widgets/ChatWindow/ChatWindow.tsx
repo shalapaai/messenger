@@ -14,6 +14,9 @@ interface ChatWindowProps {
   typingChats: Record<string, boolean>
   loadingHistory: boolean
   historyLoaded: boolean
+  loadingInitial: boolean
+  loadError: boolean
+  onRetryLoad: () => void
   messagesRef: RefObject<HTMLDivElement | null>
   topSentinelRef: RefObject<HTMLDivElement | null>
   bottomRef: RefObject<HTMLDivElement | null>
@@ -26,6 +29,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({
   chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
+  loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
   onSend, onRetry, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
@@ -83,7 +87,17 @@ export function ChatWindow({
         </button>
       </div>
 
-      {messages.length === 0 ? (
+      {loadingInitial ? (
+        <div className={s.emptyChat}>
+          <div className={s.historySpinner} />
+        </div>
+      ) : loadError ? (
+        <div className={s.emptyChat}>
+          <div className={s.emptyChatIcon}>⚠️</div>
+          <h3 className={s.emptyChatTitle}>Не удалось загрузить переписку</h3>
+          <button className={s.loadErrorRetryBtn} onClick={onRetryLoad}>Повторить</button>
+        </div>
+      ) : messages.length === 0 ? (
         <div className={s.emptyChat}>
           <div className={s.emptyChatIcon}>💬</div>
           <h3 className={s.emptyChatTitle}>Начните общение</h3>

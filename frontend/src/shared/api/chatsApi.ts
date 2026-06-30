@@ -13,13 +13,16 @@ interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 
 const COLORS = ['#2C5BF0', '#7A5BF0', '#22B07D', '#F0902C', '#E0556E', '#2CA6C9', '#9B59B6']
 
-function colorFromId(id: string): string {
+/** Детерминированный цвет аватарки по id — один и тот же человек всегда одного цвета,
+ *  независимо от того, пришло сообщение из истории (REST) или realtime (SignalR). */
+export function colorFromId(id: string): string {
   let h = 0
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0
   return COLORS[Math.abs(h) % COLORS.length]
 }
 
-function initials(name: string | null): string {
+/** Инициалы из displayName — общий хелпер для REST-истории и realtime-сообщений. */
+export function initials(name: string | null): string {
   if (!name) return '?'
   const w = name.trim().split(/\s+/)
   return w.length >= 2 ? (w[0][0] + w[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase()
@@ -46,6 +49,12 @@ function formatDate(iso: string): string {
 
 let _msgId = 100_000
 
+/** Единый источник локальных (клиентских) ID сообщений — и для истории, и для realtime,
+ *  и для оптимистичной отправки, чтобы не пересекались разные счётчики/стратегии. */
+export function nextMessageId(): number {
+  return _msgId++
+}
+
 // ── Публичные функции ─────────────────────────────────────────────────────────
 
 export async function fetchChats(): Promise<Chat[]> {
@@ -64,12 +73,18 @@ export async function fetchChats(): Promise<Chat[]> {
   }))
 }
 
-export async function fetchMessages(chatId: string, limit = 50): Promise<{ messages: Message[]; nextCursor: string | null }> {
-  const res   = await apiClient.get<MessagesPageDto>(`/chats/${chatId}/messages`, { params: { limit } })
-  const myId  = getMyUserId()
+export async function fetchMessages(
+  chatId: string,
+  opts: { limit?: number; before?: string | null } = {}
+): Promise<{ messages: Message[]; nextCursor: string | null }> {
+  const { limit = 50, before } = opts
+  const res  = await apiClient.get<MessagesPageDto>(`/chats/${chatId}/messages`, {
+    params: { limit, before: before ?? undefined },
+  })
+  const myId = getMyUserId()
 
   const messages: Message[] = [...res.data.items].reverse().map(dto => ({
-    id:             _msgId++,
+    id:             nextMessageId(),
     messageId:      dto.id,
     text:           dto.content,
     own:            dto.senderId === myId,

@@ -247,6 +247,19 @@
 }
 .msgRetry:hover { text-decoration: underline; }
 
+.loadErrorRetryBtn {
+  background: #2c5bf0;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.loadErrorRetryBtn:hover { background: #1f4bdd; }
+
 @media (max-width: 819px) {
   .messages { padding: 16px; }
   .msgRow { max-width: 85%; }

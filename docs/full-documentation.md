@@ -107,45 +107,50 @@ PostgreSQL (одна БД)
 
 ### Схема `auth`
 
-#### Таблица `auth.users`
+#### Таблица `auth.user`
 | Колонка | Тип | Описание |
 |---|---|---|
 | id | uuid | Первичный ключ |
 | email | varchar(255) | Email (уникальный) |
-| password_hash | varchar(512) | Хеш пароля (Argon2) |
+| password_hash | varchar(512) | Хеш пароля |
 | is_email_verified | boolean | Подтверждён ли email |
 | created_at | timestamptz | Дата регистрации |
 
-**Индексы:** `ix_users_email` (unique) — быстрый поиск по email при логине.
+**Индексы:** `ix_user_email` (unique) — быстрый поиск по email при логине.
 
-#### Таблица `auth.refresh_tokens`
+#### Таблица `auth.refresh_token`
 | Колонка | Тип | Описание |
 |---|---|---|
 | id | uuid | Первичный ключ |
-| user_id | uuid | Ссылка на auth.users |
+| user_id | uuid | Ссылка на auth.user |
 | token | varchar(256) | Сам refresh-токен (уникальный) |
 | expires_at | timestamptz | Когда истекает |
 | created_at | timestamptz | Когда создан |
 | is_revoked | boolean | Отозван ли (logout) |
 
-**Индексы:** `ix_refresh_tokens_token` (unique), `ix_refresh_tokens_user_id`.
+**Индексы:** `ix_refresh_token_token` (unique), `ix_refresh_token_user_id`.
 
 ---
 
 ### Схема `users`
 
-#### Таблица `users.user_profiles`
+#### Таблица `users.user_profile`
 | Колонка | Тип | Описание |
 |---|---|---|
-| id | uuid | Первичный ключ (совпадает с auth.users.id) |
+| id | uuid | Первичный ключ профиля (свой, НЕ совпадает с auth.user.id) |
+| auth_user_id | uuid | FK на `auth.user.id` — связь профиля с учётной записью |
+| email | varchar(255) | Email (дублируется из Auth для поиска без межмодульного вызова) |
 | display_name | varchar(100) | Отображаемое имя |
-| login | varchar(50) | Уникальный логин (для поиска) |
-| bio | varchar(500) | Описание профиля |
-| avatar_url | text | URL аватарки |
+| login | varchar(30) | Уникальный логин вида `@login` (nullable) |
+| status | varchar(200) | Статус-сообщение под именем (nullable) |
+| avatar_url | varchar(2048) | URL аватарки (nullable) |
+| phone | varchar(20) | Телефон (nullable) |
+| city | varchar(100) | Город (nullable) |
+| department | varchar(100) | Отдел (nullable) |
 | created_at | timestamptz | Дата создания профиля |
-| updated_at | timestamptz | Дата последнего обновления |
+| updated_at | timestamptz | Дата последнего обновления (nullable) |
 
-**Индексы:** уникальный на `login`, индекс на `display_name` для полнотекстового поиска.
+**Индексы:** `ix_user_profile_auth_user_id` (unique), `ix_user_profile_email` (unique), `ix_user_profile_login` (unique, частичный — только где `login IS NOT NULL`).
 
 ---
 
@@ -157,48 +162,48 @@ PostgreSQL (одна БД)
 | id | uuid | Первичный ключ |
 | type | varchar(10) | Тип: `"direct"` или `"group"` |
 | name | varchar(100) | Название (только для группового) |
-| avatar_url | text | Аватарка группового чата |
+| avatar_url | varchar(512) | Аватарка группового чата |
 | created_at | timestamptz | Дата создания |
 
 #### Таблица `chats.members`
 | Колонка | Тип | Описание |
 |---|---|---|
 | chat_id | uuid | Первичный ключ (часть 1) + FK на chats.chats |
-| user_id | uuid | Первичный ключ (часть 2) |
+| user_id | uuid | Первичный ключ (часть 2) + FK на auth.user |
 | role | varchar(10) | Роль: `"member"`, `"admin"`, `"owner"` |
 | joined_at | timestamptz | Дата вступления |
 
 **Ключи:** составной PK `(chat_id, user_id)` — нельзя быть в одном чате дважды.  
-**Индекс:** `idx_chats_members_user_id` — быстрый поиск всех чатов пользователя.  
+**Индекс:** `idx_chats_members_user_id` — быстрый поиск всех чатов пользователя, и основа лёгкой EXISTS-проверки членства (`IChatRepository.IsMemberAsync`, см. §10).  
 **Cascade delete:** при удалении чата → все записи в `members` удаляются автоматически.
 
 ---
 
 ### Схема `messages`
 
-#### Таблица `messages.messages`
+#### Таблица `messages.message`
 | Колонка | Тип | Описание |
 |---|---|---|
 | id | uuid | Первичный ключ |
-| chat_id | uuid | Какой чат |
-| sender_id | uuid | Кто отправил |
+| chat_id | uuid | Какой чат (FK на chats.chats) |
+| sender_id | uuid | Кто отправил (FK на auth.user) |
 | content | varchar(4096) | Текст сообщения |
 | file_url | varchar(2048) | URL файла (если вложение) |
 | status | varchar(20) | `"Sent"`, `"Delivered"`, `"Read"`, `"Deleted"` |
 | sent_at | timestamptz | Когда отправлено |
 | edited_at | timestamptz | Когда отредактировано (null если нет) |
 | deleted_at | timestamptz | Когда удалено (null если нет) |
-| reply_to_message_id | uuid | Ответ на какое сообщение (null если нет) |
+| reply_to_message_id | uuid | Ответ на какое сообщение (FK на messages.message, SET NULL при удалении оригинала) |
 
 **Индексы:**
-- `ix_messages_chat_id_sent_at` — пагинация истории чата (самый частый запрос)
-- `ix_messages_sender_id` — поиск сообщений по отправителю
+- `ix_message_chat_id_sent_at` — пагинация истории чата (самый частый запрос)
+- `ix_message_sender_id` — поиск сообщений по отправителю
 
 ---
 
 ### Схема `files`
 
-#### Таблица `files.file_uploads`
+#### Таблица `files.file_upload`
 | Колонка | Тип | Описание |
 |---|---|---|
 | id | uuid | Первичный ключ |
@@ -206,13 +211,14 @@ PostgreSQL (одна БД)
 | original_name | varchar(255) | Оригинальное имя файла |
 | content_type | varchar(100) | MIME-тип (image/jpeg, etc.) |
 | size_bytes | bigint | Размер в байтах |
-| uploaded_by | uuid | Кто загрузил |
+| uploaded_by | uuid | Кто загрузил (FK на auth.user) |
 | uploaded_at | timestamptz | Когда загружен |
 | category | varchar(30) | `"Avatar"`, `"ChatAttachment"`, `"Document"` |
+| chat_id | uuid | Заполнено только для `ChatAttachment` — нужно при скачивании, чтобы проверить членство в чате. Без FK на `chats.chats` — модули не должны зависеть друг от друга на уровне схемы (см. §8, §10) |
 
 **Индексы:**
-- `ix_file_uploads_file_key` (unique) — поиск при отдаче файла клиенту
-- `ix_file_uploads_uploaded_by_category` — поиск аватара конкретного пользователя
+- `ix_file_upload_file_key` (unique) — поиск при отдаче файла клиенту
+- `ix_file_upload_uploaded_by_category` — поиск аватара конкретного пользователя
 
 ---
 
@@ -234,7 +240,7 @@ PostgreSQL (одна БД)
 ### Как работает логин
 
 1. Клиент отправляет email + password
-2. Система находит пользователя в `auth.users` по email
+2. Система находит пользователя в `auth.user` по email
 3. Сверяет пароль с хешем через **Argon2** (алгоритм безопасного хеширования)
 4. Генерирует **JWT Access Token** (живёт 15 минут) — подписанный токен с userId внутри
 5. Генерирует **Refresh Token** (живёт 30 дней) — длинная случайная строка, хранится в БД
@@ -319,7 +325,9 @@ JWT истёк → клиент отправляет refresh token →
 1. Запрос `GET /api/chats`
 2. Система находит все чаты пользователя из `chats.members`
 3. **Межмодульный вызов** к Messages через `IMessagesModule.GetLastMessagesByChatIdsAsync()` — получает последнее сообщение для каждого чата
-4. Возвращает объединённые данные клиенту
+4. Для личных чатов без имени (`name IS NULL`) — **межмодульный вызов** к Users через `IUsersModule.GetSummariesByAuthUserIdsAsync()`, резолвится displayName и avatarUrl собеседника
+5. Для личных чатов — **межмодульный вызов** к `IPresenceTracker.GetOnlineAsync()` (Shared.Kernel, см. §10), узнаём `isOnline` собеседника прямо сейчас (а не только из будущих realtime-событий — иначе клиент не знал бы текущий статус до первого изменения)
+6. Возвращает объединённые данные клиенту, включая `otherUserId` и `isOnline` для личных чатов
 
 ---
 
@@ -344,6 +352,12 @@ Sent (0) → Delivered (1) → Read (2)
 | GET | `/api/chats/{chatId}/messages` | История сообщений (cursor-пагинация) |
 | POST | `/api/chats/{chatId}/messages/upload` | Загрузить файл и отправить как сообщение |
 | PATCH | `/api/chats/{chatId}/messages/{id}` | Редактировать своё сообщение |
+
+### Авторизация по членству в чате
+
+Все четыре эндпоинта (включая чтение истории) проверяют, что текущий пользователь **состоит в чате** — через `IChatMembershipChecker` (см. §10). Если нет — `403 Forbidden`. Без этой проверки любой залогиненный пользователь, узнав GUID чужого чата, мог бы читать и писать в него; кикнутый из группы участник продолжал бы иметь доступ по старому `chatId`.
+
+Каждое сообщение в ответе `GetMessages` дополнено `senderName`/`senderAvatarUrl` — резолвятся через `IUsersModule`, чтобы клиенту не приходилось показывать «обрезок UUID» вместо имени отправителя.
 
 ### Cursor-пагинация
 
@@ -373,7 +387,7 @@ Sent (0) → Delivered (1) → Read (2)
 Когда пользователь отправляет файл:
 1. `POST /api/chats/{id}/messages/upload` — файл + опциональный caption
 2. Handler вызывает `IFilesModule.UploadChatAttachmentAsync()` → файл сохраняется в хранилище
-3. Создаётся запись в `messages.messages` с `file_url` и пустым/caption текстом
+3. Создаётся запись в `messages.message` с `file_url` и пустым/caption текстом
 
 ### Доменные события (Domain Events)
 
@@ -408,6 +422,13 @@ Sent (0) → Delivered (1) → Read (2)
 | POST | `/api/files/avatar` | Загрузить аватарку (JPEG/PNG/WebP/GIF, до 5 МБ) |
 | GET | `/api/files/{fileKey}` | Скачать файл по ключу |
 
+### Приватность при скачивании
+
+Маршрут `GET /api/files/{fileKey}` помечен `AllowAnonymous` целиком (чтобы не ломать обычные `<img src>` для аватарок — браузер не прикладывает JWT к запросам картинок). Но внутри хендлера поведение различается по категории файла:
+
+- **`Avatar`** — отдаётся всем без проверки, аватарки задуманы публичными (как в любом мессенджере)
+- **`ChatAttachment`** — требует аутентификации **и** членства в чате, к которому привязан файл (`record.ChatId`, проверяется через тот же `IChatMembershipChecker`). Без логина — `401`, не участник чата — `403`
+
 ### Ограничения
 
 - Аватарки: только изображения, максимум **5 МБ**
@@ -418,9 +439,9 @@ Sent (0) → Delivered (1) → Read (2)
 
 1. `POST /api/files/avatar` с файлом в `multipart/form-data`
 2. Проверка MIME-типа и размера
-3. Удаление предыдущего аватара (поиск в `files.file_uploads` по `uploaded_by + category=Avatar`)
+3. Удаление предыдущего аватара (поиск в `files.file_upload` по `uploaded_by + category=Avatar`)
 4. Сохранение в хранилище → получение `fileKey` и публичного URL
-5. Создание записи в `files.file_uploads`
+5. Создание записи в `files.file_upload`
 6. Возврат URL клиенту
 
 ### Публичный API модуля
@@ -449,53 +470,67 @@ WebSocket URL: ws://host/hubs/messenger
 
 | Событие | Данные | Когда |
 |---|---|---|
-| `ReceiveMessage` | messageId, chatId, senderId, content, sentAt | Новое сообщение в чате |
+| `ReceiveMessage` | messageId, chatId, senderId, senderName, senderAvatarUrl, content, sentAt | Новое сообщение в чате |
 | `MessageEdited` | messageId, chatId, newContent, editedAt | Сообщение отредактировано |
 | `UserTyping` | userId, chatId | Пользователь начал печатать |
 | `UserStoppedTyping` | userId, chatId | Пользователь перестал печатать |
-| `UserOnline` | userId, isOnline | Пользователь подключился/отключился |
+| `UserOnline` | userId, isOnline | Пользователь подключился/отключился (рассылается во все ЧАТЫ пользователя, см. ниже) |
 
 ### Методы от клиента к серверу
 
 | Метод | Параметры | Описание |
 |---|---|---|
-| `JoinChat` | chatId | Подписаться на сообщения чата |
+| `JoinChat` | chatId | Подписаться на сообщения чата (только если состоишь в нём — иначе `HubException`) |
 | `LeaveChat` | chatId | Отписаться от чата |
-| `SendMessage` | chatId, content, replyToMessageId | Отправить сообщение (альтернатива HTTP) |
-| `StartTyping` | chatId | Начать показывать "печатает..." |
-| `StopTyping` | chatId | Убрать "печатает..." |
+| `SendMessage` | chatId, content, replyToMessageId | Отправить сообщение (альтернатива HTTP, та же проверка членства) |
+| `StartTyping` | chatId | Начать показывать "печатает..." (требует членства) |
+| `StopTyping` | chatId | Убрать "печатает..." (требует членства) |
+
+`JoinChat`/`StartTyping`/`StopTyping` проверяют членство через `IChatMembershipChecker` напрямую в хабе (они не идут через MediatR-команды Messages-модуля, поэтому проверка здесь не наследуется автоматически).
 
 ### Группы (Groups)
 
 SignalR использует группы для адресной рассылки:
 
-- `chat:{chatId}` — все подключённые участники конкретного чата
-- `user:{userId}` — все соединения конкретного пользователя
+- `chat:{chatId}` — все подключённые участники конкретного чата, вступившие через `JoinChat`
+- `user:{userId}` — только собственные соединения пользователя (если открыто несколько вкладок/устройств) — используется исключительно как счётчик подключений, **не** для рассылки статуса другим людям
 
-### Жизненный цикл подключения
+### Presence и жизненный цикл подключения
+
+Статус "онлайн" — это не просто факт одного соединения, а счётчик активных подключений пользователя (вкладки/устройства), который хранит `IPresenceTracker` (Shared.Kernel, Redis-реализация). Онлайн/оффлайн объявляется только когда счётчик переходит **0 ↔ 1**, а не на каждое открытие вкладки.
 
 ```
 OnConnected:
-  → пользователь добавляется в группу user:{userId}
-  → всем в этой группе отправляется UserOnline(isOnline: true)
+  → пользователь добавляется в группу user:{userId} (только свои подключения)
+  → IPresenceTracker.ConnectAsync(userId) — инкремент счётчика в Redis
+  → если счётчик стал 1 (было 0 подключений) — BroadcastOnlineStatus(true):
+      запросить у IChatsModule все chatId пользователя →
+      разослать UserOnline(isOnline: true) в группы chat:{id} каждого из них
 
 OnDisconnected:
   → пользователь удаляется из группы user:{userId}
-  → всем в группе отправляется UserOnline(isOnline: false)
+  → IPresenceTracker.DisconnectAsync(userId) — декремент счётчика
+  → если счётчик дошёл до 0 — BroadcastOnlineStatus(false) аналогично выше
 ```
+
+**Важно — это поведение исправлено в этой версии.** Раньше `UserOnline` рассылался в группу `user:{userId}`, в которую кроме самого пользователя никто не входит — событие физически не могло дойти до собеседников. Текущая версия рассылает в группы ЧАТОВ пользователя, куда его собеседники уже вступили через `JoinChat`.
+
+Дополнительно: `GetChatsQueryHandler` (см. §6) читает текущее состояние `IPresenceTracker` напрямую при отдаче списка чатов — иначе клиент не узнал бы, что собеседник уже онлайн, до первого изменения его статуса после открытия приложения.
 
 ### Цепочка доставки сообщения
 
 ```
 Клиент отправляет сообщение (HTTP или WebSocket)
   ↓
-SendMessageCommandHandler сохраняет в БД
+SendMessageCommandHandler проверяет членство (IChatMembershipChecker) → сохраняет в БД
   ↓
 MessagesDbContext.SaveChanges публикует MessageSentDomainEvent через MediatR
   ↓
 MessageSentEventHandler (Realtime модуль) получает событие
   ↓
-Отправляет "ReceiveMessage" всем в группе chat:{chatId} через SignalR
+Резолвит имя/аватар отправителя через IUsersModule.GetSummariesByAuthUserIdsAsync()
+  ↓
+Отправляет "ReceiveMessage" (с senderName/senderAvatarUrl) всем в группе chat:{chatId} через SignalR
   ↓
 Все подключённые участники получают сообщение мгновенно
 ```
@@ -504,7 +539,7 @@ MessageSentEventHandler (Realtime модуль) получает событие
 
 ## 10. Межмодульные связи
 
-Модули изолированы — они не вызывают друг друга напрямую. Вместо этого используются публичные контракты (интерфейсы):
+Модули изолированы — они не вызывают друг друга напрямую. Вместо этого используются публичные контракты (интерфейсы), реализация которых регистрируется в DI самим модулем-владельцем, а вызывающий модуль получает её только через интерфейс.
 
 ```
 Chats → IMessagesModule:
@@ -512,8 +547,20 @@ Chats → IMessagesModule:
   - DeleteAllMessagesInChatAsync()    — при удалении чата удалить все его сообщения
   - GetMessageCountInChatAsync()      — количество сообщений в чате
 
+Chats → IUsersModule:
+  - GetSummariesByAuthUserIdsAsync()  — displayName/avatarUrl собеседника в личных чатах
+
 Messages → IFilesModule:
-  - UploadChatAttachmentAsync()       — загрузить файл-вложение
+  - UploadChatAttachmentAsync()       — загрузить файл-вложение (с привязкой к chatId)
+
+Messages → IUsersModule:
+  - GetSummariesByAuthUserIdsAsync()  — displayName/avatarUrl отправителей в истории сообщений
+
+Realtime → IChatsModule:
+  - GetChatIdsByUserIdAsync()         — список чатов пользователя для рассылки UserOnline
+
+Realtime → IUsersModule:
+  - GetSummariesByAuthUserIdsAsync()  — имя отправителя в событии ReceiveMessage
 
 Realtime ← Messages (через MediatR INotification):
   - MessageSentDomainEvent            — новое сообщение → WebSocket рассылка
@@ -521,8 +568,30 @@ Realtime ← Messages (через MediatR INotification):
 
 Auth → Users (вне кода, по соглашению):
   - После регистрации клиент сам вызывает POST /api/users/profile
-  - Общий userId связывает auth.users и users.user_profiles
+  - auth_user_id в user_profile связывает auth.user и users.user_profile
 ```
+
+### Контракты в Shared.Kernel — когда обычного интерфейса модуля недостаточно
+
+Два модуля иногда нуждаются друг в друге **в обе стороны**. Пример: `Chats` уже зависит от `Messages` (последнее сообщение для списка чатов) — если бы `Messages` тоже зависел от `Chats` (проверка членства), получился бы цикл на уровне `.csproj`, который C# просто не скомпилирует.
+
+Решение — контракт живёт не в модуле-владельце данных, а в `Shared.Kernel` (его уже референсят все модули), а реализацию владелец регистрирует в DI. Вызывающий модуль получает реализацию через DI **без ссылки на сборку владельца** — связь только на рантайме, не в графе проектов.
+
+```
+IChatMembershipChecker (Shared.Kernel, реализация — Chats):
+  - IsMemberAsync(chatId, userId) — лёгкая EXISTS-проверка по (chat_id, user_id)
+  - Используют: Messages (SendMessage/GetMessages/UploadAndSendMessage — 403 если не участник),
+                Realtime (JoinChat/StartTyping/StopTyping — HubException если не участник),
+                Files (DownloadFile для ChatAttachment — 401/403)
+
+IPresenceTracker (Shared.Kernel, Redis-реализация):
+  - ConnectAsync()/DisconnectAsync()  — счётчик активных подключений пользователя
+  - GetOnlineAsync(userIds)           — текущий онлайн-статус списка пользователей
+  - Пишет: Realtime (MessengerHub.OnConnectedAsync/OnDisconnectedAsync)
+  - Читает: Chats (GetChatsQueryHandler — текущий статус собеседника при отдаче списка чатов)
+```
+
+Без `IChatMembershipChecker` любой залогиненный пользователь, узнав GUID чужого чата, мог читать/писать в него; кикнутый из группы участник сохранял бы доступ по старому `chatId` — этот контракт закрывает именно эту дыру.
 
 ---
 

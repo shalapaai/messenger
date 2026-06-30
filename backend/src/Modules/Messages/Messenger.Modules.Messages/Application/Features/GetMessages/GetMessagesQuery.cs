@@ -4,6 +4,7 @@ using Messenger.Shared.Kernel.Abstractions;
 
 public sealed record GetMessagesQuery(
     Guid  ChatId,
+    Guid  CurrentUserId,
     Guid? Before,
     int   Limit = 50) : IQuery<MessagesPageDto>;
 

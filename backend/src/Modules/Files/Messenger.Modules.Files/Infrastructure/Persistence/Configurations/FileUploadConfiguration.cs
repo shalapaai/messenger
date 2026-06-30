@@ -17,6 +17,7 @@ public sealed class FileUploadConfiguration : IEntityTypeConfiguration<FileUploa
         builder.Property(f => f.UploadedBy).HasColumnName("uploaded_by").IsRequired();
         builder.Property(f => f.UploadedAt).HasColumnName("uploaded_at").IsRequired();
         builder.Property(f => f.Category).HasColumnName("category").HasConversion<string>().HasMaxLength(30);
+        builder.Property(f => f.ChatId).HasColumnName("chat_id");
 
         builder.HasIndex(f => f.FileKey).IsUnique().HasDatabaseName("ix_file_upload_file_key");
         builder.HasIndex(f => new { f.UploadedBy, f.Category })

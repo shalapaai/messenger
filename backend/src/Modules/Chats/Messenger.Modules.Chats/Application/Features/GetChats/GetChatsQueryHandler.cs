@@ -4,14 +4,14 @@ using Messenger.Modules.Chats.Domain;
 using Messenger.Modules.Messages.Application.Contracts;
 using Messenger.Modules.Users.Application.Contracts;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Presence;
 using Messenger.Shared.Kernel.Results;
-using StackExchange.Redis;
 
 public sealed class GetChatsQueryHandler(
-    IChatRepository        chatRepository,
-    IMessagesModule        messagesModule,
-    IUsersModule           usersModule,
-    IConnectionMultiplexer redis)
+    IChatRepository  chatRepository,
+    IMessagesModule  messagesModule,
+    IUsersModule     usersModule,
+    IPresenceTracker presence)
     : IQueryHandler<GetChatsQuery, List<ChatSummaryDto>>
 {
     public async Task<Result<List<ChatSummaryDto>>> Handle(GetChatsQuery query, CancellationToken ct)
@@ -40,15 +40,8 @@ public sealed class GetChatsQueryHandler(
 
         var userSummaries = summariesResult.Value!;
 
-        // Текущий онлайн-статус собеседников — presence-ключи пишет MessengerHub при подключении
-        var db = redis.GetDatabase();
-        var batch = db.CreateBatch();
-        var presenceTasks = otherUserIds.ToDictionary(
-            uid => uid,
-            uid => batch.KeyExistsAsync($"presence:{uid}"));
-        batch.Execute();
-        await Task.WhenAll(presenceTasks.Values);
-        var onlineUserIds = presenceTasks.Where(kv => kv.Value.Result).Select(kv => kv.Key).ToHashSet();
+        // Текущий онлайн-статус собеседников — presence пишет MessengerHub при подключении
+        var onlineUserIds = await presence.GetOnlineAsync(otherUserIds, ct);
 
         var result = chats
             .Select(c =>

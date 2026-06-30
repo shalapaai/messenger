@@ -4,21 +4,27 @@ using MediatR;
 using Messenger.Modules.Chats.Application.Contracts;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
 using Messenger.Shared.Kernel.Extensions;
+using Messenger.Shared.Kernel.Membership;
+using Messenger.Shared.Kernel.Presence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
 
 [Authorize]
 public sealed class MessengerHub(
     ISender                 sender,
     IChatsModule            chatsModule,
-    IConnectionMultiplexer  redis,
+    IChatMembershipChecker  membershipChecker,
+    IPresenceTracker        presence,
     ILogger<MessengerHub>   logger) : Hub
 {
     // ── Подписка на чат ───────────────────────────────────────────────────────
     public async Task JoinChat(Guid chatId)
     {
+        var userId = Guid.Parse(Context.UserIdentifier!);
+        if (!await membershipChecker.IsMemberAsync(chatId, userId))
+            throw new HubException("You are not a member of this chat");
+
         await Groups.AddToGroupAsync(Context.ConnectionId, ChatGroup(chatId));
         logger.LogDebug("User {UserId} joined chat {ChatId}", Context.UserIdentifier, chatId);
     }
@@ -45,6 +51,9 @@ public sealed class MessengerHub(
     public async Task StartTyping(Guid chatId)
     {
         var userId = Context.UserIdentifier!;
+        if (!await membershipChecker.IsMemberAsync(chatId, Guid.Parse(userId)))
+            throw new HubException("You are not a member of this chat");
+
         await Clients.OthersInGroup(ChatGroup(chatId))
             .SendAsync("UserTyping", new { UserId = userId, ChatId = chatId });
     }
@@ -52,12 +61,15 @@ public sealed class MessengerHub(
     public async Task StopTyping(Guid chatId)
     {
         var userId = Context.UserIdentifier!;
+        if (!await membershipChecker.IsMemberAsync(chatId, Guid.Parse(userId)))
+            throw new HubException("You are not a member of this chat");
+
         await Clients.OthersInGroup(ChatGroup(chatId))
             .SendAsync("UserStoppedTyping", new { UserId = userId, ChatId = chatId });
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
-    // Presence считаем в Redis счётчиком подключений (вкладок/устройств) на пользователя:
+    // Presence считаем счётчиком подключений (вкладок/устройств) на пользователя:
     // онлайн/оффлайн объявляем только когда счётчик переходит 0 ↔ 1, а не на каждое
     // подключение вкладки. UserOnline шлём в группы ЧАТОВ пользователя (chat:{id}),
     // а не в group "user:{id}" — в неё кроме самого пользователя никто не входит,
@@ -67,8 +79,7 @@ public sealed class MessengerHub(
         var userId = Context.UserIdentifier!;
         await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
 
-        var db = redis.GetDatabase();
-        var connectionCount = await db.StringIncrementAsync(PresenceKey(userId));
+        var connectionCount = await presence.ConnectAsync(Guid.Parse(userId));
 
         logger.LogInformation("User {UserId} connected", userId);
         await base.OnConnectedAsync();
@@ -82,8 +93,7 @@ public sealed class MessengerHub(
         var userId = Context.UserIdentifier!;
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
 
-        var db = redis.GetDatabase();
-        var connectionCount = await db.StringDecrementAsync(PresenceKey(userId));
+        var connectionCount = await presence.DisconnectAsync(Guid.Parse(userId));
 
         if (exception is not null)
             logger.LogWarning(exception, "User {UserId} disconnected with error", userId);
@@ -93,10 +103,7 @@ public sealed class MessengerHub(
         await base.OnDisconnectedAsync(exception);
 
         if (connectionCount <= 0)
-        {
-            await db.KeyDeleteAsync(PresenceKey(userId));
             await BroadcastOnlineStatus(userId, isOnline: false);
-        }
     }
 
     private async Task BroadcastOnlineStatus(string userId, bool isOnline)
@@ -109,10 +116,9 @@ public sealed class MessengerHub(
         await Task.WhenAll(tasks);
     }
 
-    // ── Группы / ключи ───────────────────────────────────────────────────────
-    public static string ChatGroup(Guid chatId)     => $"chat:{chatId}";
-    public static string UserGroup(string userId)   => $"user:{userId}";
-    public static string PresenceKey(string userId) => $"presence:{userId}";
+    // ── Группы ───────────────────────────────────────────────────────────────
+    public static string ChatGroup(Guid chatId)   => $"chat:{chatId}";
+    public static string UserGroup(string userId) => $"user:{userId}";
 }
 
 public sealed record SendMessageRequest(Guid ChatId, string Content, Guid? ReplyToMessageId = null);

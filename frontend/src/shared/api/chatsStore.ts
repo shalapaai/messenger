@@ -10,6 +10,8 @@ interface ChatsState {
   chats: Chat[]
   /** false пока не загрузили реальные чаты из API — chats пуст, в списке показываем скелетон */
   chatsLoaded: boolean
+  /** true если последняя попытка loadChats() упала — список показывает ошибку с кнопкой "Повторить" */
+  chatsError: boolean
   loadChats: () => Promise<void>
   handleNewMessage: (msg: IncomingMessage, activeChatId: string | null) => void
   resetUnread: (chatId: string) => void
@@ -18,15 +20,21 @@ interface ChatsState {
 export const useChatsStore = create<ChatsState>((set) => ({
   chats: [],
   chatsLoaded: false,
+  chatsError: false,
 
   loadChats: async () => {
-    const chats = await fetchChats()
-    set({ chats, chatsLoaded: true })
-    // засеваем начальный онлайн-статус собеседников; дальше его обновляют live-события UserOnline
-    const { setOnline } = useOnlineStore.getState()
-    chats.forEach(chat => {
-      if (chat.otherUserId) setOnline(chat.otherUserId, chat.online)
-    })
+    set({ chatsError: false })
+    try {
+      const chats = await fetchChats()
+      set({ chats, chatsLoaded: true })
+      // засеваем начальный онлайн-статус собеседников; дальше его обновляют live-события UserOnline
+      const { setOnline } = useOnlineStore.getState()
+      chats.forEach(chat => {
+        if (chat.otherUserId) setOnline(chat.otherUserId, chat.online)
+      })
+    } catch {
+      set({ chatsError: true })
+    }
   },
 
   handleNewMessage: (msg, activeChatId) => set((state) => {
