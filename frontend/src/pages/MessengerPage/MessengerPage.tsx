@@ -13,6 +13,7 @@ import { ProfilePanel }     from '../../widgets/ProfilePanel'
 import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
+import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
 import s from './MessengerPage.module.css'
 
 export function MessengerPage() {
@@ -123,7 +124,7 @@ export function MessengerPage() {
     senderId:       profile?.userId    ?? 'me',
     senderName:     profile?.displayName ?? '',
     senderInitials: profileInitials,
-    senderColor:    '#2C5BF0',
+    senderColor:    'var(--color-primary)',
   }
 
   function triggerTypingIndicator(chatId: string) {
@@ -160,7 +161,10 @@ export function MessengerPage() {
           ? <button className={s.topBarBack} onClick={() => navigate('/chats')}>‹</button>
           : <div className={s.topBarLogo}>TL:MESSENGER</div>
         }
-        <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>{profileInitials}</button>
+        <div className={s.topBarActions}>
+          <ThemeModeToggle />
+          <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>{profileInitials}</button>
+        </div>
       </header>
 
       <div className={s.body}>

@@ -1,10 +1,10 @@
 .chatListPanel {
   width: 320px;
   flex-shrink: 0;
-  border-right: 1px solid #eceef4;
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-surface);
   overflow: hidden;
 }
 
@@ -28,8 +28,8 @@
   height: 34px;
   border-radius: 10px;
   border: none;
-  background: #2c5bf0;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -39,7 +39,7 @@
   flex-shrink: 0;
 }
 
-.clNewBtn:hover { background: #1f4bdd; }
+.clNewBtn:hover { background: var(--color-primary-hover); }
 
 .clSearch {
   position: relative;
@@ -58,21 +58,21 @@
 
 .clSearchInput {
   width: 100%;
-  border: 1px solid #eceef4;
-  background: #f5f6fa;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
   border-radius: 12px;
   padding: 10px 14px 10px 36px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
-  color: #141b2e;
+  color: var(--color-text);
   outline: none;
   transition: border-color 0.15s, background 0.15s;
   box-sizing: border-box;
 }
 
-.clSearchInput::placeholder { color: #a6aebf; }
-.clSearchInput:focus { border-color: #2c5bf0; background: #fff; }
+.clSearchInput::placeholder { color: var(--color-text-faint); }
+.clSearchInput:focus { border-color: var(--color-primary); background: var(--color-surface); }
 
 .clTabs {
   display: flex;
@@ -86,36 +86,36 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  border: 1px solid #eceef4;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
   padding: 6px 11px;
   border-radius: 20px;
   cursor: pointer;
-  color: #56607a;
+  color: var(--color-text-muted);
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.clTabActive { background: #2c5bf0; color: #fff; border-color: #2c5bf0; }
+.clTabActive { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
 
 .clTabCount {
   font-size: 11px;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 20px;
-  background: #f0f1f6;
-  color: #8a93a6;
+  background: var(--color-border-soft);
+  color: var(--color-text-subtle);
 }
 
-.clTabCountActive { background: rgba(255,255,255,0.25); color: #fff; }
+.clTabCountActive { background: rgba(255,255,255,0.25); color: var(--color-on-primary); }
 
 .clList { flex: 1; overflow-y: auto; }
 
-.clEmpty { padding: 40px 16px; text-align: center; color: #8a93a6; font-size: 14px; font-weight: 500; }
+.clEmpty { padding: 40px 16px; text-align: center; color: var(--color-text-subtle); font-size: 14px; font-weight: 500; }
 
 .clRow {
   display: flex;
@@ -123,21 +123,21 @@
   gap: 12px;
   padding: 11px 14px;
   cursor: pointer;
-  border-bottom: 1px solid #f1f2f7;
+  border-bottom: 1px solid var(--color-border-soft);
   transition: background 0.12s;
 }
 
 .clRow:last-child { border-bottom: none; }
-.clRow:hover { background: #f8f9fc; }
-.clRowActive { background: #eaf0ff; }
-.clRowActive:hover { background: #dce8ff; }
+.clRow:hover { background: var(--color-surface-soft); }
+.clRowActive { background: var(--color-primary-softer); }
+.clRowActive:hover { background: var(--color-primary-soft); }
 
 .clAvatar {
   position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  color: #fff;
+  color: var(--color-on-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,28 +155,28 @@
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #22b07d;
-  border: 2px solid #fff;
+  background: var(--color-success);
+  border: 2px solid var(--color-surface);
 }
 
 .clInfo { flex: 1; min-width: 0; }
 
 .clNameRow { display: flex; align-items: center; gap: 6px; }
 
-.clName { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clName { font-size: 14px; font-weight: 700; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.clGroupBadge { font-size: 10px; font-weight: 700; color: #2c5bf0; background: #eaf0ff; padding: 2px 6px; border-radius: 20px; flex-shrink: 0; }
+.clGroupBadge { font-size: 10px; font-weight: 700; color: var(--color-primary); background: var(--color-primary-softer); padding: 2px 6px; border-radius: 20px; flex-shrink: 0; }
 
-.clPreview { font-size: 13px; color: #8a93a6; font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.clPreviewEmpty { color: #c8cdd8; font-style: italic; }
+.clPreview { font-size: 13px; color: var(--color-text-subtle); font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clPreviewEmpty { color: var(--color-text-faint); font-style: italic; }
 
 .clMeta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
 
-.clTime { font-size: 12px; color: #a6aebf; font-weight: 600; }
+.clTime { font-size: 12px; color: var(--color-text-faint); font-weight: 600; }
 
 .clUnread {
-  background: #2c5bf0;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
   font-size: 11px;
   font-weight: 700;
   min-width: 20px;

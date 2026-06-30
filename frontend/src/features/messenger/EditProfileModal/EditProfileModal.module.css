@@ -1,7 +1,7 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(20,27,46,0.45);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,7 +10,7 @@
 }
 
 .modalPanel {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 24px;
   padding: 32px;
   width: 100%;
@@ -18,7 +18,7 @@
   position: relative;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(20,27,46,0.18);
+  box-shadow: var(--shadow-panel);
 }
 
 .modalClose {
@@ -29,17 +29,17 @@
   height: 32px;
   border-radius: 8px;
   border: none;
-  background: #f5f6fa;
+  background: var(--color-surface-muted);
   cursor: pointer;
   font-size: 14px;
-  color: #56607a;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
 }
 
-.modalClose:hover { background: #eceef4; }
+.modalClose:hover { background: var(--color-border); }
 
 .modalHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .modalTitle { font-size: 18px; font-weight: 800; }
@@ -47,28 +47,28 @@
 .modalAvatarBlock { display: flex; justify-content: center; }
 .modalFields { display: flex; flex-direction: column; gap: 14px; }
 .modalField { display: flex; flex-direction: column; gap: 7px; }
-.modalFieldLabel { font-size: 14px; font-weight: 600; color: #334155; }
-.required { margin-left: 3px; color: #dc2626; }
-.modalFieldInput { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #eceef4; border-radius: 14px; outline: none; font: inherit; font-size: 15px; color: #141b2e; background: #f5f6fa; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; box-sizing: border-box; }
-.modalFieldInput::placeholder { color: #a6aebf; }
-.modalFieldInput:hover { border-color: #c4cad8; }
-.modalFieldInput:focus { border-color: #2c5bf0; background: #fff; box-shadow: 0 0 0 4px rgba(44,91,240,0.1); }
-.modalFieldInputError, .modalFieldInputError:hover, .modalFieldInputError:focus { border-color: #dc2626; }
-.modalFieldInputError:focus { box-shadow: 0 0 0 4px rgba(220,38,38,0.1); }
-.modalFieldError { font-size: 13px; color: #dc2626; }
-.modalFormError { font-size: 14px; color: #dc2626; margin: 0; }
+.modalFieldLabel { font-size: 14px; font-weight: 600; color: var(--color-text-muted); }
+.required { margin-left: 3px; color: var(--color-danger); }
+.modalFieldInput { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--color-border); border-radius: 14px; outline: none; font: inherit; font-size: 15px; color: var(--color-text); background: var(--color-surface-muted); transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; box-sizing: border-box; }
+.modalFieldInput::placeholder { color: var(--color-text-faint); }
+.modalFieldInput:hover { border-color: var(--color-border-strong); }
+.modalFieldInput:focus { border-color: var(--color-primary); background: var(--color-surface); box-shadow: var(--shadow-focus); }
+.modalFieldInputError, .modalFieldInputError:hover, .modalFieldInputError:focus { border-color: var(--color-danger); }
+.modalFieldInputError:focus { box-shadow: var(--shadow-danger-focus); }
+.modalFieldError { font-size: 13px; color: var(--color-danger); }
+.modalFormError { font-size: 14px; color: var(--color-danger); margin: 0; }
 .modalActions { display: flex; gap: 12px; }
-.modalCancelBtn { flex: 1; min-height: 48px; border: 1px solid #eceef4; border-radius: 14px; background: #fff; color: #56607a; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-.modalCancelBtn:hover { background: #f5f6fa; border-color: #c4cad8; }
-.modalSaveBtn { flex: 2; min-height: 48px; border: none; border-radius: 14px; background: #2c5bf0; color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
-.modalSaveBtn:hover:not(:disabled) { background: #1f4bdd; }
+.modalCancelBtn { flex: 1; min-height: 48px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); color: var(--color-text-muted); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.modalCancelBtn:hover { background: var(--color-surface-muted); border-color: var(--color-border-strong); }
+.modalSaveBtn { flex: 2; min-height: 48px; border: none; border-radius: 14px; background: var(--color-primary); color: var(--color-on-primary); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+.modalSaveBtn:hover:not(:disabled) { background: var(--color-primary-hover); }
 .modalSaveBtn:disabled { opacity: 0.65; cursor: not-allowed; }
 
-.loginInputWrapper { display: flex; align-items: center; border: 1px solid #eceef4; border-radius: 14px; background: #f5f6fa; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
-.loginInputWrapper:hover { border-color: #c4cad8; }
-.loginInputWrapper:focus-within { border-color: #2c5bf0; background: #fff; box-shadow: 0 0 0 4px rgba(44,91,240,0.1); }
-.loginPrefix { padding: 0 0 0 14px; color: #a6aebf; font-size: 15px; font-weight: 500; user-select: none; }
-.loginInput { flex: 1; min-height: 48px; padding: 0 14px 0 4px; border: none; border-radius: 14px; outline: none; background: transparent; color: #141b2e; font: inherit; font-size: 15px; }
-.loginInput::placeholder { color: #a6aebf; }
-.loginInputWrapperError, .loginInputWrapperError:hover, .loginInputWrapperError:focus-within { border-color: #dc2626; }
-.loginInputWrapperError:focus-within { box-shadow: 0 0 0 4px rgba(220,38,38,0.1); }
+.loginInputWrapper { display: flex; align-items: center; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface-muted); transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
+.loginInputWrapper:hover { border-color: var(--color-border-strong); }
+.loginInputWrapper:focus-within { border-color: var(--color-primary); background: var(--color-surface); box-shadow: var(--shadow-focus); }
+.loginPrefix { padding: 0 0 0 14px; color: var(--color-text-faint); font-size: 15px; font-weight: 500; user-select: none; }
+.loginInput { flex: 1; min-height: 48px; padding: 0 14px 0 4px; border: none; border-radius: 14px; outline: none; background: transparent; color: var(--color-text); font: inherit; font-size: 15px; }
+.loginInput::placeholder { color: var(--color-text-faint); }
+.loginInputWrapperError, .loginInputWrapperError:hover, .loginInputWrapperError:focus-within { border-color: var(--color-danger); }
+.loginInputWrapperError:focus-within { box-shadow: var(--shadow-danger-focus); }
