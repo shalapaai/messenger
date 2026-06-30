@@ -23,6 +23,7 @@ import s from './MessengerPage.module.css'
 interface DraftUserState {
   displayName: string
   avatarUrl: string | null
+  avatarColor: string | null
   login: string | null
 }
 
@@ -200,7 +201,7 @@ export function MessengerPage() {
       navigate(`/chats/${existing.id}`)
     } else {
       navigate(`/chats/new/${user.userId}`, {
-        state: { displayName: user.displayName, avatarUrl: user.avatarUrl, login: user.login } satisfies DraftUserState,
+        state: { displayName: user.displayName, avatarUrl: user.avatarUrl, avatarColor: user.avatarColor, login: user.login } satisfies DraftUserState,
       })
     }
   }
@@ -219,7 +220,7 @@ export function MessengerPage() {
       ? {
           name: draftUser?.displayName ?? 'Новый чат',
           initials: getInitials(draftUser?.displayName ?? null),
-          color: colorFromId(newUserId),
+          color: draftUser?.avatarColor ?? colorFromId(newUserId),
           avatarUrl: draftUser?.avatarUrl ?? null,
           online: draftOnline,
           group: false,
