@@ -31,5 +31,10 @@ public sealed class UpdateUserProfileCommandValidator : AbstractValidator<Update
         When(x => x.Department is not null && x.Department.Length > 0, () =>
             RuleFor(x => x.Department!)
                 .MaximumLength(100).WithMessage("Department must not exceed 100 characters"));
+
+        When(x => x.AvatarColor is not null, () =>
+            RuleFor(x => x.AvatarColor!)
+                .Matches(@"^#[0-9A-Fa-f]{6}$")
+                .WithMessage("AvatarColor must be a valid hex color (#RRGGBB)"));
     }
 }

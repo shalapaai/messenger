@@ -22,7 +22,7 @@ public sealed class CreateUserProfileCommandHandler(
             await repository.ExistsByLoginAsync(command.Login.ToLowerInvariant(), ct: ct))
             return Result.Failure<UserProfileDto>(Error.Conflict("Users.LoginAlreadyTaken"));
 
-        var profileResult = UserProfile.Create(command.AuthUserId, command.Email, command.DisplayName, command.Login);
+        var profileResult = UserProfile.Create(command.AuthUserId, command.Email, command.DisplayName, command.Login, command.AvatarColor);
         if (profileResult.IsFailure)
             return Result.Failure<UserProfileDto>(profileResult.Error);
 

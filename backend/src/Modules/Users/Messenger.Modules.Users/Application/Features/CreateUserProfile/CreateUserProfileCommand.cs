@@ -6,7 +6,8 @@ public sealed record CreateUserProfileCommand(
     Guid    AuthUserId,
     string  Email,
     string  DisplayName,
-    string? Login) : ICommand<UserProfileDto>;
+    string? Login,
+    string? AvatarColor) : ICommand<UserProfileDto>;
 
 public sealed record UserProfileDto(
     Guid      UserId,

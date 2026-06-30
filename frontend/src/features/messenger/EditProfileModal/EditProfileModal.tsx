@@ -4,6 +4,7 @@ import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { getCroppedImage, type CroppedAreaPixels } from '../../../shared/lib/image'
 import { profileApi } from '../../../shared/api/profileApi'
+import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
 import type { UserProfile } from '../../../shared/types/user'
 import s from './EditProfileModal.module.css'
 
@@ -24,8 +25,9 @@ export function EditProfileModal(props: EditProfileModalProps) {
 }
 
 function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalProps) {
-  const [displayName, setDisplayName] = useState(profile.displayName)
-  const [editLogin,   setEditLogin]   = useState(profile.login?.replace(/^@/, '') ?? '')
+  const [displayName,  setDisplayName]  = useState(profile.displayName)
+  const [avatarColor,  setAvatarColor]  = useState(profile.avatarColor)
+  const [editLogin,    setEditLogin]    = useState(profile.login?.replace(/^@/, '') ?? '')
   const [editStatus,  setEditStatus]  = useState(profile.status ?? '')
   const [editPhone,   setEditPhone]   = useState(profile.phone ?? '')
   const [editCity,    setEditCity]    = useState(profile.city ?? '')
@@ -83,6 +85,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
         phone:       editPhone.trim(),
         city:        editCity.trim(),
         department:  editDept.trim(),
+        avatarColor,
       })
 
       if (croppedAvatarFile) {
@@ -117,9 +120,13 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
               <AvatarUpload
                 name={displayName}
                 avatarPreview={avatarPreview ?? profile.avatarUrl ?? undefined}
-                color={profile.avatarColor}
+                color={avatarColor}
                 onChange={handleAvatarChange}
               />
+              <div className={s.colorPickerWrap}>
+                <span className={s.colorPickerLabel}>Цвет аватарки</span>
+                <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+              </div>
             </div>
             <div className={s.modalFields}>
               <label className={s.modalField}>

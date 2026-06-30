@@ -17,6 +17,7 @@ export interface PublicUserProfile {
 export interface CreateProfileData {
   displayName: string
   login?: string
+  avatarColor?: string
 }
 
 export interface UpdateProfileData {
@@ -26,6 +27,7 @@ export interface UpdateProfileData {
   phone?: string
   city?: string
   department?: string
+  avatarColor?: string
 }
 
 export const profileApi = {

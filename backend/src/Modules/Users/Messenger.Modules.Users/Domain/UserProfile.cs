@@ -12,13 +12,13 @@ public sealed class UserProfile : AggregateRoot<Guid>
 
     private UserProfile() { } // EF Core
 
-    private UserProfile(Guid id, Guid authUserId, string email, string displayName, string? login) : base(id)
+    private UserProfile(Guid id, Guid authUserId, string email, string displayName, string? login, string? avatarColor) : base(id)
     {
         AuthUserId  = authUserId;
         Email       = email.ToLowerInvariant();
         DisplayName = displayName;
         Login       = login?.ToLowerInvariant();
-        AvatarColor = Palette[Random.Shared.Next(Palette.Length)];
+        AvatarColor = avatarColor ?? Palette[Random.Shared.Next(Palette.Length)];
         CreatedAt   = DateTime.UtcNow;
     }
 
@@ -35,8 +35,8 @@ public sealed class UserProfile : AggregateRoot<Guid>
     public DateTime  CreatedAt   { get; private set; }
     public DateTime? UpdatedAt   { get; private set; }
 
-    public static Result<UserProfile> Create(Guid authUserId, string email, string displayName, string? login = null) =>
-        Result.Success(new UserProfile(Guid.NewGuid(), authUserId, email, displayName, login));
+    public static Result<UserProfile> Create(Guid authUserId, string email, string displayName, string? login = null, string? avatarColor = null) =>
+        Result.Success(new UserProfile(Guid.NewGuid(), authUserId, email, displayName, login, avatarColor));
 
     public void Update(string? displayName, string? status, string? phone, string? city, string? department)
     {
@@ -58,5 +58,11 @@ public sealed class UserProfile : AggregateRoot<Guid>
     {
         AvatarUrl = avatarUrl;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetAvatarColor(string color)
+    {
+        AvatarColor = color;
+        UpdatedAt   = DateTime.UtcNow;
     }
 }
