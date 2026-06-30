@@ -7,9 +7,10 @@ import {
 } from '../../shared/lib/messenger/stubData'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
+import { useIsOnline } from '../../shared/api/onlineStore'
 import { fetchMessages } from '../../shared/api/chatsApi'
 import { getMyUserId } from '../../shared/lib/auth/authTokens'
-import type { IncomingMessage } from '../../shared/api/signalrClient'
+import type { IncomingMessage, TypingEvent } from '../../shared/api/signalrClient'
 import { IconNav }          from '../../widgets/IconNav'
 import { ChatListPanel }    from '../../widgets/ChatListPanel'
 import { ChatWindow }       from '../../widgets/ChatWindow'
@@ -46,41 +47,83 @@ export function MessengerPage() {
   const topSentinelRef = useRef<HTMLDivElement>(null)
   // ── Zustand чаты ─────────────────────────────────────────────────────────
   const chats       = useChatsStore((s) => s.chats)
+  const chatsLoaded = useChatsStore((s) => s.chatsLoaded)
   const loadChats   = useChatsStore((s) => s.loadChats)
   const resetUnread = useChatsStore((s) => s.resetUnread)
 
   // загружаем чаты из API при монтировании
   useEffect(() => { loadChats().catch(console.error) }, [loadChats])
 
-  // ── SignalR: входящие сообщения ───────────────────────────────────────────
+  // ── SignalR: входящие сообщения (для любого присоединённого чата) ─────────
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
-    if (msg.chatId !== id) return
     if (msg.senderId === getMyUserId()) return
-    setChatMessages(prev => ({
-      ...prev,
-      [msg.chatId]: [...(prev[msg.chatId] ?? []), {
-        id: Date.now(),
-        text: msg.content,
-        own: false,
-        senderId: msg.senderId,
-        senderName: msg.senderId,
-        senderInitials: msg.senderId.slice(0, 2).toUpperCase(),
-        senderColor: '#888888',
-        time: new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-        date: 'Сегодня',
-      }],
-    }))
-    scrollToBottom.current = true
-    smoothScroll.current   = true
+
+    setChatMessages(prev => {
+      // если чат ещё не открывали — его историю подтянет fetchMessages при открытии,
+      // дублировать здесь не нужно
+      if (!prev[msg.chatId]) return prev
+      return {
+        ...prev,
+        [msg.chatId]: [...prev[msg.chatId], {
+          id: Date.now(),
+          text: msg.content,
+          own: false,
+          senderId: msg.senderId,
+          senderName: msg.senderName,
+          senderInitials: msg.senderName.slice(0, 2).toUpperCase(),
+          senderColor: '#888888',
+          time: new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+          date: 'Сегодня',
+        }],
+      }
+    })
+
+    if (msg.chatId === id) {
+      scrollToBottom.current = true
+      smoothScroll.current   = true
+    }
   }, [id])
 
-  const { sendMessage: signalRSend } = useSignalR({ chatId: id, onMessage: handleIncomingMessage })
+  // ── SignalR: реальный индикатор печати собеседника ─────────────────────────
+  const typingClearTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+  const handleUserTyping = useCallback((event: TypingEvent) => {
+    setTypingChats(prev => ({ ...prev, [event.chatId]: true }))
+    clearTimeout(typingClearTimers.current[event.chatId])
+    // подстраховка на случай если StopTyping не придёт (обрыв связи и т.п.)
+    typingClearTimers.current[event.chatId] = setTimeout(() => {
+      setTypingChats(prev => ({ ...prev, [event.chatId]: false }))
+    }, 3000)
+  }, [])
+
+  const handleUserStoppedTyping = useCallback((event: TypingEvent) => {
+    clearTimeout(typingClearTimers.current[event.chatId])
+    setTypingChats(prev => ({ ...prev, [event.chatId]: false }))
+  }, [])
+
+  const { sendMessage: signalRSend, startTyping, stopTyping } = useSignalR({
+    chatId: id,
+    onMessage: handleIncomingMessage,
+    onTyping: handleUserTyping,
+    onStoppedTyping: handleUserStoppedTyping,
+  })
+
+  // ── Собственная печать: дебаунс StartTyping/StopTyping ─────────────────────
+  const ownTypingDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleOwnTyping = useCallback(() => {
+    if (!ownTypingDebounce.current) startTyping()
+    else clearTimeout(ownTypingDebounce.current)
+    ownTypingDebounce.current = setTimeout(() => {
+      stopTyping()
+      ownTypingDebounce.current = null
+    }, 2000)
+  }, [startTyping, stopTyping])
 
   const scrollToBottom   = useRef(true)
   const smoothScroll     = useRef(false)
   const savedScrollHeight = useRef(0)
   const savedScrollTop    = useRef(0)
-  const typingTimers     = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   useEffect(() => {
     scrollToBottom.current = true
@@ -139,7 +182,8 @@ export function MessengerPage() {
   }, [id, messages.length, historyLoaded, loadMoreHistory])
 
   useEffect(() => () => {
-    Object.values(typingTimers.current).forEach(clearTimeout)
+    Object.values(typingClearTimers.current).forEach(clearTimeout)
+    if (ownTypingDebounce.current) clearTimeout(ownTypingDebounce.current)
   }, [])
 
   useEffect(() => {
@@ -153,17 +197,6 @@ export function MessengerPage() {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [modalUser, groupModalOpen, editOpen, profileOpen])
-
-  function triggerTypingIndicator(chatId: string) {
-    clearTimeout(typingTimers.current[`${chatId}:on`])
-    clearTimeout(typingTimers.current[`${chatId}:off`])
-    typingTimers.current[`${chatId}:on`] = setTimeout(() => {
-      setTypingChats(prev => ({ ...prev, [chatId]: true }))
-      typingTimers.current[`${chatId}:off`] = setTimeout(() => {
-        setTypingChats(prev => ({ ...prev, [chatId]: false }))
-      }, 2200)
-    }, 900)
-  }
 
   async function doSend(chatId: string, text: string, tempId: number) {
     try {
@@ -196,7 +229,11 @@ export function MessengerPage() {
     scrollToBottom.current = true
     smoothScroll.current   = true
     setChatMessages(prev => ({ ...prev, [id]: [...(prev[id] ?? []), newMsg] }))
-    if (!CHAT_META[id]?.group) triggerTypingIndicator(id)
+    if (ownTypingDebounce.current) {
+      clearTimeout(ownTypingDebounce.current)
+      ownTypingDebounce.current = null
+    }
+    stopTyping()
     doSend(id, text, tempId)
   }
 
@@ -211,7 +248,14 @@ export function MessengerPage() {
     doSend(id, msg.text, msg.id)
   }
 
-  const meta = id ? (CHAT_META[id] ?? CHAT_META['1']) : null
+  const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
+  const activeChat = id ? chats.find(c => c.id === id) : undefined
+  const activeChatOnline = useIsOnline(activeChat?.otherUserId)
+  const meta = id
+    ? (activeChat
+        ? { name: activeChat.name, initials: activeChat.initials, color: activeChat.color, online: activeChatOnline, group: activeChat.group }
+        : (CHAT_META[id] ?? CHAT_META['1']))
+    : null
 
   return (
     <div className={s.root}>
@@ -229,6 +273,7 @@ export function MessengerPage() {
 
         <ChatListPanel
           chats={chats}
+          loading={!chatsLoaded}
           activeId={id}
           filter={filter}
           query={query}
@@ -251,6 +296,7 @@ export function MessengerPage() {
               bottomRef={bottomRef}
               onSend={handleSend}
               onRetry={handleRetry}
+              onTyping={handleOwnTyping}
               onHeaderClick={() => meta.group
                 ? setGroupModalOpen(true)
                 : setModalUser({ name: meta.name, initials: meta.initials, color: meta.color, online: meta.online, ...USER_PROFILES[id] })
@@ -270,7 +316,7 @@ export function MessengerPage() {
       {/* Mobile bottom nav */}
       <nav className={`${s.bottomNav}${id ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
-          <span className={s.bnGlyph}>💬{chats.reduce((s, c) => s + c.unread, 0) > 0 && <span className={s.bnBadge}>{chats.reduce((s, c) => s + c.unread, 0)}</span>}</span>
+          <span className={s.bnGlyph}>💬{totalUnread > 0 && <span className={s.bnBadge}>{totalUnread}</span>}</span>
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>

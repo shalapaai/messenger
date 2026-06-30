@@ -19,6 +19,7 @@ interface ChatWindowProps {
   bottomRef: RefObject<HTMLDivElement | null>
   onSend: (text: string) => void
   onRetry: (msg: Message) => void
+  onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
 }
@@ -26,7 +27,7 @@ interface ChatWindowProps {
 export function ChatWindow({
   chatId, meta, messages, typingChats, loadingHistory, historyLoaded,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onRetry, onHeaderClick, onAvatarClick,
+  onSend, onRetry, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -172,7 +173,7 @@ export function ChatWindow({
           placeholder="Написать сообщение…"
           value={text}
           rows={1}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setText(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}
           onKeyDown={handleKeyDown}
         />
         <button className={s.sendBtn} disabled={!text.trim()} onClick={send}>

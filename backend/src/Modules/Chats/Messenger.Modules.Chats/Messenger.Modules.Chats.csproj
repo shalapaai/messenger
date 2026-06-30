@@ -12,12 +12,15 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.31" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Messenger.Shared.Kernel\Messenger.Shared.Kernel.csproj" />
     <!-- Для вызова IMessagesModule при удалении чата -->
     <ProjectReference Include="..\..\Messages\Messenger.Modules.Messages\Messenger.Modules.Messages.csproj" />
+    <!-- Для вызова IUsersModule — имя собеседника в личных чатах -->
+    <ProjectReference Include="..\..\Users\Messenger.Modules.Users\Messenger.Modules.Users.csproj" />
   </ItemGroup>
 
 </Project>

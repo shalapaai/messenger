@@ -5,8 +5,8 @@ import type { Chat, Message } from '../types/messenger'
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
 
 interface LastMessageDto { messageId: string; senderId: string; content: string; sentAt: string }
-interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; lastMessage: LastMessageDto | null }
-interface MessageDto     { id: string; chatId: string; senderId: string; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null }
+interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean }
+interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 
 // ── Вспомогательные ──────────────────────────────────────────────────────────
@@ -51,15 +51,16 @@ let _msgId = 100_000
 export async function fetchChats(): Promise<Chat[]> {
   const res = await apiClient.get<ChatSummaryDto[]>('/chats')
   return res.data.map(dto => ({
-    id:       dto.id,
-    name:     dto.name ?? 'Личный чат',
-    initials: initials(dto.name),
-    color:    colorFromId(dto.id),
-    preview:  dto.lastMessage?.content ?? '',
-    time:     dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
-    unread:   0,
-    online:   false,
-    group:    dto.type === 'group',
+    id:          dto.id,
+    name:        dto.name ?? 'Личный чат',
+    initials:    initials(dto.name),
+    color:       colorFromId(dto.id),
+    preview:     dto.lastMessage?.content ?? '',
+    time:        dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
+    unread:      0,
+    online:      dto.isOnline,
+    group:       dto.type === 'group',
+    otherUserId: dto.otherUserId ?? undefined,
   }))
 }
 
@@ -73,8 +74,8 @@ export async function fetchMessages(chatId: string, limit = 50): Promise<{ messa
     text:           dto.content,
     own:            dto.senderId === myId,
     senderId:       dto.senderId,
-    senderName:     dto.senderId.slice(0, 8),
-    senderInitials: dto.senderId.slice(0, 2).toUpperCase(),
+    senderName:     dto.senderName,
+    senderInitials: initials(dto.senderName),
     senderColor:    colorFromId(dto.senderId),
     time:           formatTime(dto.sentAt),
     date:           formatDate(dto.sentAt),

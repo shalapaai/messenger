@@ -3,6 +3,7 @@ namespace Messenger.Modules.Chats;
 using FluentValidation;
 using MediatR;
 using Messenger.Modules.Chats.Application;
+using Messenger.Modules.Chats.Application.Contracts;
 using Messenger.Modules.Chats.Domain;
 using Messenger.Modules.Chats.Infrastructure;
 using Messenger.Modules.Chats.Infrastructure.Repositories;
@@ -26,6 +27,7 @@ public sealed class ChatsModule : IModuleInstaller
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ChatsDbContext>());
         services.AddScoped<IChatRepository, ChatRepository>();
+        services.AddScoped<IChatsModule, ChatsModuleApi>();
 
         services.AddMediatR(cfg =>
         {

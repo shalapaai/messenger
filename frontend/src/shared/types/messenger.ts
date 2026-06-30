@@ -8,6 +8,8 @@ export interface Chat {
   unread: number
   online: boolean
   group: boolean
+  /** userId собеседника — только для личных чатов, нужен для онлайн-статуса */
+  otherUserId?: string
 }
 
 export interface ChatMeta {

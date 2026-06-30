@@ -21,13 +21,19 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   const handleNewMessage = useChatsStore((s) => s.handleNewMessage)
   const setOnline        = useOnlineStore((s) => s.setOnline)
   const chats            = useChatsStore((s) => s.chats)
+  const chatsLoaded      = useChatsStore((s) => s.chatsLoaded)
   const status           = useConnectionStore((s) => s.status)
+  const chatIdsKey       = chats.map((c) => c.id).join(',')
 
-  // Вступаем во все чаты пользователя при подключении / изменении списка чатов
+  // Вступаем во все чаты пользователя при подключении / изменении НАБОРА чатов.
+  // chatIdsKey стабилен между рендерами в отличие от ссылки на массив chats,
+  // которая меняется при каждом новом сообщении (handleNewMessage пересоздаёт массив).
+  // chatsLoaded ждём, чтобы не слать joinChat с моковыми (не-Guid) ID до загрузки API.
   useEffect(() => {
-    if (status !== 'connected') return
+    if (status !== 'connected' || !chatsLoaded) return
     chats.forEach(chat => signalR.joinChat(chat.id).catch(() => {}))
-  }, [status, chats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, chatsLoaded, chatIdsKey])
 
   const onMessage = useCallback((msg: IncomingMessage) => {
     if (msg.senderId === getMyUserId()) return

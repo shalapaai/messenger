@@ -1,25 +1,32 @@
 import { create } from 'zustand'
 import type { Chat } from '../types/messenger'
 import type { IncomingMessage } from './signalrClient'
+import { fetchChats } from './chatsApi'
+import { useOnlineStore } from './onlineStore'
 
 export type { Chat }
 
-import { CHATS as STUB_CHATS } from '../lib/messenger/stubData'
-
 interface ChatsState {
   chats: Chat[]
+  /** false пока не загрузили реальные чаты из API — chats пуст, в списке показываем скелетон */
+  chatsLoaded: boolean
   loadChats: () => Promise<void>
   handleNewMessage: (msg: IncomingMessage, activeChatId: string | null) => void
   resetUnread: (chatId: string) => void
 }
 
 export const useChatsStore = create<ChatsState>((set) => ({
-  chats: STUB_CHATS,
+  chats: [],
+  chatsLoaded: false,
 
   loadChats: async () => {
-    const { fetchChats } = await import('./chatsApi')
     const chats = await fetchChats()
-    set({ chats })
+    set({ chats, chatsLoaded: true })
+    // засеваем начальный онлайн-статус собеседников; дальше его обновляют live-события UserOnline
+    const { setOnline } = useOnlineStore.getState()
+    chats.forEach(chat => {
+      if (chat.otherUserId) setOnline(chat.otherUserId, chat.online)
+    })
   },
 
   handleNewMessage: (msg, activeChatId) => set((state) => {

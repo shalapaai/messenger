@@ -12,6 +12,8 @@ export interface IncomingMessage {
   messageId: string
   chatId: string
   senderId: string
+  senderName: string
+  senderAvatarUrl: string | null
   content: string
   sentAt: string
 }

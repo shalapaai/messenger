@@ -15,6 +15,8 @@ public sealed record MessageDto(
     Guid      Id,
     Guid      ChatId,
     Guid      SenderId,
+    string    SenderName,
+    string?   SenderAvatarUrl,
     string    Content,
     string?   FileUrl,
     string    Status,

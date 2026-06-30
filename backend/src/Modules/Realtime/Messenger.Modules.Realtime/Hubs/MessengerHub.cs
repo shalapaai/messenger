@@ -1,14 +1,20 @@
 namespace Messenger.Modules.Realtime.Hubs;
 
 using MediatR;
+using Messenger.Modules.Chats.Application.Contracts;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 [Authorize]
-public sealed class MessengerHub(ISender sender, ILogger<MessengerHub> logger) : Hub
+public sealed class MessengerHub(
+    ISender                 sender,
+    IChatsModule            chatsModule,
+    IConnectionMultiplexer  redis,
+    ILogger<MessengerHub>   logger) : Hub
 {
     // ── Подписка на чат ───────────────────────────────────────────────────────
     public async Task JoinChat(Guid chatId)
@@ -51,24 +57,33 @@ public sealed class MessengerHub(ISender sender, ILogger<MessengerHub> logger) :
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Presence считаем в Redis счётчиком подключений (вкладок/устройств) на пользователя:
+    // онлайн/оффлайн объявляем только когда счётчик переходит 0 ↔ 1, а не на каждое
+    // подключение вкладки. UserOnline шлём в группы ЧАТОВ пользователя (chat:{id}),
+    // а не в group "user:{id}" — в неё кроме самого пользователя никто не входит,
+    // поэтому раньше событие никогда не доходило до собеседников.
     public override async Task OnConnectedAsync()
     {
         var userId = Context.UserIdentifier!;
         await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
-        // Оповещаем контакты — пользователь онлайн
-        await Clients.Group(UserGroup(userId))
-            .SendAsync("UserOnline", new { UserId = userId, IsOnline = true });
+
+        var db = redis.GetDatabase();
+        var connectionCount = await db.StringIncrementAsync(PresenceKey(userId));
 
         logger.LogInformation("User {UserId} connected", userId);
         await base.OnConnectedAsync();
+
+        if (connectionCount == 1)
+            await BroadcastOnlineStatus(userId, isOnline: true);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = Context.UserIdentifier!;
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
-        await Clients.Group(UserGroup(userId))
-            .SendAsync("UserOnline", new { UserId = userId, IsOnline = false });
+
+        var db = redis.GetDatabase();
+        var connectionCount = await db.StringDecrementAsync(PresenceKey(userId));
 
         if (exception is not null)
             logger.LogWarning(exception, "User {UserId} disconnected with error", userId);
@@ -76,11 +91,28 @@ public sealed class MessengerHub(ISender sender, ILogger<MessengerHub> logger) :
             logger.LogDebug("User {UserId} disconnected", userId);
 
         await base.OnDisconnectedAsync(exception);
+
+        if (connectionCount <= 0)
+        {
+            await db.KeyDeleteAsync(PresenceKey(userId));
+            await BroadcastOnlineStatus(userId, isOnline: false);
+        }
     }
 
-    // ── Группы ────────────────────────────────────────────────────────────────
-    public static string ChatGroup(Guid chatId)   => $"chat:{chatId}";
-    public static string UserGroup(string userId) => $"user:{userId}";
+    private async Task BroadcastOnlineStatus(string userId, bool isOnline)
+    {
+        var chatIdsResult = await chatsModule.GetChatIdsByUserIdAsync(Guid.Parse(userId));
+        if (chatIdsResult.IsFailure) return;
+
+        var tasks = chatIdsResult.Value!.Select(chatId =>
+            Clients.Group(ChatGroup(chatId)).SendAsync("UserOnline", new { UserId = userId, IsOnline = isOnline }));
+        await Task.WhenAll(tasks);
+    }
+
+    // ── Группы / ключи ───────────────────────────────────────────────────────
+    public static string ChatGroup(Guid chatId)     => $"chat:{chatId}";
+    public static string UserGroup(string userId)   => $"user:{userId}";
+    public static string PresenceKey(string userId) => $"presence:{userId}";
 }
 
 public sealed record SendMessageRequest(Guid ChatId, string Content, Guid? ReplyToMessageId = null);
