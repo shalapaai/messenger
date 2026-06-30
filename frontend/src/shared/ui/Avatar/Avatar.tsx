@@ -25,7 +25,11 @@ function getRandomAvatarBackground() {
 
 function Avatar({ src, name, size = 'medium', color }: AvatarProps) {
   const avatarClassName = `${styles.avatar} ${styles[size]}`
-  const fallbackLetter = name.trim().charAt(0).toUpperCase() || '?'
+  const trimmed = name.trim()
+  const words = trimmed.split(/\s+/)
+  const fallbackLetter = trimmed
+    ? words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : trimmed.slice(0, 2).toUpperCase()
+    : '?'
 
   const fallbackBackground = useMemo(() => color ?? getRandomAvatarBackground(), [color])
 
