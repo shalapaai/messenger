@@ -4,7 +4,7 @@ import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { MessengerPage } from '../../pages/MessengerPage'
 import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
-import { hasAuthTokens, getMyUserId } from '../../shared/lib/auth/authTokens'
+import { hasAuthTokens } from '../../shared/lib/auth/authTokens'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalRConnection } from '../../shared/api/useSignalRConnection'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -38,7 +38,6 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   }, [status, chatsLoaded, chatIdsKey])
 
   const onMessage = useCallback((msg: IncomingMessage) => {
-    if (msg.senderId === getMyUserId()) return
     // строго GUID — чтобы не зацепить /chats/new/:userId (черновик ещё не существующего чата)
     const activeChatId = pathname.match(/^\/chats\/([0-9a-f-]{36})$/i)?.[1] ?? null
     handleNewMessage(msg, activeChatId)

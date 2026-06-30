@@ -196,16 +196,20 @@ export function MessengerPage() {
     }
   }
 
-  function handleSelectSearchUser(user: UserSearchResult) {
-    setNewChatOpen(false)
+  function navigateToUserChat(user: UserSearchResult) {
     const existing = chats.find(c => c.otherUserId === user.userId)
     if (existing) {
       navigate(`/chats/${existing.id}`)
-      return
+    } else {
+      navigate(`/chats/new/${user.userId}`, {
+        state: { displayName: user.displayName, avatarUrl: user.avatarUrl, login: user.login } satisfies DraftUserState,
+      })
     }
-    navigate(`/chats/new/${user.userId}`, {
-      state: { displayName: user.displayName, avatarUrl: user.avatarUrl, login: user.login } satisfies DraftUserState,
-    })
+  }
+
+  function handleSelectSearchUser(user: UserSearchResult) {
+    setNewChatOpen(false)
+    navigateToUserChat(user)
   }
 
   const onlineStatuses = useOnlineStore(s => s.statuses)
@@ -282,6 +286,7 @@ export function MessengerPage() {
             const chat = chats.find(c => c.otherUserId === userId)
             openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
           }}
+          onUserSelect={user => { setQuery(''); navigateToUserChat(user) }}
         />
 
         <main className={`${s.content}${!inChatView ? ` ${s.contentMobileHidden}` : ''}`}>
