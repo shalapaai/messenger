@@ -19,7 +19,8 @@ public sealed class SearchUsersQueryHandler(IUserProfileRepository repository)
             .Select(p => new UserSearchResultDto(
                 p.AuthUserId, p.Email, p.DisplayName,
                 p.Login is not null ? $"@{p.Login}" : null,
-                p.AvatarUrl))
+                p.AvatarUrl,
+                p.AvatarColor))
             .ToList();
 
         return Result.Success(new PagedList<UserSearchResultDto>(

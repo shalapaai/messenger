@@ -6,6 +6,7 @@ export interface UserSearchResult {
   displayName: string
   login: string | null
   avatarUrl: string | null
+  avatarColor: string | null
 }
 
 interface SearchResultDto {

@@ -13,6 +13,7 @@ interface UserProfileModalProps {
 export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileModalProps) {
   const [full, setFull] = useState<PublicUserProfile | null>(null)
   const [loading, setLoading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (!user?.userId) { setFull(null); setLoading(false); return }
@@ -42,6 +43,7 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
   const hasContact = !!(phone || email || department || city || login || status)
 
   return (
+    <>
     <div className={s.modalOverlay} onClick={onClose}>
       <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
         <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
@@ -77,12 +79,42 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
           <button
             type="button"
             className={s.umDeleteChatBtn}
-            onClick={() => { if (window.confirm('Удалить чат? Переписка будет удалена безвозвратно.')) onDeleteChat() }}
+            onClick={() => setConfirmDelete(true)}
           >
             Удалить чат
           </button>
         )}
       </div>
     </div>
+
+    {confirmDelete && onDeleteChat && (
+
+      <div className={s.confirmOverlay} onClick={() => setConfirmDelete(false)}>
+        <div className={s.confirmPanel} onClick={e => e.stopPropagation()}>
+          <div className={s.confirmIcon}>🗑️</div>
+          <div className={s.confirmTitle}>Удалить чат?</div>
+          <div className={s.confirmText}>
+            Вся переписка с <strong>{name}</strong> будет удалена безвозвратно.
+          </div>
+          <div className={s.confirmActions}>
+            <button
+              type="button"
+              className={s.confirmCancel}
+              onClick={() => setConfirmDelete(false)}
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              className={s.confirmDelete}
+              onClick={() => { setConfirmDelete(false); onDeleteChat(); onClose() }}
+            >
+              Удалить
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   )
 }

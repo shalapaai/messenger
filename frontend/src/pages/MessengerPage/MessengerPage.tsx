@@ -18,12 +18,12 @@ import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
 import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
-import { NewChatModal }     from '../../features/messenger/NewChatModal'
 import s from './MessengerPage.module.css'
 
 interface DraftUserState {
   displayName: string
   avatarUrl: string | null
+  avatarColor: string | null
   login: string | null
 }
 
@@ -41,7 +41,6 @@ export function MessengerPage() {
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
-  const [newChatOpen,    setNewChatOpen]    = useState(false)
   const startTypingRef = useRef<() => void>(() => undefined)
   const stopTypingRef = useRef<() => void>(() => undefined)
 
@@ -196,16 +195,15 @@ export function MessengerPage() {
     }
   }
 
-  function handleSelectSearchUser(user: UserSearchResult) {
-    setNewChatOpen(false)
+  function navigateToUserChat(user: UserSearchResult) {
     const existing = chats.find(c => c.otherUserId === user.userId)
     if (existing) {
       navigate(`/chats/${existing.id}`)
-      return
+    } else {
+      navigate(`/chats/new/${user.userId}`, {
+        state: { displayName: user.displayName, avatarUrl: user.avatarUrl, avatarColor: user.avatarColor, login: user.login } satisfies DraftUserState,
+      })
     }
-    navigate(`/chats/new/${user.userId}`, {
-      state: { displayName: user.displayName, avatarUrl: user.avatarUrl, login: user.login } satisfies DraftUserState,
-    })
   }
 
   const onlineStatuses = useOnlineStore(s => s.statuses)
@@ -222,7 +220,7 @@ export function MessengerPage() {
       ? {
           name: draftUser?.displayName ?? 'Новый чат',
           initials: getInitials(draftUser?.displayName ?? null),
-          color: colorFromId(newUserId),
+          color: draftUser?.avatarColor ?? colorFromId(newUserId),
           avatarUrl: draftUser?.avatarUrl ?? null,
           online: draftOnline,
           group: false,
@@ -277,11 +275,12 @@ export function MessengerPage() {
           onFilterChange={setFilter}
           onQueryChange={setQuery}
           onSelect={cid => navigate(`/chats/${cid}`)}
-          onNewChat={() => setNewChatOpen(true)}
+          onNewChat={() => alert('Создание групп пока в разработке')}
           onUserClick={userId => {
             const chat = chats.find(c => c.otherUserId === userId)
             openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
           }}
+          onUserSelect={user => { setQuery(''); navigateToUserChat(user) }}
         />
 
         <main className={`${s.content}${!inChatView ? ` ${s.contentMobileHidden}` : ''}`}>
@@ -377,11 +376,6 @@ export function MessengerPage() {
         />
       )}
 
-      <NewChatModal
-        isOpen={newChatOpen}
-        onClose={() => setNewChatOpen(false)}
-        onSelect={handleSelectSearchUser}
-      />
     </div>
   )
 }
