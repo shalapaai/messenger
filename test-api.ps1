@@ -241,10 +241,17 @@ Check "Last message has fileUrl" ($last.fileUrl -ne $null)
 Check "Caption saved correctly"  ($last.content -eq "My caption")
 
 if ($last.fileUrl) {
+    # ChatAttachment теперь приватный: скачивание требует авторизации + членства в чате
     try {
-        $dl = Invoke-WebRequest -Uri "http://localhost:8080$($last.fileUrl)" -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
-        Check "File downloadable -> 200" ($dl.StatusCode -eq 200)
-    } catch { Check "File downloadable -> 200" $false }
+        $dl = Invoke-WebRequest -Uri "http://localhost:8080$($last.fileUrl)" -Headers @{ "Authorization" = "Bearer $t1" } -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+        Check "Member can download -> 200" ($dl.StatusCode -eq 200)
+    } catch { Check "Member can download -> 200" $false }
+
+    $s = Req GET $last.fileUrl.Replace("/api","") -StatusOnly
+    Check "Anonymous download -> 401" ($s -eq 401)
+
+    $s = Req GET $last.fileUrl.Replace("/api","") -token $t3 -StatusOnly
+    Check "Outsider download -> 403" ($s -eq 403)
 }
 
 # ── Summary ───────────────────────────────────────────────────────────────────
