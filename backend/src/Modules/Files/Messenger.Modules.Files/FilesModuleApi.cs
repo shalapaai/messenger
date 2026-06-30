@@ -15,7 +15,7 @@ internal sealed class FilesModuleApi(
 
     public async Task<Result<string>> UploadChatAttachmentAsync(
         Stream content, string fileName, string contentType,
-        long fileSizeBytes, Guid uploadedBy, CancellationToken ct = default)
+        long fileSizeBytes, Guid uploadedBy, Guid chatId, CancellationToken ct = default)
     {
         if (fileSizeBytes > MaxSizeBytes)
             return Result.Failure<string>(
@@ -25,7 +25,7 @@ internal sealed class FilesModuleApi(
 
         var record = FileUpload.Create(
             uploadedBy, uploadResult.FileKey, fileName,
-            contentType, uploadResult.SizeBytes, FileCategory.ChatAttachment);
+            contentType, uploadResult.SizeBytes, FileCategory.ChatAttachment, chatId);
 
         fileRepository.Add(record);
         await unitOfWork.SaveChangesAsync(ct);

@@ -2,8 +2,10 @@ namespace Messenger.Modules.Files.Presentation;
 
 using MediatR;
 using Messenger.Modules.Files.Application.Features.UploadAvatar;
+using Messenger.Modules.Files.Domain;
 using Messenger.Modules.Files.Infrastructure;
 using Messenger.Shared.Kernel.Extensions;
+using Messenger.Shared.Kernel.Membership;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -23,10 +25,14 @@ public static class FilesEndpoints
             .DisableAntiforgery()
             .RequireAuthorization();
 
-        // Скачивание файла (аватары, вложения)
+        // Скачивание файла. Аватары — публичные (как у любого мессенджера).
+        // Вложения чатов (ChatAttachment) — только авторизованный участник этого чата,
+        // проверяется внутри хендлера (маршрут анонимный, чтобы не ломать аватарки).
         group.MapGet("/{fileKey}", DownloadFile)
             .WithName("DownloadFile")
             .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .AllowAnonymous();
 
@@ -55,8 +61,10 @@ public static class FilesEndpoints
 
     private static async Task<IResult> DownloadFile(
         string fileKey,
+        HttpContext ctx,
         FilesDbContext dbContext,
         Application.Abstractions.IFileStorage fileStorage,
+        IChatMembershipChecker membershipChecker,
         CancellationToken ct)
     {
         var record = await dbContext.FileUploads
@@ -65,6 +73,16 @@ public static class FilesEndpoints
 
         if (record is null)
             return Results.NotFound();
+
+        if (record.Category == FileCategory.ChatAttachment)
+        {
+            if (ctx.User.Identity?.IsAuthenticated != true)
+                return Results.StatusCode(StatusCodes.Status401Unauthorized);
+
+            var userId = ctx.GetUserId();
+            if (record.ChatId is null || !await membershipChecker.IsMemberAsync(record.ChatId.Value, userId, ct))
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
 
         var stream = await fileStorage.DownloadAsync(fileKey, ct);
         return Results.Stream(stream, record.ContentType, record.OriginalName);

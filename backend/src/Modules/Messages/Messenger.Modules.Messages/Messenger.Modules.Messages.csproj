@@ -17,6 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Messenger.Shared.Kernel\Messenger.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\Files\Messenger.Modules.Files\Messenger.Modules.Files.csproj" />
+    <!-- Для вызова IUsersModule — имя/аватар отправителя в истории сообщений -->
+    <ProjectReference Include="..\..\Users\Messenger.Modules.Users\Messenger.Modules.Users.csproj" />
   </ItemGroup>
 
 </Project>

@@ -64,12 +64,14 @@ public static class MessagesEndpoints
 
     private static async Task<IResult> GetMessages(
         Guid              chatId,
+        HttpContext       httpContext,
         ISender           sender,
         CancellationToken ct,
         Guid?             before = null,
         int               limit  = 50)
     {
-        var result = await sender.Send(new GetMessagesQuery(chatId, before, limit), ct);
+        var userId = httpContext.GetUserId();
+        var result = await sender.Send(new GetMessagesQuery(chatId, userId, before, limit), ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)

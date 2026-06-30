@@ -1,8 +1,9 @@
 namespace Messenger.Modules.Chats.Presentation;
 
 using MediatR;
-using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Application.Features.AddChatMember;
+using Messenger.Modules.Chats.Application.Features.CreateDirectChat;
+using Messenger.Modules.Chats.Application.Features.CreateGroupChat;
 using Messenger.Modules.Chats.Application.Features.RemoveChatMember;
 using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
