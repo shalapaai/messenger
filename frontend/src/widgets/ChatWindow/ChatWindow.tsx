@@ -1,6 +1,5 @@
 import { useState, useRef, type RefObject, type KeyboardEvent, type ChangeEvent } from 'react'
 import type { ChatMeta, Message, ModalUser } from '../../shared/types/messenger'
-import { GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
 import s from './ChatWindow.module.css'
 
 type RenderedItem =
@@ -62,7 +61,6 @@ export function ChatWindow({
   }
 
   const isTyping = typingChats[chatId] && !meta.group
-  const memberCount = (GROUP_MEMBERS[chatId] ?? []).length
 
   return (
     <>
@@ -82,7 +80,7 @@ export function ChatWindow({
                 : meta.online
                   ? <><span className={s.chatHeaderOnlineDot} />в сети</>
                   : meta.group
-                    ? `${memberCount} участника`
+                    ? 'группа'
                     : 'был(а) недавно'
               }
             </div>

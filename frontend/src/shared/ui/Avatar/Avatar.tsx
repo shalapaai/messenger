@@ -5,6 +5,7 @@ type AvatarProps = {
   src?: string
   name: string
   size?: 'small' | 'medium' | 'large'
+  color?: string
 }
 
 const avatarBackgrounds = [
@@ -22,11 +23,11 @@ function getRandomAvatarBackground() {
   return avatarBackgrounds[randomIndex]
 }
 
-function Avatar({ src, name, size = 'medium' }: AvatarProps) {
+function Avatar({ src, name, size = 'medium', color }: AvatarProps) {
   const avatarClassName = `${styles.avatar} ${styles[size]}`
   const fallbackLetter = name.trim().charAt(0).toUpperCase() || '?'
 
-  const fallbackBackground = useMemo(() => getRandomAvatarBackground(), [])
+  const fallbackBackground = useMemo(() => color ?? getRandomAvatarBackground(), [color])
 
   if (src) {
     return <img src={src} alt={name} className={avatarClassName} />

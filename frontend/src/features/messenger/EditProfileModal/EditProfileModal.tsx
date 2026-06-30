@@ -117,6 +117,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
               <AvatarUpload
                 name={displayName}
                 avatarPreview={avatarPreview ?? profile.avatarUrl ?? undefined}
+                color={profile.avatarColor}
                 onChange={handleAvatarChange}
               />
             </div>

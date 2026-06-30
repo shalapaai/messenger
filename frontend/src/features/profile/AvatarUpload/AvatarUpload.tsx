@@ -6,10 +6,11 @@ import styles from './AvatarUpload.module.css'
 type AvatarUploadProps = {
   name: string
   avatarPreview?: string
+  color?: string
   onChange: (file: File) => void
 }
 
-function AvatarUpload({ name, avatarPreview, onChange }: AvatarUploadProps) {
+function AvatarUpload({ name, avatarPreview, color, onChange }: AvatarUploadProps) {
   const inputId = useId()
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -25,7 +26,7 @@ function AvatarUpload({ name, avatarPreview, onChange }: AvatarUploadProps) {
 
   return (
     <div className={styles.upload}>
-      <Avatar src={avatarPreview} name={name} size="large" />
+      <Avatar src={avatarPreview} name={name} size="large" color={color} />
 
       <div className={styles.actions}>
         <label className={styles.uploadButton} htmlFor={inputId}>

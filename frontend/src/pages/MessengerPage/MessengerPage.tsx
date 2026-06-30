@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, ModalUser } from '../../shared/types/messenger'
-import { GROUP_MEMBERS } from '../../shared/lib/messenger/stubData'
 import { colorFromId, initials as getInitials } from '../../shared/api/chatsApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -147,12 +146,16 @@ export function MessengerPage() {
           ? <button className={s.topBarBack} onClick={() => navigate('/chats')}>‹</button>
           : <div className={s.topBarLogo}>TL:MESSENGER</div>
         }
-        <button className={s.topBarUserBtn} onClick={() => setProfileOpen(true)}>
-    {profile?.avatarUrl
-      ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
-      : profileInitials
-    }
-  </button>
+        <button
+          className={s.topBarUserBtn}
+          style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
+          onClick={() => setProfileOpen(true)}
+        >
+          {profile?.avatarUrl
+            ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
+            : profileInitials
+          }
+        </button>
       </header>
 
       <div className={s.body}>
@@ -160,6 +163,7 @@ export function MessengerPage() {
           onProfileOpen={() => setProfileOpen(true)}
           userInitials={profileInitials}
           userAvatarUrl={profile?.avatarUrl}
+          userAvatarColor={profile?.avatarColor}
         />
 
         <ChatListPanel
@@ -220,12 +224,15 @@ export function MessengerPage() {
           <span>Чаты</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
-          <span className={s.bnAvatarMini}>
-      {profile?.avatarUrl
-        ? <img src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
-        : profileInitials
-      }
-    </span>
+          <span
+            className={s.bnAvatarMini}
+            style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
+          >
+            {profile?.avatarUrl
+              ? <img src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
+              : profileInitials
+            }
+          </span>
           <span>Профиль</span>
         </button>
       </nav>
@@ -259,7 +266,7 @@ export function MessengerPage() {
           isOpen={groupModalOpen}
           chatId={id!}
           meta={meta}
-          members={GROUP_MEMBERS[id!] ?? []}
+          members={[]}
           onClose={() => setGroupModalOpen(false)}
           onMemberClick={user => { setGroupModalOpen(false); setModalUser(user) }}
         />
