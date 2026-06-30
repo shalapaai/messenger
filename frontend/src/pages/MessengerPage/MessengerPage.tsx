@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { Filter, ModalUser, Message } from '../../shared/types/messenger'
 import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest } from '../../shared/api/chatsApi'
@@ -28,6 +29,7 @@ interface DraftUserState {
 }
 
 export function MessengerPage() {
+  const { t } = useTranslation()
   const { id, newUserId } = useParams<{ id?: string; newUserId?: string }>()
   const location = useLocation()
   const navigate = useNavigate()
@@ -149,7 +151,7 @@ export function MessengerPage() {
         await loadChats()
         navigate(`/chats/${newChatId}`, { replace: true })
       } catch {
-        window.alert('Не удалось отправить сообщение. Попробуйте ещё раз.')
+        window.alert(t('messenger.sendFailed'))
       }
       return
     }
@@ -168,7 +170,7 @@ export function MessengerPage() {
     try {
       await deleteMessage(id, msg)
     } catch {
-      window.alert('Не удалось удалить сообщение.')
+      window.alert(t('messenger.deleteMessageFailed'))
     }
   }
 
@@ -179,7 +181,7 @@ export function MessengerPage() {
       removeChat(id)
       navigate('/chats')
     } catch {
-      window.alert('Не удалось удалить чат.')
+      window.alert(t('messenger.deleteChatFailed'))
     }
   }
 
@@ -191,7 +193,7 @@ export function MessengerPage() {
       setGroupModalOpen(false)
       navigate('/chats')
     } catch {
-      window.alert('Не удалось выйти из группы.')
+      window.alert(t('messenger.leaveGroupFailed'))
     }
   }
 
@@ -218,7 +220,7 @@ export function MessengerPage() {
         : null)
     : newUserId
       ? {
-          name: draftUser?.displayName ?? 'Новый чат',
+          name: draftUser?.displayName ?? t('messenger.newChatDraftName'),
           initials: getInitials(draftUser?.displayName ?? null),
           color: draftUser?.avatarColor ?? colorFromId(newUserId),
           avatarUrl: draftUser?.avatarUrl ?? null,
@@ -275,7 +277,7 @@ export function MessengerPage() {
           onFilterChange={setFilter}
           onQueryChange={setQuery}
           onSelect={cid => navigate(`/chats/${cid}`)}
-          onNewChat={() => alert('Создание групп пока в разработке')}
+          onNewChat={() => alert(t('messenger.groupCreationInProgress'))}
           onUserClick={userId => {
             const chat = chats.find(c => c.otherUserId === userId)
             openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
@@ -312,8 +314,8 @@ export function MessengerPage() {
           ) : (
             <div className={s.placeholder}>
               <div className={s.placeholderIcon}>💬</div>
-              <h3 className={s.placeholderTitle}>Выберите чат</h3>
-              <p className={s.placeholderText}>Выберите чат из списка слева, чтобы начать общение</p>
+              <h3 className={s.placeholderTitle}>{t('messenger.selectChatTitle')}</h3>
+              <p className={s.placeholderText}>{t('messenger.selectChatText')}</p>
             </div>
           )}
         </main>
@@ -323,7 +325,7 @@ export function MessengerPage() {
       <nav className={`${s.bottomNav}${inChatView ? ` ${s.bottomNavHidden}` : ''}`}>
         <button className={`${s.bnItem} ${s.bnItemActive}`} onClick={() => navigate('/chats')}>
           <span className={s.bnGlyph}>💬{totalUnread > 0 && <span className={s.bnBadge}>{totalUnread}</span>}</span>
-          <span>Чаты</span>
+          <span>{t('profile.chats')}</span>
         </button>
         <button className={s.bnItem} onClick={() => setProfileOpen(true)}>
           <span
@@ -335,7 +337,7 @@ export function MessengerPage() {
               : profileInitials
             }
           </span>
-          <span>Профиль</span>
+          <span>{t('profile.profile')}</span>
         </button>
       </nav>
 

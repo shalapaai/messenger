@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Chat, Filter } from '../../shared/types/messenger'
 import { useOnlineStore } from '../../shared/api/onlineStore'
 import { searchUsers, type UserSearchResult } from '../../shared/api/usersApi'
@@ -21,13 +22,10 @@ interface ChatListPanelProps {
   onUserSelect: (user: UserSearchResult) => void
 }
 
-const TABS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'Все' },
-  { id: 'direct', label: 'Личные' },
-  { id: 'group', label: 'Группы' },
-]
+const TABS: Filter[] = ['all', 'direct', 'group']
 
 export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect, onNewChat, onUserClick, onUserSelect }: ChatListPanelProps) {
+  const { t } = useTranslation()
   const onlineStatuses = useOnlineStore((s) => s.statuses)
   const [userResults, setUserResults]         = useState<UserSearchResult[]>([])
   const [userSearchLoading, setUserSearchLoading] = useState(false)
@@ -43,10 +41,15 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
     .filter(c => !q || c.name.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
 
   useEffect(() => {
-    if (!q) { setUserResults([]); setUserSearchLoading(false); return }
-    setUserSearchLoading(true)
     const existingIds = new Set(chats.flatMap(c => c.otherUserId ? [c.otherUserId] : []))
     const timer = setTimeout(() => {
+      if (!q) {
+        setUserResults([])
+        setUserSearchLoading(false)
+        return
+      }
+
+      setUserSearchLoading(true)
       searchUsers(q)
         .then(res => setUserResults(res.filter(u => !existingIds.has(u.userId))))
         .catch(() => setUserResults([]))
@@ -62,8 +65,8 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
   return (
     <aside className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}>
       <div className={s.clHeader}>
-        <h2 className={s.clTitle}>Сообщения</h2>
-        <button className={s.clNewBtn} onClick={onNewChat} title="Создать группу">
+        <h2 className={s.clTitle}>{t('messenger.messages')}</h2>
+        <button className={s.clNewBtn} onClick={onNewChat} title={t('messenger.createGroup')}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
@@ -77,21 +80,21 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
         <span className={s.clSearchIcon}>🔍</span>
         <input
           className={s.clSearchInput}
-          placeholder="Поиск или новый чат"
+          placeholder={t('messenger.searchOrNewChat')}
           value={query}
           onChange={e => onQueryChange(e.target.value)}
         />
       </div>
 
       <div className={s.clTabs}>
-        {TABS.map(t => (
+        {TABS.map(tab => (
           <button
-            key={t.id}
-            className={`${s.clTab} ${filter === t.id ? s.clTabActive : ''}`}
-            onClick={() => onFilterChange(t.id)}
+            key={tab}
+            className={`${s.clTab} ${filter === tab ? s.clTabActive : ''}`}
+            onClick={() => onFilterChange(tab)}
           >
-            {t.label}
-            <span className={`${s.clTabCount} ${filter === t.id ? s.clTabCountActive : ''}`}>{counts[t.id]}</span>
+            {t(`messenger.tabs.${tab}`)}
+            <span className={`${s.clTabCount} ${filter === tab ? s.clTabCountActive : ''}`}>{counts[tab]}</span>
           </button>
         ))}
       </div>
@@ -99,8 +102,8 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
       <div className={s.clList}>
         {showError ? (
           <div className={s.clError}>
-            <p>Не удалось загрузить чаты</p>
-            <button className={s.clRetryBtn} onClick={onRetry}>Повторить</button>
+            <p>{t('messenger.loadChatsFailed')}</p>
+            <button className={s.clRetryBtn} onClick={onRetry}>{t('common.retry')}</button>
           </div>
         ) : showSkeleton ? (
           Array.from({ length: 6 }).map((_, i) => (
@@ -142,10 +145,10 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
                   <div className={s.clInfo}>
                     <div className={s.clNameRow}>
                       <span className={s.clName}>{chat.name}</span>
-                      {chat.group && <span className={s.clGroupBadge}>ГРУППА</span>}
+                      {chat.group && <span className={s.clGroupBadge}>{t('messenger.groupBadge')}</span>}
                     </div>
                     <div className={s.clPreview}>
-                      {chat.preview || <span className={s.clPreviewEmpty}>Нет сообщений</span>}
+                      {chat.preview || <span className={s.clPreviewEmpty}>{t('messenger.noMessages')}</span>}
                     </div>
                   </div>
                   <div className={s.clMeta}>
@@ -158,9 +161,9 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
 
             {q && (userSearchLoading || userResults.length > 0) && (
               <>
-                <div className={s.clUserDivider}>Новые пользователи</div>
+                <div className={s.clUserDivider}>{t('messenger.newUsers')}</div>
                 {userSearchLoading ? (
-                  <div className={s.clUserSearching}>Поиск…</div>
+                  <div className={s.clUserSearching}>{t('messenger.searching')}</div>
                 ) : (
                   userResults.map(user => {
                     const init = initials(user.displayName)
@@ -195,7 +198,7 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
             )}
 
             {showEmpty && (
-              <div className={s.clEmpty}>Ничего не найдено</div>
+              <div className={s.clEmpty}>{t('messenger.emptySearch')}</div>
             )}
           </>
         )}

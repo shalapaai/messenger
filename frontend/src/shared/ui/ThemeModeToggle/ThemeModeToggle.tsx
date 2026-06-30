@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '../../context/useTheme'
 import s from './ThemeModeToggle.module.css'
 
@@ -6,9 +7,10 @@ interface ThemeModeToggleProps {
 }
 
 export function ThemeModeToggle({ className = '' }: ThemeModeToggleProps) {
+  const { t } = useTranslation()
   const { themeMode, toggleThemeMode } = useTheme()
   const isDark = themeMode === 'dark'
-  const label = isDark ? 'Включить светлую тему' : 'Включить тёмную тему'
+  const label = isDark ? t('theme.enableLight') : t('theme.enableDark')
 
   return (
     <button

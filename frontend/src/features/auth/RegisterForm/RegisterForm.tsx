@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
@@ -7,6 +8,7 @@ import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
 import styles from './RegisterForm.module.css'
 
 function RegisterForm() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,22 +20,22 @@ function RegisterForm() {
     event.preventDefault()
 
     if (!email.trim() || !password.trim() || !repeatPassword.trim()) {
-      setError('Заполните все поля')
+      setError(t('auth.errors.requiredRegister'))
       return
     }
 
     if (!isValidEmail(email)) {
-      setError('Введите электронную почту в правильном формате')
+      setError(t('auth.errors.invalidEmail'))
       return
     }
 
     if (password.length < 8) {
-      setError('Пароль должен быть не короче 8 символов')
+      setError(t('auth.errors.shortPassword'))
       return
     }
 
     if (password !== repeatPassword) {
-      setError('Пароли не совпадают')
+      setError(t('auth.errors.passwordMismatch'))
       return
     }
 
@@ -48,9 +50,7 @@ function RegisterForm() {
       saveAuthTokens(tokens)
       navigate('/profile/setup')
     } catch {
-      setError(
-        'Не удалось зарегистрироваться. Возможно, эта почта уже используется',
-      )
+      setError(t('auth.errors.registerFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -59,47 +59,47 @@ function RegisterForm() {
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <div className={styles.header}>
-        <h2 className={styles.title}>Регистрация</h2>
+        <h2 className={styles.title}>{t('auth.registerTitle')}</h2>
         <p className={styles.subtitle}>
-          Создайте аккаунт, чтобы начать пользоваться мессенджером.
+          {t('auth.registerSubtitle')}
         </p>
       </div>
 
       <label className={styles.field}>
-        <span className={styles.label}>Электронная почта</span>
+        <span className={styles.label}>{t('common.email')}</span>
         <input
           className={styles.input}
           type="email"
           name="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="Введите email"
+          placeholder={t('auth.emailPlaceholder')}
           autoComplete="email"
         />
       </label>
 
       <label className={styles.field}>
-        <span className={styles.label}>Пароль</span>
+        <span className={styles.label}>{t('common.password')}</span>
         <input
           className={styles.input}
           type="password"
           name="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Придумайте пароль"
+          placeholder={t('auth.newPasswordPlaceholder')}
           autoComplete="new-password"
         />
       </label>
 
       <label className={styles.field}>
-        <span className={styles.label}>Повторите пароль</span>
+        <span className={styles.label}>{t('auth.repeatPassword')}</span>
         <input
           className={styles.input}
           type="password"
           name="repeatPassword"
           value={repeatPassword}
           onChange={(event) => setRepeatPassword(event.target.value)}
-          placeholder="Повторите пароль"
+          placeholder={t('auth.repeatPasswordPlaceholder')}
           autoComplete="new-password"
         />
       </label>
@@ -107,11 +107,11 @@ function RegisterForm() {
       {error && <p className={styles.error}>{error}</p>}
 
       <button className={styles.button} type="submit" disabled={isLoading}>
-        {isLoading ? 'Создаём аккаунт...' : 'Зарегистрироваться'}
+        {isLoading ? t('auth.registerLoading') : t('auth.registerButton')}
       </button>
 
       <p className={styles.footerText}>
-        Уже есть аккаунт? <Link to="/login">Войти</Link>
+        {t('auth.registerFooter')} <Link to="/login">{t('auth.registerFooterLink')}</Link>
       </p>
     </form>
   )

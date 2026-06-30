@@ -4,6 +4,7 @@ import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chat
 import { deleteMessage as deleteMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted } from '../../../shared/api/signalrClient'
+import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
 type SendFn = (content: string) => Promise<{ messageId: string }>
 
@@ -77,8 +78,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           senderInitials:  initials(msg.senderName),
           senderColor:     msg.senderAvatarColor,
           senderAvatarUrl: msg.senderAvatarUrl,
-          time:            new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-          date:            'Сегодня',
+          time:            new Date(msg.sentAt).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+          date:            i18n.t('common.today'),
         }],
       }
     })
@@ -152,8 +153,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     const tempId = nextMessageId()
     const newMsg: Message = {
       ...meSender, id: tempId, text,
-      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-      date: 'Сегодня',
+      time: new Date().toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+      date: i18n.t('common.today'),
       status: 'pending',
     }
     setChatMessages(prev => ({ ...prev, [chatId]: [...(prev[chatId] ?? []), newMsg] }))

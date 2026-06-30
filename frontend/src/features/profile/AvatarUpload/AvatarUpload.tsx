@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { ChangeEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Avatar } from '../../../shared/ui/Avatar'
 import styles from './AvatarUpload.module.css'
 
@@ -12,6 +13,7 @@ type AvatarUploadProps = {
 }
 
 function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: AvatarUploadProps) {
+  const { t } = useTranslation()
   const inputId = useId()
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -32,7 +34,7 @@ function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: Avatar
       <div className={styles.actions}>
         <div className={styles.buttonsRow}>
           <label className={styles.uploadButton} htmlFor={inputId}>
-            {avatarPreview ? 'Заменить фото' : 'Выбрать фото'}
+            {avatarPreview ? t('avatar.replace') : t('avatar.choose')}
           </label>
 
           {avatarPreview && onRemove && (
@@ -40,14 +42,14 @@ function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: Avatar
               type="button"
               className={styles.removeButton}
               onClick={onRemove}
-              aria-label="Удалить фото"
+              aria-label={t('avatar.remove')}
             >
               ✕
             </button>
           )}
         </div>
 
-        <p className={styles.hint}>PNG, JPG или WEBP</p>
+        <p className={styles.hint}>{t('avatar.hint')}</p>
       </div>
 
       <input

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Cropper from 'react-easy-crop'
 import type { Area, Point } from 'react-easy-crop'
 import type { CroppedAreaPixels } from '../../../shared/lib/image'
@@ -15,6 +16,7 @@ export function AvatarCropModal({
   onCancel,
   onConfirm,
 }: AvatarCropModalProps) {
+  const { t } = useTranslation()
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] =
@@ -32,7 +34,7 @@ export function AvatarCropModal({
     <div className={styles.overlay}>
       <div className={styles.panel}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Обрезать фото</h2>
+          <h2 className={styles.title}>{t('avatar.cropTitle')}</h2>
         </div>
 
         <div className={styles.cropArea}>
@@ -52,7 +54,7 @@ export function AvatarCropModal({
         </div>
 
         <label className={styles.zoomControl}>
-          <span>Масштаб</span>
+          <span>{t('avatar.zoom')}</span>
           <input
             type="range"
             min={1}
@@ -69,7 +71,7 @@ export function AvatarCropModal({
             className={styles.secondaryButton}
             onClick={onCancel}
           >
-            Отмена
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -77,7 +79,7 @@ export function AvatarCropModal({
             onClick={handleConfirm}
             disabled={!croppedAreaPixels}
           >
-            Сохранить
+            {t('avatar.cropSave')}
           </button>
         </div>
       </div>
