@@ -10,6 +10,7 @@ public sealed record PublicUserDto(
     string? Login,
     string? Status,
     string? AvatarUrl,
+    string  AvatarColor,
     string? Phone,
     string? City,
     string? Department,

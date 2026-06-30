@@ -20,7 +20,7 @@ internal sealed class UsersModuleApi(UsersDbContext dbContext) : IUsersModule
 
         var dict = profiles.ToDictionary(
             p => p.AuthUserId,
-            p => new UserSummaryDto(p.AuthUserId, p.DisplayName, p.AvatarUrl));
+            p => new UserSummaryDto(p.AuthUserId, p.DisplayName, p.AvatarUrl, p.AvatarColor));
 
         return Result.Success(dict);
     }

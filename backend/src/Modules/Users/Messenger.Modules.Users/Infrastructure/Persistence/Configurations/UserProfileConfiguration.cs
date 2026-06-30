@@ -16,6 +16,7 @@ public sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProf
         b.Property(p => p.Login).HasColumnName("login").HasMaxLength(30);
         b.Property(p => p.Status).HasColumnName("status").HasMaxLength(200);
         b.Property(p => p.AvatarUrl).HasColumnName("avatar_url").HasMaxLength(2048);
+        b.Property(p => p.AvatarColor).HasColumnName("avatar_color").HasMaxLength(7).IsRequired();
         b.Property(p => p.Phone).HasColumnName("phone").HasMaxLength(20);
         b.Property(p => p.City).HasColumnName("city").HasMaxLength(100);
         b.Property(p => p.Department).HasColumnName("department").HasMaxLength(100);

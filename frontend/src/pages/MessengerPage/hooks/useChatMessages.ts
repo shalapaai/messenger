@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
-import { fetchMessages, colorFromId, initials, nextMessageId } from '../../../shared/api/chatsApi'
+import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage } from '../../../shared/api/signalrClient'
 
@@ -66,7 +66,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           senderId:        msg.senderId,
           senderName:      msg.senderName,
           senderInitials:  initials(msg.senderName),
-          senderColor:     colorFromId(msg.senderId),
+          senderColor:     msg.senderAvatarColor,
           senderAvatarUrl: msg.senderAvatarUrl,
           time:            new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
           date:            'Сегодня',

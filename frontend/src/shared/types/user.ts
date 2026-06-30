@@ -5,6 +5,7 @@ export interface UserProfile {
   login: string | null
   status: string | null
   avatarUrl: string | null
+  avatarColor: string
   phone: string | null
   city: string | null
   department: string | null

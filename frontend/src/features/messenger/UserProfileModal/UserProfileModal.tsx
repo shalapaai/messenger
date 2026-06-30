@@ -30,7 +30,7 @@ export function UserProfileModal({ user, onClose }: UserProfileModalProps) {
   const login      = full?.login ?? user.login
   const status     = full?.status ?? user.status
   const initials   = getInitials(name)
-  const color      = colorFromId(user.userId ?? '')
+  const color      = full?.avatarColor ?? colorFromId(user.userId ?? '')
 
   const phone      = full?.phone
   const email      = full?.email

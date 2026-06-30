@@ -14,6 +14,7 @@ export interface IncomingMessage {
   senderId: string
   senderName: string
   senderAvatarUrl: string | null
+  senderAvatarColor: string
   content: string
   sentAt: string
 }

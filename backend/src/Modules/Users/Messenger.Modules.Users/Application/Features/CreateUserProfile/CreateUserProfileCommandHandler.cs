@@ -36,5 +36,5 @@ public sealed class CreateUserProfileCommandHandler(
     private static UserProfileDto ToDto(UserProfile p) =>
         new(p.AuthUserId, p.Email, p.DisplayName,
             p.Login is not null ? $"@{p.Login}" : null,
-            p.Status, p.AvatarUrl, p.CreatedAt);
+            p.Status, p.AvatarUrl, p.AvatarColor, p.CreatedAt);
 }

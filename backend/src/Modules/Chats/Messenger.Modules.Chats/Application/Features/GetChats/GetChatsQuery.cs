@@ -10,6 +10,7 @@ public sealed record ChatSummaryDto(
     string          Type,
     string?         Name,
     string?         AvatarUrl,
+    string?         AvatarColor,
     LastMessageDto? LastMessage,
     Guid?           OtherUserId,
     bool            IsOnline);

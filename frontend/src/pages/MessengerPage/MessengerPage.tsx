@@ -47,7 +47,7 @@ export function MessengerPage() {
     senderId:        profile?.userId      ?? 'me',
     senderName:      profile?.displayName ?? '',
     senderInitials:  profileInitials,
-    senderColor:     '#2C5BF0',
+    senderColor:     profile?.avatarColor ?? '#2C5BF0',
     senderAvatarUrl: profile?.avatarUrl ?? null,
   }
 

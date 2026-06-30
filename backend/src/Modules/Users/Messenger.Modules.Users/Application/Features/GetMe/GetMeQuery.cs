@@ -11,6 +11,7 @@ public sealed record MeDto(
     string?   Login,
     string?   Status,
     string?   AvatarUrl,
+    string    AvatarColor,
     string?   Phone,
     string?   City,
     string?   Department,

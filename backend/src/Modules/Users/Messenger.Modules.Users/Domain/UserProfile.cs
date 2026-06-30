@@ -5,6 +5,11 @@ using Messenger.Shared.Kernel.Results;
 
 public sealed class UserProfile : AggregateRoot<Guid>
 {
+    private static readonly string[] Palette =
+    [
+        "#2C5BF0", "#7A5BF0", "#22B07D", "#F0902C", "#E0556E", "#2CA6C9", "#9B59B6"
+    ];
+
     private UserProfile() { } // EF Core
 
     private UserProfile(Guid id, Guid authUserId, string email, string displayName, string? login) : base(id)
@@ -13,6 +18,7 @@ public sealed class UserProfile : AggregateRoot<Guid>
         Email       = email.ToLowerInvariant();
         DisplayName = displayName;
         Login       = login?.ToLowerInvariant();
+        AvatarColor = Palette[Random.Shared.Next(Palette.Length)];
         CreatedAt   = DateTime.UtcNow;
     }
 
@@ -22,6 +28,7 @@ public sealed class UserProfile : AggregateRoot<Guid>
     public string?   Login       { get; private set; }
     public string?   Status      { get; private set; }
     public string?   AvatarUrl   { get; private set; }
+    public string    AvatarColor { get; private set; } = "#2C5BF0";
     public string?   Phone       { get; private set; }
     public string?   City        { get; private set; }
     public string?   Department  { get; private set; }

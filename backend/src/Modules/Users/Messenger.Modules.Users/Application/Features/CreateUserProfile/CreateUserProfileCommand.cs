@@ -15,4 +15,5 @@ public sealed record UserProfileDto(
     string?   Login,
     string?   Status,
     string?   AvatarUrl,
+    string    AvatarColor,
     DateTime  CreatedAt);
