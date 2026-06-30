@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { profileApi, type PublicUserProfile } from '../../../shared/api/profileApi'
 import { initials as getInitials, colorFromId } from '../../../shared/api/chatsApi'
 import type { ModalUser } from '../../../shared/types/messenger'
@@ -11,18 +12,33 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileModalProps) {
+  const { t } = useTranslation()
   const [full, setFull] = useState<PublicUserProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
-    if (!user?.userId) { setFull(null); setLoading(false); return }
-    setFull(null)
-    setLoading(true)
-    profileApi.getUserById(user.userId)
-      .then(setFull)
-      .catch(() => setFull(null))
-      .finally(() => setLoading(false))
+    let cancelled = false
+
+    const timer = setTimeout(() => {
+      if (!user?.userId) {
+        setFull(null)
+        setLoading(false)
+        return
+      }
+
+      setFull(null)
+      setLoading(true)
+      profileApi.getUserById(user.userId)
+        .then(profile => { if (!cancelled) setFull(profile) })
+        .catch(() => { if (!cancelled) setFull(null) })
+        .finally(() => { if (!cancelled) setLoading(false) })
+    }, 0)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [user?.userId])
 
 
@@ -56,23 +72,23 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
         <div className={s.umName}>{name}</div>
         <div className={s.umStatus}>
           {user.online
-            ? <><span className={s.umStatusDot} />в сети</>
-            : 'был(а) недавно'
+            ? <><span className={s.umStatusDot} />{t('common.online')}</>
+            : t('common.recently')
           }
         </div>
 
-        {loading && <div className={s.umLoading}>Загрузка...</div>}
+        {loading && <div className={s.umLoading}>{t('common.loading')}...</div>}
 
         {!loading && hasContact && (
           <>
             <div className={s.umDivider} />
-            <div className={s.umSection}>Контакт</div>
-            {login      && <div className={s.umField}><span className={s.umFieldLabel}>Логин</span><span className={s.umFieldValue}>{login}</span></div>}
-            {status     && <div className={s.umField}><span className={s.umFieldLabel}>Статус</span><span className={s.umFieldValue}>{status}</span></div>}
-            {email      && <div className={s.umField}><span className={s.umFieldLabel}>Email</span><span className={s.umFieldValue}>{email}</span></div>}
-            {phone      && <div className={s.umField}><span className={s.umFieldLabel}>Телефон</span><span className={s.umFieldValue}>{phone}</span></div>}
-            {city       && <div className={s.umField}><span className={s.umFieldLabel}>Город</span><span className={s.umFieldValue}>{city}</span></div>}
-            {department && <div className={s.umField}><span className={s.umFieldLabel}>Отдел</span><span className={s.umFieldValue}>{department}</span></div>}
+            <div className={s.umSection}>{t('profile.contact')}</div>
+            {login      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.login')}</span><span className={s.umFieldValue}>{login}</span></div>}
+            {status     && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.status')}</span><span className={s.umFieldValue}>{status}</span></div>}
+            {email      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.email')}</span><span className={s.umFieldValue}>{email}</span></div>}
+            {phone      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.phone')}</span><span className={s.umFieldValue}>{phone}</span></div>}
+            {city       && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.city')}</span><span className={s.umFieldValue}>{city}</span></div>}
+            {department && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.department')}</span><span className={s.umFieldValue}>{department}</span></div>}
           </>
         )}
         {onDeleteChat && (
@@ -81,7 +97,7 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
             className={s.umDeleteChatBtn}
             onClick={() => setConfirmDelete(true)}
           >
-            Удалить чат
+            {t('messenger.deleteChat')}
           </button>
         )}
       </div>
@@ -92,9 +108,9 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
       <div className={s.confirmOverlay} onClick={() => setConfirmDelete(false)}>
         <div className={s.confirmPanel} onClick={e => e.stopPropagation()}>
           <div className={s.confirmIcon}>🗑️</div>
-          <div className={s.confirmTitle}>Удалить чат?</div>
+          <div className={s.confirmTitle}>{t('messenger.deleteChatTitle')}</div>
           <div className={s.confirmText}>
-            Вся переписка с <strong>{name}</strong> будет удалена безвозвратно.
+            <Trans i18nKey="messenger.deleteChatText" values={{ name }} components={{ strong: <strong /> }} />
           </div>
           <div className={s.confirmActions}>
             <button
@@ -102,14 +118,14 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
               className={s.confirmCancel}
               onClick={() => setConfirmDelete(false)}
             >
-              Отмена
+              {t('common.cancel')}
             </button>
             <button
               type="button"
               className={s.confirmDelete}
               onClick={() => { setConfirmDelete(false); onDeleteChat(); onClose() }}
             >
-              Удалить
+              {t('messenger.deleteChat')}
             </button>
           </div>
         </div>

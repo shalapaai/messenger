@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { searchUsers, type UserSearchResult } from '../../../shared/api/usersApi'
 import { useChatsStore } from '../../../shared/api/chatsStore'
 import { colorFromId, initials } from '../../../shared/api/chatsApi'
@@ -11,6 +12,7 @@ interface NewChatModalProps {
 }
 
 export function NewChatModal({ isOpen, onClose, onSelect }: NewChatModalProps) {
+  const { t } = useTranslation()
   const [query, setQuery]     = useState('')
   const [results, setResults] = useState<UserSearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -18,16 +20,30 @@ export function NewChatModal({ isOpen, onClose, onSelect }: NewChatModalProps) {
   const chats = useChatsStore((s) => s.chats)
 
   useEffect(() => {
-    if (!isOpen) { setQuery(''); setResults([]); setError(false) }
+    if (isOpen) return
+
+    const timer = setTimeout(() => {
+      setQuery('')
+      setResults([])
+      setError(false)
+    }, 0)
+
+    return () => clearTimeout(timer)
   }, [isOpen])
 
   useEffect(() => {
     const q = query.trim()
-    if (!q) { setResults([]); setError(false); setLoading(false); return }
 
-    setLoading(true)
-    setError(false)
     const timer = setTimeout(() => {
+      if (!q) {
+        setResults([])
+        setError(false)
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      setError(false)
       searchUsers(q)
         .then(setResults)
         .catch(() => setError(true))
@@ -63,34 +79,34 @@ export function NewChatModal({ isOpen, onClose, onSelect }: NewChatModalProps) {
     <div className={s.modalOverlay} onClick={onClose}>
       <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
         <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
-        <div className={s.title}>Новый чат</div>
+        <div className={s.title}>{t('messenger.newChat')}</div>
         <input
           className={s.searchInput}
-          placeholder="Имя, @login или почта"
+          placeholder={t('messenger.searchPlaceholder')}
           value={query}
           onChange={e => setQuery(e.target.value)}
           autoFocus
         />
         <div className={s.results}>
           {loading ? (
-            <div className={s.hint}>Поиск…</div>
+            <div className={s.hint}>{t('messenger.searching')}</div>
           ) : error ? (
-            <div className={s.hint}>Не удалось выполнить поиск</div>
+            <div className={s.hint}>{t('messenger.searchFailed')}</div>
           ) : !query.trim() ? (
-            <div className={s.hint}>Начните вводить имя, @login или почту</div>
+            <div className={s.hint}>{t('messenger.searchStartHint')}</div>
           ) : results.length === 0 ? (
-            <div className={s.hint}>Никого не найдено</div>
+            <div className={s.hint}>{t('messenger.emptySearch')}</div>
           ) : (
             <>
               {contacts.length > 0 && (
                 <>
-                  <div className={s.section}>Контакты</div>
+                  <div className={s.section}>{t('messenger.contacts')}</div>
                   {contacts.map(renderRow)}
                 </>
               )}
               {others.length > 0 && (
                 <>
-                  <div className={s.section}>Пользователи</div>
+                  <div className={s.section}>{t('messenger.users')}</div>
                   {others.map(renderRow)}
                 </>
               )}

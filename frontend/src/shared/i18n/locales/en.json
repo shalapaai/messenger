@@ -1,0 +1,182 @@
+{
+  "app": {
+    "brand": "TL:Messenger"
+  },
+  "language": {
+    "label": "Language",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "theme": {
+    "enableLight": "Switch to light theme",
+    "enableDark": "Switch to dark theme",
+    "appearance": "Appearance",
+    "accentColor": "Interface color",
+    "chooseAccent": "Choose {{color}} color"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "retry": "Retry",
+    "continue": "Continue",
+    "email": "Email",
+    "password": "Password",
+    "phone": "Phone",
+    "city": "City",
+    "department": "Department",
+    "status": "Status",
+    "login": "Username",
+    "displayName": "Display name",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "online": "online",
+    "recently": "last seen recently",
+    "loading": "Loading"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Enter your details to continue messaging.",
+    "loginButton": "Sign in",
+    "loginLoading": "Signing in...",
+    "loginFooter": "No account?",
+    "loginFooterLink": "Create one",
+    "loginHeroTitle": "Team messenger",
+    "loginHeroDescription": "Sign in to continue conversations, open chats, and keep important messages close.",
+    "registerTitle": "Registration",
+    "registerSubtitle": "Create an account to start using the messenger.",
+    "registerButton": "Register",
+    "registerLoading": "Creating account...",
+    "registerFooter": "Already have an account?",
+    "registerFooterLink": "Sign in",
+    "registerHeroTitle": "Start messaging",
+    "registerHeroDescription": "Create an account to message users and create personal or group chats.",
+    "emailPlaceholder": "Enter email",
+    "passwordPlaceholder": "Enter password",
+    "newPasswordPlaceholder": "Create password",
+    "repeatPassword": "Repeat password",
+    "repeatPasswordPlaceholder": "Repeat password",
+    "errors": {
+      "requiredLogin": "Enter email and password",
+      "requiredRegister": "Fill in all fields",
+      "invalidEmail": "Enter a valid email address",
+      "shortPassword": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "loginFailed": "Could not sign in. Check your email and password",
+      "registerFailed": "Could not register. This email may already be in use"
+    }
+  },
+  "profileSetup": {
+    "heroTitle": "Set up your profile",
+    "heroDescription": "Add a name, status, and avatar so people can recognize you.",
+    "displayNamePlaceholder": "For example, Nicholas",
+    "loginPlaceholder": "for example, nikolay",
+    "statusPlaceholder": "For example, available",
+    "cityPlaceholder": "For example, Moscow",
+    "departmentPlaceholder": "For example, Engineering",
+    "errors": {
+      "avatarTooLarge": "Avatar must not exceed 5 MB",
+      "loginTaken": "Username is already taken",
+      "saveFailed": "Could not save profile. Please try again.",
+      "displayNameRequired": "Enter display name",
+      "loginRequired": "Enter username",
+      "loginFormat": "3-30 characters: letters, digits, and _"
+    }
+  },
+  "avatar": {
+    "fallbackLabel": "User avatar",
+    "choose": "Choose photo",
+    "replace": "Replace photo",
+    "remove": "Remove photo",
+    "color": "Avatar color",
+    "chooseColor": "Color {{color}}",
+    "hint": "PNG, JPG, or WEBP",
+    "cropTitle": "Crop photo",
+    "zoom": "Zoom",
+    "savePhoto": "Save photo",
+    "cropSave": "Save"
+  },
+  "profile": {
+    "open": "Open profile",
+    "logout": "Log out",
+    "logoutAccount": "Log out",
+    "edit": "Edit profile",
+    "email": "Email",
+    "chats": "Chats",
+    "profile": "Profile",
+    "editTitle": "Edit profile",
+    "saveFailed": "Could not save profile. Please try again.",
+    "contact": "Contact"
+  },
+  "messenger": {
+    "messages": "Messages",
+    "newChat": "New chat",
+    "createGroup": "Create group",
+    "groupCreationInProgress": "Group creation is still in development",
+    "search": "Search",
+    "searchOrNewChat": "Search or new chat",
+    "newUsers": "New users",
+    "searching": "Searching…",
+    "searchFailed": "Could not search",
+    "searchStartHint": "Start typing a name, @username, or email",
+    "searchPlaceholder": "Name, @username, or email",
+    "contacts": "Contacts",
+    "users": "Users",
+    "newChatDraftName": "New chat",
+    "tabs": {
+      "all": "All",
+      "direct": "Direct",
+      "group": "Groups"
+    },
+    "loadChatsFailed": "Could not load chats",
+    "emptySearch": "Nothing found",
+    "groupBadge": "GROUP",
+    "noMessages": "No messages",
+    "selectChatTitle": "Select a chat",
+    "selectChatText": "Choose a chat from the list on the left to start messaging",
+    "typing": "typing...",
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members",
+    "loadConversationFailed": "Could not load conversation",
+    "startChat": "Start messaging",
+    "firstMessage": "Write the first message to {{name}} 👋",
+    "historyStart": "Start of conversation",
+    "sendFailedRetry": "⚠ Not sent · Retry",
+    "messagePlaceholder": "Write a message…",
+    "deletedMessage": "Message deleted",
+    "deleteMessage": "Delete message",
+    "confirmDeleteMessage": "Delete message?",
+    "sendFailed": "Could not send the message. Please try again.",
+    "deleteMessageFailed": "Could not delete the message.",
+    "deleteChat": "Delete chat",
+    "deleteChatTitle": "Delete chat?",
+    "deleteChatText": "The entire conversation with {{name}} will be permanently deleted.",
+    "deleteChatFailed": "Could not delete chat.",
+    "leaveGroupFailed": "Could not leave group."
+  },
+  "group": {
+    "members_one": "Member ({{count}})",
+    "members_other": "Members ({{count}})",
+    "memberCount_one": "{{count}} member",
+    "memberCount_other": "{{count}} members",
+    "addMember": "Add member",
+    "editGroup": "Edit group",
+    "leaveGroup": "Leave group",
+    "leaveConfirm": "Leave group?",
+    "label": "group",
+    "roles": {
+      "admin": "Admin",
+      "member": "Member"
+    }
+  },
+  "connection": {
+    "connected": "✓ Connected",
+    "reconnecting": "⟳ Reconnecting...",
+    "disconnected": "No connection"
+  },
+  "errors": {
+    "imagePrepare": "Could not prepare image",
+    "imageCrop": "Could not crop image",
+    "imageLoad": "Could not load image"
+  }
+}

@@ -1,8 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { ProfileSetupForm } from '../../features/profile/ProfileSetupForm'
 import { AuthLayout } from '../../widgets/AuthLayout'
 import styles from './ProfileSetupPage.module.css'
 
 function ProfileSetupPage() {
+  const { t } = useTranslation()
+
   return (
     <div className={styles.page}>
       <div className={styles.blobPrimary} />
@@ -10,8 +13,8 @@ function ProfileSetupPage() {
       <div className={styles.blobAccent} />
 
       <AuthLayout
-        title="Настройте профиль"
-        description="Добавьте имя, статус и аватар, чтобы собеседникам было проще узнать вас."
+        title={t('profileSetup.heroTitle')}
+        description={t('profileSetup.heroDescription')}
         isTitleWrapped
       >
         <ProfileSetupForm />

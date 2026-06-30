@@ -1,3 +1,5 @@
+import i18n from '../../i18n'
+
 export type CroppedAreaPixels = {
   x: number
   y: number
@@ -16,7 +18,7 @@ export async function getCroppedImage(
   const context = canvas.getContext('2d')
 
   if (!context) {
-    throw new Error('Не удалось подготовить изображение')
+    throw new Error(i18n.t('errors.imagePrepare'))
   }
 
   canvas.width = croppedAreaPixels.width
@@ -37,7 +39,7 @@ export async function getCroppedImage(
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((result) => {
       if (!result) {
-        reject(new Error('Не удалось обрезать изображение'))
+        reject(new Error(i18n.t('errors.imageCrop')))
         return
       }
 
@@ -54,7 +56,7 @@ function createImage(src: string) {
 
     image.addEventListener('load', () => resolve(image))
     image.addEventListener('error', () =>
-      reject(new Error('Не удалось загрузить изображение')),
+      reject(new Error(i18n.t('errors.imageLoad'))),
     )
 
     image.crossOrigin = 'anonymous'

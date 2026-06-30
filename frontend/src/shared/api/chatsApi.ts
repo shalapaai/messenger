@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient'
 import { getMyUserId } from '../lib/auth/authTokens'
+import i18n, { getCurrentLocale } from '../i18n'
 import type { Chat, Message } from '../types/messenger'
 
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
@@ -31,20 +32,22 @@ export function initials(name: string | null): string {
 function formatTime(iso: string): string {
   const d   = new Date(iso)
   const now = new Date()
+  const locale = getCurrentLocale()
   if (d.toDateString() === now.toDateString())
-    return d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера'
-  return d.toLocaleDateString('ru', { day: '2-digit', month: '2-digit' })
+  if (d.toDateString() === yesterday.toDateString()) return i18n.t('common.yesterday')
+  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
 }
 
 function formatDate(iso: string): string {
   const d   = new Date(iso)
   const now = new Date()
-  if (d.toDateString() === now.toDateString()) return 'Сегодня'
+  const locale = getCurrentLocale()
+  if (d.toDateString() === now.toDateString()) return i18n.t('common.today')
   const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера'
-  return d.toLocaleDateString('ru', { day: 'numeric', month: 'long' })
+  if (d.toDateString() === yesterday.toDateString()) return i18n.t('common.yesterday')
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long' })
 }
 
 let _msgId = 100_000
@@ -61,7 +64,7 @@ export async function fetchChats(): Promise<Chat[]> {
   const res = await apiClient.get<ChatSummaryDto[]>('/chats')
   return res.data.map(dto => ({
     id:          dto.id,
-    name:        dto.name ?? 'Личный чат',
+    name:        dto.name ?? i18n.t('messenger.tabs.direct'),
     initials:    initials(dto.name),
     color:       dto.avatarColor ?? colorFromId(dto.id),
     avatarUrl:   dto.avatarUrl,

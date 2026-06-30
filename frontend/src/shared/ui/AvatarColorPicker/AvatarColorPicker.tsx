@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { AVATAR_COLORS } from '../../lib/avatarColors'
 import s from './AvatarColorPicker.module.css'
 
@@ -7,13 +8,15 @@ interface AvatarColorPickerProps {
 }
 
 export function AvatarColorPicker({ value, onChange }: AvatarColorPickerProps) {
+  const { t } = useTranslation()
+
   return (
     <div className={s.picker}>
       {AVATAR_COLORS.map(color => (
         <button
           key={color}
           type="button"
-          aria-label={`Цвет ${color}`}
+          aria-label={t('avatar.chooseColor', { color })}
           aria-pressed={value === color}
           className={s.swatch}
           style={{

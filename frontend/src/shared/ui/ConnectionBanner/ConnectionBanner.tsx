@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useConnectionStore } from '../../api/connectionStore'
 import { signalR } from '../../api/signalrClient'
 import s from './ConnectionBanner.module.css'
 
 export function ConnectionBanner() {
+  const { t } = useTranslation()
   const status = useConnectionStore((st) => st.status)
   const [visible, setVisible] = useState(false)
   const [justConnected, setJustConnected] = useState(false)
@@ -32,13 +34,13 @@ export function ConnectionBanner() {
 
   return (
     <div className={`${s.banner} ${s[justConnected ? 'connected' : status]}`}>
-      {justConnected && '✓ Подключено'}
-      {!justConnected && status === 'reconnecting' && '⟳ Переподключение...'}
+      {justConnected && t('connection.connected')}
+      {!justConnected && status === 'reconnecting' && t('connection.reconnecting')}
       {!justConnected && status === 'disconnected' && (
         <>
-          Нет соединения
+          {t('connection.disconnected')}
           <button className={s.retryBtn} onClick={() => signalR.connect().catch(console.error)}>
-            Повторить
+            {t('common.retry')}
           </button>
         </>
       )}
