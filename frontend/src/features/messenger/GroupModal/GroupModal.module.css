@@ -1,7 +1,7 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(20,27,46,0.45);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,7 +10,7 @@
 }
 
 .modalPanel {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 24px;
   padding: 32px;
   width: 100%;
@@ -18,7 +18,7 @@
   position: relative;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(20,27,46,0.18);
+  box-shadow: var(--shadow-panel);
 }
 
 .modalClose {
@@ -29,39 +29,39 @@
   height: 32px;
   border-radius: 8px;
   border: none;
-  background: #f5f6fa;
+  background: var(--color-surface-muted);
   cursor: pointer;
   font-size: 14px;
-  color: #56607a;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
 }
 
-.modalClose:hover { background: #eceef4; }
+.modalClose:hover { background: var(--color-border); }
 
-.umAvatar { width: 80px; height: 80px; border-radius: 22px; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
+.umAvatar { width: 80px; height: 80px; border-radius: 22px; color: var(--color-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
 .umName { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
-.umStatus { font-size: 14px; color: #8a93a6; text-align: center; margin-bottom: 28px; }
-.umDivider { height: 1px; background: #eceef4; margin: 0 -32px 24px; }
+.umStatus { font-size: 14px; color: var(--color-text-subtle); text-align: center; margin-bottom: 28px; }
+.umDivider { height: 1px; background: var(--color-border); margin: 0 -32px 24px; }
 .umSectionRow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.umSection { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; color: #a6aebf; text-transform: uppercase; margin-bottom: 0; }
-.umAddMemberBtn { width: 26px; height: 26px; border-radius: 50%; border: none; background: #eaf0ff; color: #2c5bf0; font-size: 15px; font-weight: 600; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
-.umAddMemberBtn:hover { background: #d4e2ff; }
+.umSection { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; color: var(--color-text-faint); text-transform: uppercase; margin-bottom: 0; }
+.umAddMemberBtn { width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--color-primary-softer); color: var(--color-primary); font-size: 15px; font-weight: 600; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+.umAddMemberBtn:hover { background: var(--color-primary-soft); }
 .umMemberList { display: flex; flex-direction: column; }
-.umMemberRow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f2f7; }
+.umMemberRow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--color-border-soft); }
 .umMemberRow:last-child { border-bottom: none; }
 .umMemberRowClickable { cursor: pointer; border-radius: 12px; transition: background 0.12s; }
-.umMemberRowClickable:hover { background: #f5f6fa; }
+.umMemberRowClickable:hover { background: var(--color-surface-muted); }
 .umMemberAvatarWrap { position: relative; flex-shrink: 0; }
-.umMemberAvatar { width: 40px; height: 40px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
-.umMemberOnlineDot { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: #22b07d; border: 2px solid #fff; }
+.umMemberAvatar { width: 40px; height: 40px; border-radius: 50%; color: var(--color-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+.umMemberOnlineDot { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--color-success); border: 2px solid var(--color-surface); }
 .umMemberName { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.umRoleBadge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; background: #eaf0ff; color: #2c5bf0; flex-shrink: 0; }
-.umRoleBadgeAdmin { background: #fff4e6; color: #e07b2c; }
+.umRoleBadge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; background: var(--color-primary-softer); color: var(--color-primary); flex-shrink: 0; }
+.umRoleBadgeAdmin { background: var(--color-warning-soft); color: var(--color-warning); }
 .umGroupActions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
-.umEditGroupBtn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: #2c5bf0; color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
-.umEditGroupBtn:hover { background: #1f4bdd; }
-.umLeaveGroupBtn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: #fff0f0; color: #e03b3b; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
-.umLeaveGroupBtn:hover { background: #ffd8d8; }
+.umEditGroupBtn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--color-primary); color: var(--color-on-primary); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+.umEditGroupBtn:hover { background: var(--color-primary-hover); }
+.umLeaveGroupBtn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--color-danger-soft); color: var(--color-danger-strong); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+.umLeaveGroupBtn:hover { background: var(--color-danger-soft-hover); }

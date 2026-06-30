@@ -40,7 +40,7 @@
   margin: 24px 0 0;
   font-size: 19px;
   line-height: 1.5;
-  color: #5f6673;
+  color: var(--color-text-muted);
 }
 
 .titleWrapped .title {
@@ -48,12 +48,20 @@
 }
 
 .card {
+  position: relative;
   width: 100%;
   padding: 32px;
   border: 1px solid var(--color-border);
   border-radius: 28px;
   background: var(--color-surface);
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-panel);
+}
+
+.cardActions {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1;
 }
 
 /* iPad / планшеты */

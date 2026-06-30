@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
 import { useUserProfile } from '../../shared/context/useUserProfile'
+import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
 import s from './IconNav.module.css'
 
 interface IconNavProps {
@@ -31,6 +32,7 @@ export function IconNav({ onProfileOpen, userInitials, userAvatarUrl, userAvatar
     <nav className={s.iconNav}>
       <div className={s.iconNavLogo}>TL</div>
       <div className={s.iconNavBottom}>
+        <ThemeModeToggle />
         <div className={s.avatarMenuWrap}>
           {menuOpen && (
             <div className={s.avatarMenu}>

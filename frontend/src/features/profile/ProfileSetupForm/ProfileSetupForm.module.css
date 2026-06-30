@@ -28,7 +28,7 @@
 }
 
 .label {
-  color: #334155;
+  color: var(--color-text-muted);
 
   font-size: 14px;
   font-weight: 600;
@@ -39,12 +39,12 @@
   min-height: 48px;
   padding: 0 14px;
 
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 14px;
   outline: none;
 
-  background: rgba(255, 255, 255, 0.96);
-  color: #0f172a;
+  background: var(--color-surface);
+  color: var(--color-text);
 
   font: inherit;
   font-size: 15px;
@@ -56,23 +56,23 @@
 }
 
 .input::placeholder {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .input:hover {
-  border-color: #94a3b8;
+  border-color: var(--color-text-subtle);
 }
 
 .input:focus {
-  border-color: #2563eb;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-focus);
 }
 
 .error {
   margin: -4px 0 0;
 
-  color: #dc2626;
+  color: var(--color-danger);
 
   font-size: 14px;
   line-height: 1.4;
@@ -85,8 +85,8 @@
   border: none;
   border-radius: 14px;
 
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 
   font: inherit;
   font-size: 15px;
@@ -101,7 +101,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--color-primary-hover);
 }
 
 .submitButton:active:not(:disabled) {
@@ -132,21 +132,21 @@
 .required {
   margin-left: 4px;
 
-  color: #dc2626;
+  color: var(--color-danger);
 }
 
 .inputError,
 .inputError:hover,
 .inputError:focus {
-  border-color: #dc2626;
+  border-color: var(--color-danger);
 }
 
 .inputError:focus {
-  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+  box-shadow: var(--shadow-danger-focus);
 }
 
 .fieldError {
-  color: #dc2626;
+  color: var(--color-danger);
 
   font-size: 13px;
   line-height: 1.35;
@@ -156,9 +156,9 @@
   display: flex;
   align-items: center;
 
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--color-surface);
 
   transition:
     border-color 0.2s ease,
@@ -167,29 +167,29 @@
 }
 
 .loginInputWrapper:hover {
-  border-color: #94a3b8;
+  border-color: var(--color-text-subtle);
 }
 
 .loginInputWrapper:focus-within {
-  border-color: #2563eb;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-focus);
 }
 
 .loginInputWrapperError,
 .loginInputWrapperError:hover,
 .loginInputWrapperError:focus-within {
-  border-color: #dc2626;
+  border-color: var(--color-danger);
 }
 
 .loginInputWrapperError:focus-within {
-  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+  box-shadow: var(--shadow-danger-focus);
 }
 
 .loginPrefix {
   padding: 0 0 0 14px;
 
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 
   font-size: 15px;
   font-weight: 500;
@@ -206,12 +206,12 @@
   outline: none;
 
   background: transparent;
-  color: #0f172a;
+  color: var(--color-text);
 
   font: inherit;
   font-size: 15px;
 }
 
 .loginInput::placeholder {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }

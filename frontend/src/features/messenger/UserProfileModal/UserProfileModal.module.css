@@ -1,7 +1,7 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(20,27,46,0.45);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,7 +10,7 @@
 }
 
 .modalPanel {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 24px;
   padding: 32px;
   width: 100%;
@@ -18,7 +18,7 @@
   position: relative;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(20,27,46,0.18);
+  box-shadow: var(--shadow-panel);
 }
 
 .modalClose {
@@ -29,26 +29,26 @@
   height: 32px;
   border-radius: 8px;
   border: none;
-  background: #f5f6fa;
+  background: var(--color-surface-muted);
   cursor: pointer;
   font-size: 14px;
-  color: #56607a;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
 }
 
-.modalClose:hover { background: #eceef4; }
+.modalClose:hover { background: var(--color-border); }
 
-.umAvatar { width: 80px; height: 80px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
+.umAvatar { width: 80px; height: 80px; border-radius: 50%; color: var(--color-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
 .umAvatarImg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; display: block; }
-.umLoading { font-size: 13px; color: #a6aebf; text-align: center; margin-bottom: 16px; }
+.umLoading { font-size: 13px; color: var(--color-text-faint); text-align: center; margin-bottom: 16px; }
 .umName { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
-.umStatus { font-size: 14px; color: #8a93a6; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; }
-.umStatusDot { width: 8px; height: 8px; border-radius: 50%; background: #22b07d; flex-shrink: 0; display: inline-block; }
-.umDivider { height: 1px; background: #eceef4; margin: 0 -32px 24px; }
-.umSection { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; color: #a6aebf; text-transform: uppercase; margin-bottom: 14px; }
+.umStatus { font-size: 14px; color: var(--color-text-subtle); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; }
+.umStatusDot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); flex-shrink: 0; display: inline-block; }
+.umDivider { height: 1px; background: var(--color-border); margin: 0 -32px 24px; }
+.umSection { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; color: var(--color-text-faint); text-transform: uppercase; margin-bottom: 14px; }
 .umField { display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px; }
-.umFieldLabel { font-size: 12px; font-weight: 600; color: #a6aebf; }
-.umFieldValue { font-size: 15px; font-weight: 600; color: #141b2e; }
+.umFieldLabel { font-size: 12px; font-weight: 600; color: var(--color-text-faint); }
+.umFieldValue { font-size: 15px; font-weight: 600; color: var(--color-text); }

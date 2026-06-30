@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Filter, ModalUser } from '../../shared/types/messenger'
 import { colorFromId, initials as getInitials } from '../../shared/api/chatsApi'
@@ -16,6 +16,7 @@ import { ProfilePanel }     from '../../widgets/ProfilePanel'
 import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
+import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
 import s from './MessengerPage.module.css'
 
 export function MessengerPage() {
@@ -30,6 +31,8 @@ export function MessengerPage() {
   const [editOpen,       setEditOpen]       = useState(false)
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
+  const startTypingRef = useRef<() => void>(() => undefined)
+  const stopTypingRef = useRef<() => void>(() => undefined)
 
   // ── Реальный профиль (вместо мок-"Анны Соколовой") ─────────────────────────
   const profileInitials = profile
@@ -46,7 +49,7 @@ export function MessengerPage() {
     senderId:        profile?.userId      ?? 'me',
     senderName:      profile?.displayName ?? '',
     senderInitials:  profileInitials,
-    senderColor:     profile?.avatarColor ?? '#2C5BF0',
+    senderColor:     profile?.avatarColor ?? 'var(--color-primary)',
     senderAvatarUrl: profile?.avatarUrl ?? null,
   }
 
@@ -73,8 +76,8 @@ export function MessengerPage() {
 
   // ── SignalR: чужая печать, своя печать (дебаунс), отправка ─────────────────
   const typingIndicator = useTypingIndicator(
-    () => startTyping(),
-    () => stopTyping(),
+    () => startTypingRef.current(),
+    () => stopTypingRef.current(),
   )
 
   const { sendMessage: signalRSend, startTyping, stopTyping } = useSignalR({
@@ -83,6 +86,11 @@ export function MessengerPage() {
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
   })
+
+  useEffect(() => {
+    startTypingRef.current = startTyping
+    stopTypingRef.current = stopTyping
+  }, [startTyping, stopTyping])
 
   // ── Подгрузка истории вверх по скроллу ──────────────────────────────────────
   useEffect(() => {
@@ -146,16 +154,19 @@ export function MessengerPage() {
           ? <button className={s.topBarBack} onClick={() => navigate('/chats')}>‹</button>
           : <div className={s.topBarLogo}>TL:MESSENGER</div>
         }
-        <button
-          className={s.topBarUserBtn}
-          style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
-          onClick={() => setProfileOpen(true)}
-        >
-          {profile?.avatarUrl
-            ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
-            : profileInitials
-          }
-        </button>
+        <div className={s.topBarActions}>
+          <ThemeModeToggle />
+          <button
+            className={s.topBarUserBtn}
+            style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
+            onClick={() => setProfileOpen(true)}
+          >
+            {profile?.avatarUrl
+              ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
+              : profileInitials
+            }
+          </button>
+        </div>
       </header>
 
       <div className={s.body}>

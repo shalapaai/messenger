@@ -2,6 +2,9 @@ import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
 import { useUserProfile } from '../../shared/context/useUserProfile'
+import { useTheme } from '../../shared/context/useTheme'
+import { accentColors, type AccentColor } from '../../shared/context/themeContextValue'
+import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
 import type { UserProfile } from '../../shared/types/user'
 import s from './ProfilePanel.module.css'
 
@@ -26,6 +29,7 @@ function formatDate(isoDate: string): string {
 export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: ProfilePanelProps) {
   const navigate = useNavigate()
   const { clearProfile } = useUserProfile()
+  const { accentColor, setAccentColor } = useTheme()
 
   if (!isOpen) return null
 
@@ -71,6 +75,26 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
               <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Эл. почта</span><span className={s.ppDetailValue}>{profile.email}</span></div>
               {profile.phone && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Телефон</span><span className={s.ppDetailValue}>{profile.phone}</span></div>}
               {profile.department && <div className={s.ppDetailRow}><span className={s.ppDetailLabel}>Отдел</span><span className={s.ppDetailValue}>{profile.department}</span></div>}
+            </div>
+            <div className={s.ppDivider} />
+            <div className={s.ppThemeSettings}>
+              <div className={s.ppSettingsHeader}>
+                <span className={s.ppSettingsTitle}>Оформление</span>
+                <ThemeModeToggle />
+              </div>
+              <div className={s.ppAccentList} aria-label="Цвет интерфейса">
+                {accentColors.map((color: AccentColor) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`${s.ppAccentSwatch} ${accentColor === color ? s.ppAccentSwatchActive : ''}`}
+                    data-accent-color={color}
+                    onClick={() => setAccentColor(color)}
+                    aria-label={`Выбрать цвет ${color}`}
+                    aria-pressed={accentColor === color}
+                  />
+                ))}
+              </div>
             </div>
             <button className={s.ppEditBtn} onClick={onEdit}>✎ Изменить профиль</button>
             <button className={s.ppLogoutBtn} onClick={handleLogout}>Выйти из аккаунта</button>
