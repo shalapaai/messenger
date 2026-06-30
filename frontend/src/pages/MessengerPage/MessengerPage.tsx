@@ -18,7 +18,6 @@ import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
 import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
-import { NewChatModal }     from '../../features/messenger/NewChatModal'
 import s from './MessengerPage.module.css'
 
 interface DraftUserState {
@@ -41,7 +40,6 @@ export function MessengerPage() {
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
-  const [newChatOpen,    setNewChatOpen]    = useState(false)
   const startTypingRef = useRef<() => void>(() => undefined)
   const stopTypingRef = useRef<() => void>(() => undefined)
 
@@ -207,11 +205,6 @@ export function MessengerPage() {
     }
   }
 
-  function handleSelectSearchUser(user: UserSearchResult) {
-    setNewChatOpen(false)
-    navigateToUserChat(user)
-  }
-
   const onlineStatuses = useOnlineStore(s => s.statuses)
 
   const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0)
@@ -281,7 +274,7 @@ export function MessengerPage() {
           onFilterChange={setFilter}
           onQueryChange={setQuery}
           onSelect={cid => navigate(`/chats/${cid}`)}
-          onNewChat={() => setNewChatOpen(true)}
+          onNewChat={() => alert('Создание групп пока в разработке')}
           onUserClick={userId => {
             const chat = chats.find(c => c.otherUserId === userId)
             openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
@@ -382,11 +375,6 @@ export function MessengerPage() {
         />
       )}
 
-      <NewChatModal
-        isOpen={newChatOpen}
-        onClose={() => setNewChatOpen(false)}
-        onSelect={handleSelectSearchUser}
-      />
     </div>
   )
 }
