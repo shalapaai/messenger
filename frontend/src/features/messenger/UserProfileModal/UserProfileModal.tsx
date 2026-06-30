@@ -107,7 +107,7 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
             <button
               type="button"
               className={s.confirmDelete}
-              onClick={() => { setConfirmDelete(false); onDeleteChat() }}
+              onClick={() => { setConfirmDelete(false); onDeleteChat(); onClose() }}
             >
               Удалить
             </button>
