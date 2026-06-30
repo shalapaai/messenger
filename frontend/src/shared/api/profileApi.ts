@@ -58,4 +58,8 @@ export const profileApi = {
     })
     return res.data.avatarUrl
   },
+
+  async removeAvatar(): Promise<void> {
+    await apiClient.delete('/users/me/avatar')
+  },
 }

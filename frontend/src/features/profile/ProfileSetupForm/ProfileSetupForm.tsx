@@ -134,6 +134,7 @@ function ProfileSetupForm() {
             avatarPreview={avatarPreview}
             color={avatarColor}
             onChange={handleAvatarChange}
+            onRemove={() => { setAvatarPreview(undefined); setCroppedAvatarFile(null) }}
           />
           <div className={styles.colorPickerWrap}>
             <span className={styles.colorPickerLabel}>Цвет аватарки</span>

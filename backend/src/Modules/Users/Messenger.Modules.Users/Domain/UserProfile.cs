@@ -60,6 +60,12 @@ public sealed class UserProfile : AggregateRoot<Guid>
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void ClearAvatarUrl()
+    {
+        AvatarUrl = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void SetAvatarColor(string color)
     {
         AvatarColor = color;

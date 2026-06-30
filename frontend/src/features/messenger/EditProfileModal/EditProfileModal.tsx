@@ -33,6 +33,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   const [editCity,    setEditCity]    = useState(profile.city ?? '')
   const [editDept,    setEditDept]    = useState(profile.department ?? '')
   const [avatarPreview,      setAvatarPreview]      = useState<string | undefined>(undefined)
+  const [avatarRemoved,      setAvatarRemoved]      = useState(false)
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
   const [croppedAvatarFile,  setCroppedAvatarFile]  = useState<File | null>(null)
   const [cropImageSrc,       setCropImageSrc]       = useState<string | undefined>(undefined)
@@ -88,7 +89,9 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
         avatarColor,
       })
 
-      if (croppedAvatarFile) {
+      if (avatarRemoved && !croppedAvatarFile) {
+        await profileApi.removeAvatar()
+      } else if (croppedAvatarFile) {
         await profileApi.uploadAvatar(croppedAvatarFile)
       }
 
@@ -119,9 +122,10 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
             <div className={s.modalAvatarBlock}>
               <AvatarUpload
                 name={displayName}
-                avatarPreview={avatarPreview ?? profile.avatarUrl ?? undefined}
+                avatarPreview={avatarRemoved ? undefined : (avatarPreview ?? profile.avatarUrl ?? undefined)}
                 color={avatarColor}
-                onChange={handleAvatarChange}
+                onChange={(file) => { setAvatarRemoved(false); handleAvatarChange(file) }}
+                onRemove={() => { setAvatarPreview(undefined); setAvatarRemoved(true); setCroppedAvatarFile(null) }}
               />
               <div className={s.colorPickerWrap}>
                 <span className={s.colorPickerLabel}>Цвет аватарки</span>

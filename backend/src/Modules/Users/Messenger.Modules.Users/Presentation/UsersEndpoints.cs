@@ -6,6 +6,7 @@ using Messenger.Modules.Users.Application.Features.GetMe;
 using Messenger.Modules.Users.Application.Features.GetUserById;
 using Messenger.Modules.Users.Application.Features.SearchUsers;
 using Messenger.Modules.Users.Application.Features.UpdateUserProfile;
+using Messenger.Modules.Users.Application.Features.RemoveAvatar;
 using Messenger.Modules.Users.Application.Features.UploadAvatar;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -58,6 +59,12 @@ public static class UsersEndpoints
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
             .DisableAntiforgery();
 
+        group.MapDelete("/me/avatar", RemoveAvatar)
+            .WithName("RemoveUserAvatar")
+            .WithSummary("Удалить аватар")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         group.MapGet("/{userId:guid}", GetUserById)
             .WithName("GetUserById")
             .WithSummary("Получить профиль пользователя по ID")
@@ -106,6 +113,12 @@ public static class UsersEndpoints
         var command = new UpdateUserProfileCommand(ctx.GetUserId(), request.DisplayName, request.Status, request.Login, request.Phone, request.City, request.Department, request.AvatarColor);
         var result  = await sender.Send(command, ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> RemoveAvatar(ISender sender, HttpContext ctx, CancellationToken ct)
+    {
+        var result = await sender.Send(new RemoveUserAvatarCommand(ctx.GetUserId()), ct);
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToHttpResult();
     }
 
     private static async Task<IResult> UploadAvatar(

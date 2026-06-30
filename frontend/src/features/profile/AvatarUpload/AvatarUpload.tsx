@@ -8,9 +8,10 @@ type AvatarUploadProps = {
   avatarPreview?: string
   color?: string
   onChange: (file: File) => void
+  onRemove?: () => void
 }
 
-function AvatarUpload({ name, avatarPreview, color, onChange }: AvatarUploadProps) {
+function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: AvatarUploadProps) {
   const inputId = useId()
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -29,9 +30,22 @@ function AvatarUpload({ name, avatarPreview, color, onChange }: AvatarUploadProp
       <Avatar src={avatarPreview} name={name} size="large" color={color} />
 
       <div className={styles.actions}>
-        <label className={styles.uploadButton} htmlFor={inputId}>
-          {avatarPreview ? 'Заменить фото' : 'Выбрать фото'}
-        </label>
+        <div className={styles.buttonsRow}>
+          <label className={styles.uploadButton} htmlFor={inputId}>
+            {avatarPreview ? 'Заменить фото' : 'Выбрать фото'}
+          </label>
+
+          {avatarPreview && onRemove && (
+            <button
+              type="button"
+              className={styles.removeButton}
+              onClick={onRemove}
+              aria-label="Удалить фото"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         <p className={styles.hint}>PNG, JPG или WEBP</p>
       </div>
