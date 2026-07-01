@@ -6,6 +6,7 @@ import {
   type RefObject,
   type KeyboardEvent,
   type ChangeEvent,
+  type MouseEvent,
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmojiPicker } from '../../shared/ui/EmojiPicker'
@@ -27,22 +28,18 @@ type RenderedItem =
       senderSwitch: boolean
     }
 
-function TrashIcon({ className }: { className: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  )
+interface ContextMenuState {
+  x: number
+  y: number
+  msg: Message
 }
 
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
+  /** момент, до которого собеседник прочитал переписку — null, если ещё не прочитал ничего */
+  otherReadAt: string | null
   meSender: Sender
   typingChats: Record<string, boolean>
   loadingHistory: boolean
@@ -56,6 +53,7 @@ interface ChatWindowProps {
   onSend: (text: string) => void
   onRetry: (msg: Message) => void
   onDelete: (msg: Message) => void
+  onEdit: (msg: Message, newText: string) => void
   onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
@@ -65,6 +63,7 @@ export function ChatWindow({
   chatId,
   meta,
   messages,
+  otherReadAt,
   meSender,
   typingChats,
   loadingHistory,
@@ -78,12 +77,15 @@ export function ChatWindow({
   onSend,
   onRetry,
   onDelete,
+  onEdit,
   onTyping,
   onHeaderClick,
   onAvatarClick,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const [editingMsg, setEditingMsg] = useState<Message | null>(null)
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
   const [isEmojiSpaceReserved, setIsEmojiSpaceReserved] = useState(false)
   const [isInputLayerActive, setIsInputLayerActive] = useState(false)
@@ -161,6 +163,10 @@ export function ChatWindow({
       window.history.replaceState(state, '', window.location.href)
     }
   }, [closeInputLayer])
+
+  const isReadByOther = (msg: Message) =>
+    !!otherReadAt &&
+    new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
 
   useEffect(() => {
     if (!isEmojiPickerOpen) return
@@ -261,6 +267,51 @@ export function ChatWindow({
     }
   }, [discardInputHistoryLayer])
 
+  useEffect(() => {
+    if (!contextMenu) return
+
+    const close = () => setContextMenu(null)
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') close()
+    }
+    const messagesEl = messagesRef.current
+
+    window.addEventListener('click', close)
+    window.addEventListener('keydown', onKey)
+    messagesEl?.addEventListener('scroll', close)
+
+    return () => {
+      window.removeEventListener('click', close)
+      window.removeEventListener('keydown', onKey)
+      messagesEl?.removeEventListener('scroll', close)
+    }
+  }, [contextMenu, messagesRef])
+
+  function openContextMenu(event: MouseEvent, msg: Message) {
+    if (!msg.messageId) return
+
+    event.preventDefault()
+    setContextMenu({ x: event.clientX, y: event.clientY, msg })
+  }
+
+  function startEdit(msg: Message) {
+    setEditingMsg(msg)
+    setText(msg.text)
+    setContextMenu(null)
+    setIsEmojiPickerOpen(false)
+    textareaRef.current?.focus()
+  }
+
+  function cancelEdit() {
+    setEditingMsg(null)
+    setText('')
+  }
+
+  function requestDelete(msg: Message) {
+    setContextMenu(null)
+    if (window.confirm(t('messenger.confirmDeleteMessage'))) onDelete(msg)
+  }
+
   const rendered: RenderedItem[] = []
   let lastDate = ''
   for (let i = 0; i < messages.length; i++) {
@@ -284,7 +335,14 @@ export function ChatWindow({
   function send() {
     const trimmed = text.trim()
     if (!trimmed) return
-    onSend(trimmed)
+
+    if (editingMsg) {
+      if (trimmed !== editingMsg.text) onEdit(editingMsg, trimmed)
+      setEditingMsg(null)
+    } else {
+      onSend(trimmed)
+    }
+
     setText('')
     clearKeyboardCloseWait()
     setIsEmojiPickerOpen(false)
@@ -292,10 +350,14 @@ export function ChatWindow({
     textareaRef.current?.focus()
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
       send()
+    }
+
+    if (event.key === 'Escape' && editingMsg) {
+      cancelEdit()
     }
   }
 
@@ -330,6 +392,7 @@ export function ChatWindow({
     clearKeyboardCloseWait()
     ensureInputHistoryEntry()
     rememberKeyboardClosedViewportHeight()
+    setContextMenu(null)
     textareaRef.current?.blur()
     setIsEmojiSpaceReserved(true)
     setIsEmojiPickerOpen(true)
@@ -488,6 +551,7 @@ export function ChatWindow({
                       senderName: meSender.senderName,
                     }
                   : item.msg
+
                 return (
                   <div key={item.msg.id}>
                     {item.showName && (
@@ -530,33 +594,13 @@ export function ChatWindow({
                           item.showAvatar ? s.bubbleTail : '',
                           item.msg.status === 'pending' ? s.bubblePending : '',
                           item.msg.status === 'failed' ? s.bubbleFailed : '',
-                          item.msg.deleted ? s.bubbleDeleted : '',
                         ].join(' ')}
+                        onContextMenu={(event) =>
+                          openContextMenu(event, item.msg)
+                        }
                       >
-                        {item.msg.deleted
-                          ? t('messenger.deletedMessage')
-                          : item.msg.text}
+                        {item.msg.text}
                       </div>
-                      {item.msg.own &&
-                        !item.msg.deleted &&
-                        item.msg.status !== 'pending' &&
-                        item.msg.status !== 'failed' && (
-                          <button
-                            type="button"
-                            className={s.msgDeleteBtn}
-                            title={t('messenger.deleteMessage')}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  t('messenger.confirmDeleteMessage'),
-                                )
-                              )
-                                onDelete(item.msg)
-                            }}
-                          >
-                            <TrashIcon className={s.msgDeleteIcon} />
-                          </button>
-                        )}
                     </div>
                     <span className={s.msgTime}>
                       {item.msg.own && item.msg.status === 'pending' && (
@@ -566,11 +610,24 @@ export function ChatWindow({
                           ●
                         </span>
                       )}
-                      {item.msg.own && item.msg.status === 'sent' && (
-                        <span
-                          className={`${s.msgStatusIcon} ${s.msgStatusSent}`}
-                        >
-                          ✓
+                      {item.msg.own &&
+                        item.msg.status === 'sent' &&
+                        (isReadByOther(item.msg) ? (
+                          <span
+                            className={`${s.msgStatusIcon} ${s.msgStatusRead}`}
+                          >
+                            ✓✓
+                          </span>
+                        ) : (
+                          <span
+                            className={`${s.msgStatusIcon} ${s.msgStatusSent}`}
+                          >
+                            ✓
+                          </span>
+                        ))}
+                      {item.msg.edited && (
+                        <span className={s.msgEdited}>
+                          {t('messenger.edited')}
                         </span>
                       )}
                       {item.msg.time}
@@ -597,6 +654,19 @@ export function ChatWindow({
         className={`${s.inputArea} ${isEmojiSpaceReserved ? s.inputAreaEmojiOpen : ''}`}
         ref={emojiAreaRef}
       >
+        {editingMsg && (
+          <div className={s.editingBar}>
+            <span>{t('messenger.editingMessage')}</span>
+            <button
+              type="button"
+              className={s.editingBarCancel}
+              onClick={cancelEdit}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         <div className={s.inputBar}>
           <div className={s.messageInputShell}>
             <button
@@ -624,8 +694,8 @@ export function ChatWindow({
               placeholder={t('messenger.messagePlaceholder')}
               value={text}
               rows={1}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-                setText(e.target.value)
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                setText(event.target.value)
                 onTyping()
               }}
               onKeyDown={handleKeyDown}
@@ -671,6 +741,50 @@ export function ChatWindow({
           />
         </div>
       </div>
+
+      {contextMenu && (
+        <div
+          className={s.contextMenu}
+          style={{
+            left: Math.min(contextMenu.x, window.innerWidth - 190),
+            top: Math.min(
+              contextMenu.y,
+              window.innerHeight - (contextMenu.msg.own ? 156 : 120),
+            ),
+          }}
+        >
+          <button
+            type="button"
+            className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`}
+            onClick={() => requestDelete(contextMenu.msg)}
+          >
+            {t('messenger.deleteMessage')}
+          </button>
+          {contextMenu.msg.own && (
+            <button
+              type="button"
+              className={s.contextMenuItem}
+              onClick={() => startEdit(contextMenu.msg)}
+            >
+              {t('messenger.editMessage')}
+            </button>
+          )}
+          <button
+            type="button"
+            className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`}
+            disabled
+          >
+            {t('messenger.replyMessage')}
+          </button>
+          <button
+            type="button"
+            className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`}
+            disabled
+          >
+            {t('messenger.forwardMessage')}
+          </button>
+        </div>
+      )}
     </>
   )
 }

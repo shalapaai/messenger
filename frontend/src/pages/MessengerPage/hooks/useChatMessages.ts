@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
-import { deleteMessage as deleteMessageApi } from '../../../shared/api/messagesApi'
+import { deleteMessage as deleteMessageApi, editMessage as editMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage, MessageDeleted } from '../../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
 type SendFn = (content: string) => Promise<{ messageId: string }>
@@ -11,6 +11,8 @@ type SendFn = (content: string) => Promise<{ messageId: string }>
 interface UseChatMessagesOptions {
   /** Новое сообщение добавлено в текущий открытый чат — повод проскроллить вниз */
   onAppend?: (smooth: boolean) => void
+  /** Пришло чужое realtime-сообщение в чат, который открыт прямо сейчас — повод отметить чат прочитанным */
+  onIncomingRead?: (chatId: string) => void
 }
 
 /**
@@ -66,11 +68,16 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
 
     setChatMessages(prev => {
       // если чат ещё не открывали — его историю подтянет fetchMessages при открытии
-      if (!prev[msg.chatId]) return prev
+      const chatMsgs = prev[msg.chatId]
+      if (!chatMsgs) return prev
+      // сервер шлёт ReceiveMessage и в группу чата, и в личную группу участника —
+      // если получатель уже состоит в обеих (обычное дело), событие приходит дважды
+      if (chatMsgs.some(m => m.messageId === msg.messageId)) return prev
       return {
         ...prev,
-        [msg.chatId]: [...prev[msg.chatId], {
+        [msg.chatId]: [...chatMsgs, {
           id:              nextMessageId(),
+          messageId:       msg.messageId,
           text:            msg.content,
           own:             false,
           senderId:        msg.senderId,
@@ -79,12 +86,16 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           senderColor:     msg.senderAvatarColor,
           senderAvatarUrl: msg.senderAvatarUrl,
           time:            new Date(msg.sentAt).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+          sentAt:          msg.sentAt,
           date:            i18n.t('common.today'),
         }],
       }
     })
 
-    if (msg.chatId === id) opts.onAppend?.(true)
+    if (msg.chatId === id) {
+      opts.onAppend?.(true)
+      opts.onIncomingRead?.(msg.chatId)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
@@ -94,9 +105,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       if (!chatMsgs) return prev
       return {
         ...prev,
-        [event.chatId]: chatMsgs.map(m =>
-          m.messageId === event.messageId ? { ...m, text: '', deleted: true } : m
-        ),
+        [event.chatId]: chatMsgs.filter(m => m.messageId !== event.messageId),
       }
     })
   }, [])
@@ -106,8 +115,30 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     await deleteMessageApi(chatId, msg.messageId)
     setChatMessages(prev => ({
       ...prev,
+      [chatId]: (prev[chatId] ?? []).filter(m => m.id !== msg.id),
+    }))
+  }, [])
+
+  const handleEditedMessage = useCallback((event: MessageEdited) => {
+    setChatMessages(prev => {
+      const chatMsgs = prev[event.chatId]
+      if (!chatMsgs) return prev
+      return {
+        ...prev,
+        [event.chatId]: chatMsgs.map(m =>
+          m.messageId === event.messageId ? { ...m, text: event.newContent, edited: true } : m
+        ),
+      }
+    })
+  }, [])
+
+  const editMessage = useCallback(async (chatId: string, msg: Message, newText: string) => {
+    if (!msg.messageId) return
+    await editMessageApi(chatId, msg.messageId, newText)
+    setChatMessages(prev => ({
+      ...prev,
       [chatId]: (prev[chatId] ?? []).map(m =>
-        m.id === msg.id ? { ...m, text: '', deleted: true } : m
+        m.id === msg.id ? { ...m, text: newText, edited: true } : m
       ),
     }))
   }, [])
@@ -151,9 +182,11 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
 
   const send = useCallback((chatId: string, text: string, signalRSend: SendFn, meSender: Sender) => {
     const tempId = nextMessageId()
+    const now = new Date()
     const newMsg: Message = {
       ...meSender, id: tempId, text,
-      time: new Date().toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+      time: now.toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+      sentAt: now.toISOString(),
       date: i18n.t('common.today'),
       status: 'pending',
     }
@@ -180,11 +213,13 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     retryLoadInitial: () => id && loadInitial(id),
     handleIncomingMessage,
     handleDeletedMessage,
+    handleEditedMessage,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
     send,
     retry,
     deleteMessage,
+    editMessage,
   }
 }

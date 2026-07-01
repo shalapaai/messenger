@@ -11,6 +11,10 @@ export interface Chat {
   group: boolean
   /** userId собеседника — только для личных чатов, нужен для онлайн-статуса */
   otherUserId?: string
+  /** momент, до которого собеседник прочитал переписку — для галочек "прочитано" в реальном времени */
+  otherReadAt?: string | null
+  /** messageId последнего обработанного realtime-сообщения — защита от дублей при двойной доставке по сокету */
+  lastMessageId?: string
 }
 
 export interface ChatMeta {
@@ -42,12 +46,14 @@ export interface Message {
   senderColor: string
   senderAvatarUrl: string | null
   time: string
+  /** ISO-момент отправки — нужен, чтобы сверять с otherReadAt и решать, "прочитано" ли сообщение */
+  sentAt: string
   date: string
   status?: 'pending' | 'sent' | 'failed'
-  deleted?: boolean
+  edited?: boolean
 }
 
-export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date'>
+export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date' | 'sentAt'>
 
 export interface ModalUser {
   userId?: string

@@ -6,7 +6,7 @@ import type { Chat, Message } from '../types/messenger'
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
 
 interface LastMessageDto { messageId: string; senderId: string; content: string; sentAt: string }
-interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean }
+interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean; otherMemberLastReadAt: string | null }
 interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 
@@ -74,6 +74,7 @@ export async function fetchChats(): Promise<Chat[]> {
     online:      dto.isOnline,
     group:       dto.type === 'group',
     otherUserId: dto.otherUserId ?? undefined,
+    otherReadAt: dto.otherMemberLastReadAt,
   }))
 }
 
@@ -87,22 +88,31 @@ export async function fetchMessages(
   })
   const myId = getMyUserId()
 
-  const messages: Message[] = [...res.data.items].reverse().map(dto => ({
-    id:             nextMessageId(),
-    messageId:      dto.id,
-    text:           dto.content,
-    own:            dto.senderId === myId,
-    senderId:       dto.senderId,
-    senderName:     dto.senderName,
-    senderInitials: initials(dto.senderName),
-    senderColor:     dto.senderAvatarColor,
-    senderAvatarUrl: dto.senderAvatarUrl,
-    time:           formatTime(dto.sentAt),
-    date:           formatDate(dto.sentAt),
-    deleted:        dto.status === 'deleted',
-  }))
+  // удалённые сообщения не показываем вообще — ни истории, ни плейсхолдера "Сообщение удалено"
+  const messages: Message[] = [...res.data.items].reverse()
+    .filter(dto => dto.status !== 'deleted')
+    .map(dto => ({
+      id:             nextMessageId(),
+      messageId:      dto.id,
+      text:           dto.content,
+      own:            dto.senderId === myId,
+      senderId:       dto.senderId,
+      senderName:     dto.senderName,
+      senderInitials: initials(dto.senderName),
+      senderColor:     dto.senderAvatarColor,
+      senderAvatarUrl: dto.senderAvatarUrl,
+      time:           formatTime(dto.sentAt),
+      sentAt:         dto.sentAt,
+      date:           formatDate(dto.sentAt),
+    }))
 
   return { messages, nextCursor: res.data.nextCursor }
+}
+
+/** Отмечает чат прочитанным текущим пользователем — двигает LastReadAt, чтобы собеседник
+ *  увидел галочки "прочитано" в реальном времени (событие MessagesRead по SignalR). */
+export async function markChatRead(chatId: string): Promise<void> {
+  await apiClient.post(`/chats/${chatId}/read`)
 }
 
 /** Создаёт (или возвращает существующий) личный чат с пользователем — идемпотентно. */

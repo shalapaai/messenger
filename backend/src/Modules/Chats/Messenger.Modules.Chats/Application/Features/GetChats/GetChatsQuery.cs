@@ -13,4 +13,5 @@ public sealed record ChatSummaryDto(
     string?         AvatarColor,
     LastMessageDto? LastMessage,
     Guid?           OtherUserId,
-    bool            IsOnline);
+    bool            IsOnline,
+    DateTime?       OtherMemberLastReadAt);

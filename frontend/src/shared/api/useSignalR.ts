@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type TypingEvent, type UserOnlineEvent } from './signalrClient'
+import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent } from './signalrClient'
 import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
 export type { ConnectionStatus }
@@ -9,6 +9,7 @@ interface UseSignalROptions {
   onMessage?: (msg: IncomingMessage) => void
   onMessageEdited?: (event: MessageEdited) => void
   onMessageDeleted?: (event: MessageDeleted) => void
+  onMessagesRead?: (event: MessagesReadEvent) => void
   onTyping?: (event: TypingEvent) => void
   onStoppedTyping?: (event: TypingEvent) => void
   onUserOnline?: (event: UserOnlineEvent) => void
@@ -37,13 +38,14 @@ export function useSignalR(options: UseSignalROptions = {}) {
       options.onMessage       && signalR.onReceiveMessage(options.onMessage),
       options.onMessageEdited  && signalR.onMessageEdited(options.onMessageEdited),
       options.onMessageDeleted && signalR.onMessageDeleted(options.onMessageDeleted),
+      options.onMessagesRead  && signalR.onMessagesRead(options.onMessagesRead),
       options.onTyping        && signalR.onUserTyping(options.onTyping),
       options.onStoppedTyping && signalR.onUserStoppedTyping(options.onStoppedTyping),
       options.onUserOnline    && signalR.onUserOnline(options.onUserOnline),
     ].filter(Boolean) as Array<() => void>
 
     return () => off.forEach(fn => fn())
-  }, [options.onMessage, options.onMessageEdited, options.onMessageDeleted, options.onTyping, options.onStoppedTyping, options.onUserOnline])
+  }, [options.onMessage, options.onMessageEdited, options.onMessageDeleted, options.onMessagesRead, options.onTyping, options.onStoppedTyping, options.onUserOnline])
 
   const sendMessage = useCallback((content: string, replyToMessageId?: string) => {
     const { chatId } = optionsRef.current

@@ -19,6 +19,7 @@ RUN dotnet restore src/Api/Messenger.Api/Messenger.Api.csproj
 
 # ── Stage 2: Build & Publish ──────────────────────────────────────────────────
 FROM restore AS publish
+ARG CACHEBUST=1
 COPY backend/src/ ./src/
 RUN dotnet publish src/Api/Messenger.Api/Messenger.Api.csproj \
     --configuration Release \
