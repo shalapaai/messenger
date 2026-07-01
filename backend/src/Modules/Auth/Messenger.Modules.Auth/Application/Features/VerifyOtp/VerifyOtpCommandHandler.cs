@@ -31,6 +31,12 @@ public sealed class VerifyOtpCommandHandler(
         if (user is null)
             return Result.Failure<TokenPairDto>(Error.Unauthorized("Invalid or expired code"));
 
+        if (!user.IsEmailVerified)
+        {
+            user.VerifyEmail();
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+
         var accessToken       = jwtTokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshTokenValue = jwtTokenService.GenerateRefreshToken();
         var expirationDays    = configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays", 7);

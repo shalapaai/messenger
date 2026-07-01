@@ -75,9 +75,13 @@ public static class AuthEndpoints
         if (result.IsFailure)
             return result.Error.ToHttpResult();
 
-        var tokens = result.Value!;
-        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
-        return Results.Created("/api/auth/register", tokens);
+        var dto = result.Value!;
+
+        if (dto.RequiresOtp)
+            return Results.Accepted(value: dto);
+
+        AppendRefreshTokenCookie(httpContext.Response, dto.RefreshToken!, environment);
+        return Results.Created("/api/auth/register", dto);
     }
 
     private static async Task<IResult> Login(

@@ -7,18 +7,14 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 
 public sealed class LoginCommandHandler(
-    IUserAuthRepository  userRepository,
-    IPasswordHasher      passwordHasher,
-    IJwtTokenService     jwtTokenService,
+    IUserAuthRepository     userRepository,
+    IPasswordHasher         passwordHasher,
+    IJwtTokenService        jwtTokenService,
     IRefreshTokenRepository refreshTokenRepository,
-    IUnitOfWork          unitOfWork,
-    IEmailService        emailService,
-    IMemoryCache         cache,
-    IConfiguration       configuration)
+    IUnitOfWork             unitOfWork,
+    IConfiguration          configuration)
     : ICommandHandler<LoginCommand, LoginResultDto>
 {
-    private const string CacheKeyPrefix = "otp:";
-
     public async Task<Result<LoginResultDto>> Handle(LoginCommand command, CancellationToken ct)
     {
         var user = await userRepository.GetByEmailAsync(command.Email, ct);
@@ -26,24 +22,8 @@ public sealed class LoginCommandHandler(
         if (user is null || !passwordHasher.Verify(command.Password, user.PasswordHash))
             return Result.Failure<LoginResultDto>(Error.Unauthorized("Invalid email or password"));
 
-        var twoFactorEnabled = configuration.GetValue<bool>("TwoFactor:Enabled");
-
-        if (!twoFactorEnabled)
-        {
-            var tokens = await IssueTokensAsync(user, ct);
-            return Result.Success(LoginResultDto.WithTokens(tokens));
-        }
-
-        // Generate and cache a 6-digit OTP (5 min TTL)
-        var code = GenerateCode();
-        cache.Set(
-            CacheKeyPrefix + user.Email,
-            code,
-            new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
-
-        await emailService.SendOtpAsync(user.Email, code, ct);
-
-        return Result.Success(LoginResultDto.WithOtp(user.Email));
+        var tokens = await IssueTokensAsync(user, ct);
+        return Result.Success(LoginResultDto.WithTokens(tokens));
     }
 
     private async Task<TokenPairDto> IssueTokensAsync(Domain.UserAuth user, CancellationToken ct)
@@ -58,7 +38,4 @@ public sealed class LoginCommandHandler(
 
         return new TokenPairDto(accessToken.Token, refreshTokenValue, accessToken.ExpiresAt);
     }
-
-    private static string GenerateCode() =>
-        Random.Shared.Next(100_000, 999_999).ToString();
 }

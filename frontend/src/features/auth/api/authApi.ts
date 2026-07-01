@@ -24,8 +24,8 @@ export async function verifyOtp(email: string, code: string): Promise<AuthTokens
   return response.data
 }
 
-export async function register(data: AuthRequest) {
-  const response = await apiClient.post<AuthTokens>('/auth/register', data)
+export async function register(data: AuthRequest): Promise<LoginResult> {
+  const response = await apiClient.post<LoginResult>('/auth/register', data)
   return response.data
 }
 
