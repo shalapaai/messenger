@@ -6,15 +6,26 @@ type AuthRequest = {
   password: string
 }
 
-export async function login(data: AuthRequest) {
-  const response = await apiClient.post<AuthTokens>('/auth/login', data)
+export type LoginResult = {
+  requiresOtp: boolean
+  email?: string
+  accessToken?: string
+  refreshToken?: string
+  accessTokenExpiresAt?: string
+}
 
+export async function login(data: AuthRequest): Promise<LoginResult> {
+  const response = await apiClient.post<LoginResult>('/auth/login', data)
+  return response.data
+}
+
+export async function verifyOtp(email: string, code: string): Promise<AuthTokens> {
+  const response = await apiClient.post<AuthTokens>('/auth/verify-otp', { email, code })
   return response.data
 }
 
 export async function register(data: AuthRequest) {
   const response = await apiClient.post<AuthTokens>('/auth/register', data)
-
   return response.data
 }
 

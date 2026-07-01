@@ -4,6 +4,7 @@ using MediatR;
 using Messenger.Modules.Auth.Application.Features.Login;
 using Messenger.Modules.Auth.Application.Features.Logout;
 using Messenger.Modules.Auth.Application.Features.Register;
+using Messenger.Modules.Auth.Application.Features.VerifyOtp;
 using Messenger.Modules.Localization.Resources;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -23,7 +24,6 @@ public static class AuthEndpoints
         group.MapPost("/register", Register)
             .WithName("Register")
             .WithSummary("Регистрация нового пользователя")
-            .WithDescription("Создаёт аккаунт, возвращает access токен и устанавливает refresh токен в HttpOnly cookie.")
             .Produces<TokenPairDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
@@ -32,16 +32,23 @@ public static class AuthEndpoints
         group.MapPost("/login", Login)
             .WithName("Login")
             .WithSummary("Аутентификация")
-            .WithDescription("Возвращает access токен и устанавливает refresh токен в HttpOnly cookie.")
-            .Produces<TokenPairDto>()
+            .WithDescription("Если 2FA включена — возвращает { requiresOtp: true }. Иначе — токены.")
+            .Produces<LoginResultDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .AllowAnonymous();
+
+        group.MapPost("/verify-otp", VerifyOtp)
+            .WithName("VerifyOtp")
+            .WithSummary("Подтверждение кода из письма")
+            .WithDescription("Принимает email + 6-значный код, при успехе выдаёт токены.")
+            .Produces<TokenPairDto>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
             .AllowAnonymous();
 
         group.MapPost("/refresh", RefreshToken)
             .WithName("RefreshToken")
             .WithSummary("Обновление access токена")
-            .WithDescription("Читает refresh токен из HttpOnly cookie, возвращает новый access токен и обновляет refresh cookie.")
             .Produces<TokenPairDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .AllowAnonymous();
@@ -49,7 +56,6 @@ public static class AuthEndpoints
         group.MapPost("/logout", Logout)
             .WithName("Logout")
             .WithSummary("Выход из системы")
-            .WithDescription("Инвалидирует refresh токен из cookie и удаляет refresh cookie. Bearer-токен не требуется.")
             .Produces(StatusCodes.Status204NoContent)
             .AllowAnonymous();
 
@@ -67,9 +73,7 @@ public static class AuthEndpoints
         var result  = await sender.Send(command, ct);
 
         if (result.IsFailure)
-        {
             return result.Error.ToHttpResult();
-        }
 
         var tokens = result.Value!;
         AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
@@ -94,6 +98,28 @@ public static class AuthEndpoints
             return Results.UnprocessableEntity(new { code = result.Error.Code, description = message });
         }
 
+        var dto = result.Value!;
+
+        if (dto.RequiresOtp)
+            return Results.Accepted(value: dto);
+
+        AppendRefreshTokenCookie(httpContext.Response, dto.RefreshToken!, environment);
+        return Results.Ok(dto);
+    }
+
+    private static async Task<IResult> VerifyOtp(
+        VerifyOtpRequest request,
+        ISender sender,
+        HttpContext httpContext,
+        IHostEnvironment environment,
+        CancellationToken ct)
+    {
+        var command = new VerifyOtpCommand(request.Email, request.Code);
+        var result  = await sender.Send(command, ct);
+
+        if (result.IsFailure)
+            return result.Error.ToHttpResult();
+
         var tokens = result.Value!;
         AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
         return Results.Ok(tokens);
@@ -108,16 +134,13 @@ public static class AuthEndpoints
     {
         var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.Token;
         if (string.IsNullOrWhiteSpace(refreshToken))
-        {
             return Results.Unauthorized();
-        }
+
         var command = new Application.Features.RefreshToken.RefreshTokenCommand(refreshToken);
         var result  = await sender.Send(command, ct);
 
         if (result.IsFailure)
-        {
             return result.Error.ToHttpResult();
-        }
 
         var tokens = result.Value!;
         AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
@@ -133,9 +156,8 @@ public static class AuthEndpoints
     {
         var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.RefreshToken;
         if (!string.IsNullOrWhiteSpace(refreshToken))
-        {
             await sender.Send(new LogoutCommand(refreshToken), ct);
-        }
+
         DeleteRefreshTokenCookie(httpContext.Response, environment);
         return Results.NoContent();
     }
@@ -165,14 +187,15 @@ public static class AuthEndpoints
         return new CookieOptions
         {
             HttpOnly = true,
-            Secure = !environment.IsDevelopment(),
+            Secure   = !environment.IsDevelopment(),
             SameSite = environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
-            Expires = expires,
-            Path = "/api/auth"
+            Expires  = expires,
+            Path     = "/api/auth",
         };
     }
 }
 
 public sealed record RegisterRequest(string Email, string Password);
+public sealed record VerifyOtpRequest(string Email, string Code);
 public sealed record RefreshTokenRequest(string Token);
 public sealed record LogoutRequest(string RefreshToken);
