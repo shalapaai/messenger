@@ -37,6 +37,7 @@ public sealed class AuthModule : IModuleInstaller
         {
             services.AddOptions<ResendClientOptions>()
                 .Configure(o => o.ApiToken = configuration["Resend:ApiKey"]!);
+            services.AddHttpClient<ResendClient>();
             services.AddTransient<IResend, ResendClient>();
             services.AddScoped<IEmailService, ResendEmailService>();
         }
