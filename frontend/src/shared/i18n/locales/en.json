@@ -143,7 +143,6 @@
     "historyStart": "Start of conversation",
     "sendFailedRetry": "⚠ Not sent · Retry",
     "messagePlaceholder": "Write a message…",
-    "deletedMessage": "Message deleted",
     "deleteMessage": "Delete message",
     "confirmDeleteMessage": "Delete message?",
     "sendFailed": "Could not send the message. Please try again.",

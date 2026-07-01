@@ -12,4 +12,11 @@ internal sealed class ChatsModuleApi(IChatRepository chatRepository) : IChatsMod
         var chats = await chatRepository.GetByUserIdAsync(userId, ct);
         return Result.Success(chats.Select(c => c.Id.Value).ToList());
     }
+
+    public async Task<Result<List<Guid>>> GetMemberIdsAsync(Guid chatId, CancellationToken ct = default)
+    {
+        var chat = await chatRepository.GetByIdAsync(ChatId.From(chatId), ct);
+        if (chat is null) return Result.Failure<List<Guid>>(Error.NotFound("Chat"));
+        return Result.Success(chat.Members.Select(m => m.UserId).ToList());
+    }
 }

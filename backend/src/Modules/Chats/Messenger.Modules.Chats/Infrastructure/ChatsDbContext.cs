@@ -1,10 +1,12 @@
 namespace Messenger.Modules.Chats.Infrastructure;
 
+using MediatR;
 using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
+using Messenger.Shared.Kernel.Primitives;
 using Microsoft.EntityFrameworkCore;
 
-public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options)
+public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMediator mediator)
     : DbContext(options), IUnitOfWork
 {
     public DbSet<Chat> Chats => Set<Chat>();
@@ -45,8 +47,28 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options)
                 .HasConversion(v => v.ToString().ToLower(), v => Enum.Parse<ChatMemberRole>(v, true))
                 .HasMaxLength(10).IsRequired();
             b.Property(m => m.JoinedAt).HasColumnName("joined_at").IsRequired();
+            b.Property(m => m.LastReadAt).HasColumnName("last_read_at");
             b.HasIndex(m => m.UserId).HasDatabaseName("idx_chats_members_user_id");
             b.ToTable("members");
         });
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        var aggregates = ChangeTracker
+            .Entries<AggregateRoot<ChatId>>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+
+        var domainEvents = aggregates.SelectMany(a => a.DomainEvents).ToList();
+        aggregates.ForEach(a => a.ClearDomainEvents());
+
+        var result = await base.SaveChangesAsync(ct);
+
+        foreach (var @event in domainEvents)
+            await mediator.Publish(@event, ct);
+
+        return result;
     }
 }

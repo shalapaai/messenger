@@ -121,7 +121,6 @@
 .bubbleOwn { background: var(--color-primary); color: var(--color-on-primary); }
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
-.bubbleDeleted { background: #f1f2f7 !important; color: #a6aebf !important; border: 1px solid #eceef4; font-style: italic; }
 
 .msgDeleteBtn {
   width: 28px;
@@ -267,6 +266,7 @@
 .msgStatusIcon { margin-right: 3px; font-size: 10px; }
 .msgStatusPending { color: #a6aebf; animation: statusPulse 1.2s ease-in-out infinite; }
 .msgStatusSent    { color: #22b07d; }
+.msgStatusRead    { color: #4fa9f7; letter-spacing: -2px; }
 
 @keyframes statusPulse {
   0%, 100% { opacity: 1; }

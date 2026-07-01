@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { Filter, ModalUser, Message } from '../../shared/types/messenger'
-import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest } from '../../shared/api/chatsApi'
+import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead } from '../../shared/api/chatsApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
@@ -75,6 +75,7 @@ export function MessengerPage() {
   const loadChats   = useChatsStore((s) => s.loadChats)
   const resetUnread = useChatsStore((s) => s.resetUnread)
   const removeChat  = useChatsStore((s) => s.removeChat)
+  const handleMessagesRead = useChatsStore((s) => s.handleMessagesRead)
 
   useEffect(() => { loadChats() }, [loadChats])
   useEffect(() => { if (id) resetUnread(id) }, [id, resetUnread])
@@ -86,7 +87,13 @@ export function MessengerPage() {
     send, retry, deleteMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
+    onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
   })
+
+  // Чат открыт/выбран (включая повторный заход в уже загруженный чат) — отмечаем прочитанным
+  useEffect(() => {
+    if (id) markChatRead(id).catch(() => {})
+  }, [id])
 
   const scroll = useScrollRestore(messages)
 
@@ -100,6 +107,7 @@ export function MessengerPage() {
     chatId: id,
     onMessage: handleIncomingMessage,
     onMessageDeleted: handleDeletedMessage,
+    onMessagesRead: (event) => handleMessagesRead(event.chatId, event.readerId, event.readAt),
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
   })
@@ -291,6 +299,7 @@ export function MessengerPage() {
               chatId={chatId}
               meta={meta}
               messages={messages}
+              otherReadAt={activeChat?.otherReadAt ?? null}
               meSender={meSender}
               typingChats={typingIndicator.typingChats}
               loadingHistory={loadingHistory}

@@ -23,6 +23,8 @@ interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
+  /** момент, до которого собеседник прочитал переписку — null, если ещё не прочитал ничего */
+  otherReadAt: string | null
   meSender: Sender
   typingChats: Record<string, boolean>
   loadingHistory: boolean
@@ -42,7 +44,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({
-  chatId, meta, messages, meSender, typingChats, loadingHistory, historyLoaded,
+  chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
   onSend, onRetry, onDelete, onTyping, onHeaderClick, onAvatarClick,
@@ -50,6 +52,9 @@ export function ChatWindow({
   const { t } = useTranslation()
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const isReadByOther = (msg: Message) =>
+    !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
 
   const rendered: RenderedItem[] = []
   let lastDate = ''
@@ -169,11 +174,10 @@ export function ChatWindow({
                     item.showAvatar ? s.bubbleTail : '',
                     item.msg.status === 'pending' ? s.bubblePending : '',
                     item.msg.status === 'failed'  ? s.bubbleFailed  : '',
-                    item.msg.deleted              ? s.bubbleDeleted : '',
                   ].join(' ')}>
-                    {item.msg.deleted ? t('messenger.deletedMessage') : item.msg.text}
+                    {item.msg.text}
                   </div>
-                  {item.msg.own && !item.msg.deleted && item.msg.status !== 'pending' && item.msg.status !== 'failed' && (
+                  {item.msg.own && item.msg.status !== 'pending' && item.msg.status !== 'failed' && (
                     <button
                       type="button"
                       className={s.msgDeleteBtn}
@@ -186,7 +190,11 @@ export function ChatWindow({
                 </div>
                 <span className={s.msgTime}>
                   {item.msg.own && item.msg.status === 'pending' && <span className={`${s.msgStatusIcon} ${s.msgStatusPending}`}>●</span>}
-                  {item.msg.own && item.msg.status === 'sent'    && <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>}
+                  {item.msg.own && item.msg.status === 'sent' && (
+                    isReadByOther(item.msg)
+                      ? <span className={`${s.msgStatusIcon} ${s.msgStatusRead}`}>✓✓</span>
+                      : <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>
+                  )}
                   {item.msg.time}
                 </span>
                 {item.msg.status === 'failed' && (

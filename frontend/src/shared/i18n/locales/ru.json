@@ -145,7 +145,6 @@
     "historyStart": "Начало переписки",
     "sendFailedRetry": "⚠ Не отправлено · Повторить",
     "messagePlaceholder": "Написать сообщение…",
-    "deletedMessage": "Сообщение удалено",
     "deleteMessage": "Удалить сообщение",
     "confirmDeleteMessage": "Удалить сообщение?",
     "sendFailed": "Не удалось отправить сообщение. Попробуйте ещё раз.",
