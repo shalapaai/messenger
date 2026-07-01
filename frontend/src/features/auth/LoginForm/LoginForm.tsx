@@ -5,12 +5,14 @@ import { login } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
+import { useFeatures } from '../../../shared/context/FeaturesContext'
 import styles from './LoginForm.module.css'
 
 function LoginForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { refetchProfile } = useUserProfile()
+  const { passwordResetEnabled } = useFeatures()
 
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -87,9 +89,11 @@ function LoginForm() {
         {t('auth.loginFooter')} <Link to="/register">{t('auth.loginFooterLink')}</Link>
       </p>
 
-      <p className={styles.footerText}>
-        <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
-      </p>
+      {passwordResetEnabled && (
+        <p className={styles.footerText}>
+          <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+        </p>
+      )}
     </form>
   )
 }

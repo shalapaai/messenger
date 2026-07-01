@@ -3,6 +3,7 @@ import { useCallback, useEffect, type ReactNode } from 'react'
 import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { ForgotPasswordPage } from '../../pages/ForgotPasswordPage'
+import { useFeatures } from '../../shared/context/FeaturesContext'
 import { MessengerPage } from '../../pages/MessengerPage'
 import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
 import { hasAuthTokens } from '../../shared/lib/auth/authTokens'
@@ -15,6 +16,12 @@ import { useConnectionStore } from '../../shared/api/connectionStore'
 import { signalR } from '../../shared/api/signalrClient'
 import { ConnectionBanner } from '../../shared/ui/ConnectionBanner/ConnectionBanner'
 import type { IncomingMessage, UserOnlineEvent } from '../../shared/api/signalrClient'
+
+function ForgotPasswordRoute() {
+  const { passwordResetEnabled } = useFeatures()
+  if (!passwordResetEnabled) return <Navigate to="/login" replace />
+  return <ForgotPasswordPage />
+}
 
 // SignalR-соединение живёт только когда пользователь полностью авторизован
 // (есть токены И заполненный профиль) — т.е. внутри финальной "разрешённой" зоны
@@ -98,7 +105,7 @@ export function AppRouter() {
         <Route element={<GuardedLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordRoute />} />
           <Route path="/profile/setup" element={<ProfileSetupPage />} />
           <Route path="/chats" element={<MessengerPage />} />
           <Route path="/chats/new/:newUserId" element={<MessengerPage />} />

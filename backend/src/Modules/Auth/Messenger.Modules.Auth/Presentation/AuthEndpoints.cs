@@ -12,6 +12,7 @@ using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Hosting;
 
@@ -22,6 +23,12 @@ public static class AuthEndpoints
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
+
+        group.MapGet("/features", GetFeatures)
+            .WithName("GetAuthFeatures")
+            .WithSummary("Публичные флаги фич")
+            .Produces<AuthFeaturesDto>()
+            .AllowAnonymous();
 
         group.MapPost("/register", Register)
             .WithName("Register")
@@ -182,6 +189,13 @@ public static class AuthEndpoints
         return Results.NoContent();
     }
 
+    private static IResult GetFeatures(IConfiguration configuration)
+    {
+        return Results.Ok(new AuthFeaturesDto(
+            PasswordResetEnabled: configuration.GetValue<bool>("PasswordReset:Enabled"),
+            TwoFactorEnabled:     configuration.GetValue<bool>("TwoFactor:Enabled")));
+    }
+
     private static async Task<IResult> ForgotPassword(
         ForgotPasswordRequest request,
         ISender sender,
@@ -243,3 +257,4 @@ public sealed record RefreshTokenRequest(string Token);
 public sealed record LogoutRequest(string RefreshToken);
 public sealed record ForgotPasswordRequest(string Email);
 public sealed record ResetPasswordRequest(string Email, string Code, string NewPassword);
+public sealed record AuthFeaturesDto(bool PasswordResetEnabled, bool TwoFactorEnabled);
