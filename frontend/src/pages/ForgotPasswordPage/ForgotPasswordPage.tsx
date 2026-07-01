@@ -4,7 +4,7 @@ import { AuthLayout } from '../../widgets/AuthLayout'
 function ForgotPasswordPage() {
   return (
     <AuthLayout
-      title="Восстановление доступа"
+      title="Сброс пароля"
       description="Введите email, и мы пришлём код для сброса пароля."
     >
       <ForgotPasswordForm />

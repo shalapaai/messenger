@@ -30,10 +30,11 @@ public sealed class AuthModule : IModuleInstaller
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 
-        // Email / 2FA
+        // Email — включается если нужна хотя бы одна email-фича
         services.AddMemoryCache();
-        var twoFactorEnabled = configuration.GetValue<bool>("TwoFactor:Enabled");
-        if (twoFactorEnabled)
+        var twoFactorEnabled    = configuration.GetValue<bool>("TwoFactor:Enabled");
+        var passwordResetEnabled = configuration.GetValue<bool>("PasswordReset:Enabled");
+        if (twoFactorEnabled || passwordResetEnabled)
         {
             services.AddOptions<ResendClientOptions>()
                 .Configure(o => o.ApiToken = configuration["Resend:ApiKey"]!);
