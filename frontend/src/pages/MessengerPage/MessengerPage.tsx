@@ -83,8 +83,8 @@ export function MessengerPage() {
   // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
-    handleIncomingMessage, handleDeletedMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, retry, deleteMessage,
+    handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
+    send, retry, deleteMessage, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -107,6 +107,7 @@ export function MessengerPage() {
     chatId: id,
     onMessage: handleIncomingMessage,
     onMessageDeleted: handleDeletedMessage,
+    onMessageEdited: handleEditedMessage,
     onMessagesRead: (event) => handleMessagesRead(event.chatId, event.readerId, event.readAt),
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
@@ -179,6 +180,15 @@ export function MessengerPage() {
       await deleteMessage(id, msg)
     } catch {
       window.alert(t('messenger.deleteMessageFailed'))
+    }
+  }
+
+  async function handleEditMessage(msg: Message, newText: string) {
+    if (!id) return
+    try {
+      await editMessage(id, msg, newText)
+    } catch {
+      window.alert(t('messenger.editMessageFailed'))
     }
   }
 
@@ -313,6 +323,7 @@ export function MessengerPage() {
               onSend={handleSend}
               onRetry={handleRetrySend}
               onDelete={handleDeleteMessage}
+              onEdit={handleEditMessage}
               onTyping={typingIndicator.handleOwnTyping}
               onHeaderClick={() => {
                 if (meta.group) { setGroupModalOpen(true); return }

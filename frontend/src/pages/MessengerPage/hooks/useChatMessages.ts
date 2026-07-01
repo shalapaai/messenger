@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
-import { deleteMessage as deleteMessageApi } from '../../../shared/api/messagesApi'
+import { deleteMessage as deleteMessageApi, editMessage as editMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage, MessageDeleted } from '../../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
 type SendFn = (content: string) => Promise<{ messageId: string }>
@@ -119,6 +119,30 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }))
   }, [])
 
+  const handleEditedMessage = useCallback((event: MessageEdited) => {
+    setChatMessages(prev => {
+      const chatMsgs = prev[event.chatId]
+      if (!chatMsgs) return prev
+      return {
+        ...prev,
+        [event.chatId]: chatMsgs.map(m =>
+          m.messageId === event.messageId ? { ...m, text: event.newContent, edited: true } : m
+        ),
+      }
+    })
+  }, [])
+
+  const editMessage = useCallback(async (chatId: string, msg: Message, newText: string) => {
+    if (!msg.messageId) return
+    await editMessageApi(chatId, msg.messageId, newText)
+    setChatMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] ?? []).map(m =>
+        m.id === msg.id ? { ...m, text: newText, edited: true } : m
+      ),
+    }))
+  }, [])
+
   const loadMoreHistory = useCallback((
     onBeforePrepend: () => void,
     onAfterPrepend: () => void,
@@ -189,11 +213,13 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     retryLoadInitial: () => id && loadInitial(id),
     handleIncomingMessage,
     handleDeletedMessage,
+    handleEditedMessage,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
     send,
     retry,
     deleteMessage,
+    editMessage,
   }
 }

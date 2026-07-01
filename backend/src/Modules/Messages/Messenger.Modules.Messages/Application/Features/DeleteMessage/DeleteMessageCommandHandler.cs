@@ -2,11 +2,13 @@ namespace Messenger.Modules.Messages.Application.Features.DeleteMessage;
 
 using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Membership;
 using Messenger.Shared.Kernel.Results;
 
 public sealed class DeleteMessageCommandHandler(
-    IMessageRepository messageRepository,
-    IUnitOfWork unitOfWork)
+    IMessageRepository      messageRepository,
+    IChatMembershipChecker  membershipChecker,
+    IUnitOfWork             unitOfWork)
     : ICommandHandler<DeleteMessageCommand>
 {
     public async Task<Result> Handle(DeleteMessageCommand command, CancellationToken ct)
@@ -16,7 +18,11 @@ public sealed class DeleteMessageCommandHandler(
         if (message is null)
             return Result.Failure(Error.NotFound("Message"));
 
-        var result = message.Delete(command.RequesterId);
+        // удалить может любой участник чата, не только автор сообщения
+        if (!await membershipChecker.IsMemberAsync(message.ChatId, command.RequesterId, ct))
+            return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        var result = message.Delete();
 
         if (result.IsFailure)
             return result;
