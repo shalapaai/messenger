@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'rea
 import { useCallback, useEffect, type ReactNode } from 'react'
 import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
+import { ForgotPasswordPage } from '../../pages/ForgotPasswordPage'
 import { MessengerPage } from '../../pages/MessengerPage'
 import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
 import { hasAuthTokens } from '../../shared/lib/auth/authTokens'
@@ -66,7 +67,7 @@ function GuardedLayout() {
   const hasTokens = hasAuthTokens()
 
   if (!hasTokens) {
-    if (pathname !== '/login' && pathname !== '/register') {
+    if (pathname !== '/login' && pathname !== '/register' && pathname !== '/forgot-password') {
       return <Navigate to="/login" replace />
     }
     return <Outlet />
@@ -97,6 +98,7 @@ export function AppRouter() {
         <Route element={<GuardedLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/profile/setup" element={<ProfileSetupPage />} />
           <Route path="/chats" element={<MessengerPage />} />
           <Route path="/chats/new/:newUserId" element={<MessengerPage />} />

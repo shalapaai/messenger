@@ -39,6 +39,7 @@
     "loginSubtitle": "Enter your details to continue messaging.",
     "loginButton": "Sign in",
     "loginLoading": "Signing in...",
+    "forgotPassword": "Forgot password?",
     "loginFooter": "No account?",
     "loginFooterLink": "Create one",
     "loginHeroTitle": "Team messenger",

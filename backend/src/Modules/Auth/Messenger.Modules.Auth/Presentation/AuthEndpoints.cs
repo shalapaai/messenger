@@ -1,9 +1,11 @@
 namespace Messenger.Modules.Auth.Presentation;
 
 using MediatR;
+using Messenger.Modules.Auth.Application.Features.ForgotPassword;
 using Messenger.Modules.Auth.Application.Features.Login;
 using Messenger.Modules.Auth.Application.Features.Logout;
 using Messenger.Modules.Auth.Application.Features.Register;
+using Messenger.Modules.Auth.Application.Features.ResetPassword;
 using Messenger.Modules.Auth.Application.Features.VerifyOtp;
 using Messenger.Modules.Localization.Resources;
 using Messenger.Shared.Kernel.Extensions;
@@ -57,6 +59,20 @@ public static class AuthEndpoints
             .WithName("Logout")
             .WithSummary("Выход из системы")
             .Produces(StatusCodes.Status204NoContent)
+            .AllowAnonymous();
+
+        group.MapPost("/forgot-password", ForgotPassword)
+            .WithName("ForgotPassword")
+            .WithSummary("Запрос кода сброса пароля")
+            .WithDescription("Отправляет код на email. Всегда возвращает 200, даже если email не найден.")
+            .Produces(StatusCodes.Status200OK)
+            .AllowAnonymous();
+
+        group.MapPost("/reset-password", ResetPassword)
+            .WithName("ResetPassword")
+            .WithSummary("Сброс пароля по коду")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
             .AllowAnonymous();
 
         return app;
@@ -166,6 +182,28 @@ public static class AuthEndpoints
         return Results.NoContent();
     }
 
+    private static async Task<IResult> ForgotPassword(
+        ForgotPasswordRequest request,
+        ISender sender,
+        CancellationToken ct)
+    {
+        await sender.Send(new ForgotPasswordCommand(request.Email), ct);
+        return Results.Ok();
+    }
+
+    private static async Task<IResult> ResetPassword(
+        ResetPasswordRequest request,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new ResetPasswordCommand(request.Email, request.Code, request.NewPassword), ct);
+
+        if (result.IsFailure)
+            return result.Error.ToHttpResult();
+
+        return Results.NoContent();
+    }
+
     private static void AppendRefreshTokenCookie(
         HttpResponse response,
         string refreshToken,
@@ -203,3 +241,5 @@ public sealed record RegisterRequest(string Email, string Password);
 public sealed record VerifyOtpRequest(string Email, string Code);
 public sealed record RefreshTokenRequest(string Token);
 public sealed record LogoutRequest(string RefreshToken);
+public sealed record ForgotPasswordRequest(string Email);
+public sealed record ResetPasswordRequest(string Email, string Code, string NewPassword);

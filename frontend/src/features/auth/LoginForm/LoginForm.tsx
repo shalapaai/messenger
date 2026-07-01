@@ -84,6 +84,10 @@ function LoginForm() {
       </button>
 
       <p className={styles.footerText}>
+        <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+      </p>
+
+      <p className={styles.footerText}>
         {t('auth.loginFooter')} <Link to="/register">{t('auth.loginFooterLink')}</Link>
       </p>
     </form>
