@@ -70,11 +70,10 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success();
     }
 
-    public Result Delete(Guid requesterId)
+    // Удалить может любой участник чата, не только автор — членство в чате
+    // проверяется на уровне обработчика команды (см. DeleteMessageCommandHandler)
+    public Result Delete()
     {
-        if (SenderId != requesterId)
-            return Result.Failure(Error.Forbidden("Only the sender can delete this message"));
-
         if (Status == MessageStatus.Deleted)
             return Result.Failure(new Error("Message.AlreadyDeleted", "Message is already deleted"));
 

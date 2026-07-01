@@ -121,28 +121,9 @@
 .bubbleOwn { background: var(--color-primary); color: var(--color-on-primary); }
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
-.bubbleDeleted { background: #f1f2f7 !important; color: #a6aebf !important; border: 1px solid #eceef4; font-style: italic; }
-
-.msgDeleteBtn {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: none;
-  background: #f1f2f7;
-  color: #56607a;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.12s, background 0.12s, color 0.12s;
-}
-.msgRow:hover .msgDeleteBtn { opacity: 1; }
-.msgDeleteBtn:hover { background: #fee2e2; color: #e03b3b; }
-.msgDeleteIcon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 46px; }
+.msgEdited { margin-right: 4px; font-style: italic; }
 
 /* ── Input bar ────────────────────────────────────────────────────────────── */
 .inputBar {
@@ -267,6 +248,7 @@
 .msgStatusIcon { margin-right: 3px; font-size: 10px; }
 .msgStatusPending { color: #a6aebf; animation: statusPulse 1.2s ease-in-out infinite; }
 .msgStatusSent    { color: #22b07d; }
+.msgStatusRead    { color: #4fa9f7; letter-spacing: -2px; }
 
 @keyframes statusPulse {
   0%, 100% { opacity: 1; }
@@ -306,3 +288,63 @@
   .inputBar { padding: 12px 16px; }
   .chatHeader { padding: 12px 16px; }
 }
+
+/* ── Контекстное меню сообщения ───────────────────────────────────────────── */
+.contextMenu {
+  position: fixed;
+  z-index: 550;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-panel);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.contextMenuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.contextMenuItem:hover { background: var(--color-surface-muted); }
+.contextMenuItemDanger { color: #e03b3b; }
+.contextMenuItemDanger:hover { background: #fee2e2; }
+.contextMenuItemDisabled { color: var(--color-text-faint); cursor: default; }
+.contextMenuItemDisabled:hover { background: none; }
+
+/* ── Панель редактирования сообщения ──────────────────────────────────────── */
+.editingBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: var(--color-surface-muted);
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+}
+
+.editingBarCancel {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-faint);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+.editingBarCancel:hover { color: var(--color-text); }

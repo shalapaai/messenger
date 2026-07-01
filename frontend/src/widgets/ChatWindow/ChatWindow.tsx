@@ -1,4 +1,4 @@
-import { useState, useRef, type RefObject, type KeyboardEvent, type ChangeEvent } from 'react'
+import { useState, useRef, useEffect, type RefObject, type KeyboardEvent, type ChangeEvent, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
@@ -7,22 +7,14 @@ type RenderedItem =
   | { type: 'sep'; label: string }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
 
-function TrashIcon({ className }: { className: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  )
-}
+interface ContextMenuState { x: number; y: number; msg: Message }
 
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
+  /** момент, до которого собеседник прочитал переписку — null, если ещё не прочитал ничего */
+  otherReadAt: string | null
   meSender: Sender
   typingChats: Record<string, boolean>
   loadingHistory: boolean
@@ -36,20 +28,65 @@ interface ChatWindowProps {
   onSend: (text: string) => void
   onRetry: (msg: Message) => void
   onDelete: (msg: Message) => void
+  onEdit: (msg: Message, newText: string) => void
   onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
 }
 
 export function ChatWindow({
-  chatId, meta, messages, meSender, typingChats, loadingHistory, historyLoaded,
+  chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onRetry, onDelete, onTyping, onHeaderClick, onAvatarClick,
+  onSend, onRetry, onDelete, onEdit, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const [editingMsg, setEditingMsg] = useState<Message | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const isReadByOther = (msg: Message) =>
+    !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
+
+  useEffect(() => {
+    if (!contextMenu) return
+    const close = () => setContextMenu(null)
+    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') close() }
+    const messagesEl = messagesRef.current
+    window.addEventListener('click', close)
+    window.addEventListener('keydown', onKey)
+    messagesEl?.addEventListener('scroll', close)
+    return () => {
+      window.removeEventListener('click', close)
+      window.removeEventListener('keydown', onKey)
+      messagesEl?.removeEventListener('scroll', close)
+    }
+  }, [contextMenu, messagesRef])
+
+  function openContextMenu(e: MouseEvent, msg: Message) {
+    // действия доступны только для сообщений, уже подтверждённых сервером
+    if (!msg.messageId) return
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY, msg })
+  }
+
+  function startEdit(msg: Message) {
+    setEditingMsg(msg)
+    setText(msg.text)
+    setContextMenu(null)
+    textareaRef.current?.focus()
+  }
+
+  function cancelEdit() {
+    setEditingMsg(null)
+    setText('')
+  }
+
+  function requestDelete(msg: Message) {
+    setContextMenu(null)
+    if (window.confirm(t('messenger.confirmDeleteMessage'))) onDelete(msg)
+  }
 
   const rendered: RenderedItem[] = []
   let lastDate = ''
@@ -67,13 +104,19 @@ export function ChatWindow({
   function send() {
     const trimmed = text.trim()
     if (!trimmed) return
-    onSend(trimmed)
+    if (editingMsg) {
+      if (trimmed !== editingMsg.text) onEdit(editingMsg, trimmed)
+      setEditingMsg(null)
+    } else {
+      onSend(trimmed)
+    }
     setText('')
     textareaRef.current?.focus()
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+    if (e.key === 'Escape' && editingMsg) { cancelEdit() }
   }
 
   const isTyping = typingChats[chatId] && !meta.group
@@ -163,30 +206,27 @@ export function ChatWindow({
                       : displaySender.senderInitials
                     }
                   </div>
-                  <div className={[
-                    s.bubble,
-                    item.msg.own ? s.bubbleOwn : s.bubbleOther,
-                    item.showAvatar ? s.bubbleTail : '',
-                    item.msg.status === 'pending' ? s.bubblePending : '',
-                    item.msg.status === 'failed'  ? s.bubbleFailed  : '',
-                    item.msg.deleted              ? s.bubbleDeleted : '',
-                  ].join(' ')}>
-                    {item.msg.deleted ? t('messenger.deletedMessage') : item.msg.text}
+                  <div
+                    className={[
+                      s.bubble,
+                      item.msg.own ? s.bubbleOwn : s.bubbleOther,
+                      item.showAvatar ? s.bubbleTail : '',
+                      item.msg.status === 'pending' ? s.bubblePending : '',
+                      item.msg.status === 'failed'  ? s.bubbleFailed  : '',
+                    ].join(' ')}
+                    onContextMenu={(e) => openContextMenu(e, item.msg)}
+                  >
+                    {item.msg.text}
                   </div>
-                  {item.msg.own && !item.msg.deleted && item.msg.status !== 'pending' && item.msg.status !== 'failed' && (
-                    <button
-                      type="button"
-                      className={s.msgDeleteBtn}
-                      title={t('messenger.deleteMessage')}
-                      onClick={() => { if (window.confirm(t('messenger.confirmDeleteMessage'))) onDelete(item.msg) }}
-                    >
-                      <TrashIcon className={s.msgDeleteIcon} />
-                    </button>
-                  )}
                 </div>
                 <span className={s.msgTime}>
                   {item.msg.own && item.msg.status === 'pending' && <span className={`${s.msgStatusIcon} ${s.msgStatusPending}`}>●</span>}
-                  {item.msg.own && item.msg.status === 'sent'    && <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>}
+                  {item.msg.own && item.msg.status === 'sent' && (
+                    isReadByOther(item.msg)
+                      ? <span className={`${s.msgStatusIcon} ${s.msgStatusRead}`}>✓✓</span>
+                      : <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>
+                  )}
+                  {item.msg.edited && <span className={s.msgEdited}>{t('messenger.edited')}</span>}
                   {item.msg.time}
                 </span>
                 {item.msg.status === 'failed' && (
@@ -200,6 +240,13 @@ export function ChatWindow({
           )}
 
           <div ref={bottomRef} />
+        </div>
+      )}
+
+      {editingMsg && (
+        <div className={s.editingBar}>
+          <span>{t('messenger.editingMessage')}</span>
+          <button type="button" className={s.editingBarCancel} onClick={cancelEdit}>✕</button>
         </div>
       )}
 
@@ -220,6 +267,31 @@ export function ChatWindow({
           </svg>
         </button>
       </div>
+
+      {contextMenu && (
+        <div
+          className={s.contextMenu}
+          style={{
+            left: Math.min(contextMenu.x, window.innerWidth - 190),
+            top:  Math.min(contextMenu.y, window.innerHeight - (contextMenu.msg.own ? 156 : 120)),
+          }}
+        >
+          <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => requestDelete(contextMenu.msg)}>
+            {t('messenger.deleteMessage')}
+          </button>
+          {contextMenu.msg.own && (
+            <button type="button" className={s.contextMenuItem} onClick={() => startEdit(contextMenu.msg)}>
+              {t('messenger.editMessage')}
+            </button>
+          )}
+          <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`} disabled>
+            {t('messenger.replyMessage')}
+          </button>
+          <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`} disabled>
+            {t('messenger.forwardMessage')}
+          </button>
+        </div>
+      )}
     </>
   )
 }

@@ -1,5 +1,6 @@
 namespace Messenger.Modules.Chats.Domain;
 
+using Messenger.Modules.Chats.Domain.Events;
 using Messenger.Shared.Kernel.Primitives;
 using Messenger.Shared.Kernel.Results;
 
@@ -34,6 +35,9 @@ public sealed class ChatMember
     public Guid UserId { get; private set; }
     public ChatMemberRole Role { get; private set; }
     public DateTime JoinedAt { get; private set; }
+    public DateTime? LastReadAt { get; private set; }
+
+    internal void MarkAsRead() => LastReadAt = DateTime.UtcNow;
 }
 
 public sealed class Chat : AggregateRoot<ChatId>
@@ -121,6 +125,15 @@ public sealed class Chat : AggregateRoot<ChatId>
             return Result.Failure(Error.Forbidden("Cannot remove the chat owner"));
 
         _members.Remove(target);
+        return Result.Success();
+    }
+
+    public Result MarkMemberAsRead(Guid userId)
+    {
+        var member = _members.FirstOrDefault(m => m.UserId == userId);
+        if (member is null) return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+        member.MarkAsRead();
+        RaiseDomainEvent(new ChatReadDomainEvent(Id.Value, userId, member.LastReadAt!.Value));
         return Result.Success();
     }
 

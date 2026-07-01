@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
+import { LanguageSwitcher } from '../../shared/ui/LanguageSwitcher'
 import styles from './AuthLayout.module.css'
 
 type AuthLayoutProps = {
@@ -20,6 +21,7 @@ function AuthLayout({ title, description, children, isTitleWrapped = false}: Aut
 
       <section className={styles.card}>
         <div className={styles.cardActions}>
+          <LanguageSwitcher compact />
           <ThemeModeToggle />
         </div>
         {children}

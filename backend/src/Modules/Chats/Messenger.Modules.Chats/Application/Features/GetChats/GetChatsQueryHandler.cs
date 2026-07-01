@@ -53,6 +53,8 @@ public sealed class GetChatsQueryHandler(
                 string? avatarColor = null;
                 Guid? otherUserId = null;
 
+                DateTime? otherMemberLastReadAt = null;
+
                 if (c.Type == ChatType.Direct)
                 {
                     otherUserId = c.Members.Select(m => m.UserId).FirstOrDefault(uid => uid != query.CurrentUserId);
@@ -62,6 +64,8 @@ public sealed class GetChatsQueryHandler(
                         avatarUrl   = avatarUrl ?? summary.AvatarUrl;
                         avatarColor = summary.AvatarColor;
                     }
+                    otherMemberLastReadAt = c.Members
+                        .FirstOrDefault(m => m.UserId == otherUserId)?.LastReadAt;
                 }
 
                 return new ChatSummaryDto(
@@ -72,7 +76,8 @@ public sealed class GetChatsQueryHandler(
                     avatarColor,
                     lastMessage,
                     otherUserId,
-                    otherUserId.HasValue && onlineUserIds.Contains(otherUserId.Value));
+                    otherUserId.HasValue && onlineUserIds.Contains(otherUserId.Value),
+                    otherMemberLastReadAt);
             })
             .OrderByDescending(c => c.LastMessage?.SentAt)
             .ToList();

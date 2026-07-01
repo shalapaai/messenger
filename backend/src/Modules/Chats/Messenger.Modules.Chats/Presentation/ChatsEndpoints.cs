@@ -9,6 +9,7 @@ using Messenger.Modules.Chats.Application.Features.RemoveChatMember;
 using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
+using Messenger.Modules.Chats.Application.Features.MarkChatRead;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -72,6 +73,12 @@ public static class ChatsEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesValidationProblem();
+
+        group.MapPost("/{id:guid}/read", MarkChatRead)
+            .WithName("MarkChatRead")
+            .WithSummary("Отметить чат прочитанным")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/direct", CreateDirectChat)
             .WithName("CreateDirectChat")
@@ -180,6 +187,17 @@ public static class ChatsEndpoints
         return result.IsSuccess
             ? Results.NoContent()
             : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> MarkChatRead(
+        Guid              id,
+        HttpContext        httpContext,
+        ISender            sender,
+        CancellationToken  ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var result = await sender.Send(new MarkChatReadCommand(id, requesterId), ct);
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToHttpResult();
     }
 
     private static async Task<IResult> CreateDirectChat(
