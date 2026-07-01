@@ -3,7 +3,11 @@ import type { AppLanguage } from '../../i18n'
 import { supportedLanguages } from '../../i18n'
 import s from './LanguageSwitcher.module.css'
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  compact?: boolean
+}
+
+export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation()
   const currentLanguage = i18n.language === 'en' ? 'en' : 'ru'
 
@@ -21,7 +25,7 @@ export function LanguageSwitcher() {
           onClick={() => handleLanguageChange(language)}
           aria-pressed={currentLanguage === language}
         >
-          {t(`language.${language}`)}
+          {compact ? language.toUpperCase() : t(`language.${language}`)}
         </button>
       ))}
     </div>
