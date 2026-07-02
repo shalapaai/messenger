@@ -129,6 +129,8 @@
 .inputArea {
   position: relative;
   flex-shrink: 0;
+  --mobile-input-layer-height: 340px;
+  --mobile-keyboard-offset: 0px;
 }
 
 .inputBar {
@@ -371,17 +373,34 @@
 }
 
 @media (max-width: 1024px) {
-  .messages { padding: 16px; }
+  .messages {
+    padding: 16px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .messagesInputLayerOpen {
+    padding-bottom: calc(
+      var(--mobile-input-layer-height) + 96px + env(safe-area-inset-bottom)
+    );
+  }
+
   .msgRow { max-width: 85%; }
   .inputBar { padding: 12px 16px; }
   .chatHeader { padding: 12px 16px; }
 
   .inputArea {
-    transition: padding-bottom 0.28s ease;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--mobile-keyboard-offset);
+    z-index: 90;
+    transition:
+      bottom 0.24s ease,
+      padding-bottom 0.24s ease;
   }
 
   .inputAreaEmojiOpen {
-    padding-bottom: clamp(300px, 42dvh, 380px);
+    padding-bottom: var(--mobile-input-layer-height);
   }
 
   .desktopEmojiWrap {
@@ -400,7 +419,7 @@
     z-index: 80;
     width: 100%;
     max-width: none;
-    height: clamp(300px, 42dvh, 380px);
+    height: var(--mobile-input-layer-height);
     max-height: none;
     border-top: 1px solid var(--color-border);
     background: var(--color-surface);
