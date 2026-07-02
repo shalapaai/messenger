@@ -434,7 +434,9 @@
 }
 
 .contextMenuItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
   padding: 9px 12px;
@@ -448,6 +450,7 @@
   cursor: pointer;
   transition: background 0.12s;
 }
+.contextMenuItem svg { flex-shrink: 0; }
 .contextMenuItem:hover { background: var(--color-surface-muted); }
 .contextMenuItemDanger { color: #e03b3b; }
 .contextMenuItemDanger:hover { background: #fee2e2; }

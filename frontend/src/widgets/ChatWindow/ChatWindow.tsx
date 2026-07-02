@@ -34,6 +34,45 @@ interface ContextMenuState {
   msg: Message
 }
 
+function ReplyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 17 4 12 9 7" />
+      <path d="M4 12h11a5 5 0 0 1 5 5v2" />
+    </svg>
+  )
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  )
+}
+
+function ForwardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 17 20 12 15 7" />
+      <path d="M20 12H9a5 5 0 0 0-5 5v2" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  )
+}
+
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
@@ -755,10 +794,11 @@ export function ChatWindow({
         >
           <button
             type="button"
-            className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`}
-            onClick={() => requestDelete(contextMenu.msg)}
+            className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`}
+            disabled
           >
-            {t('messenger.deleteMessage')}
+            <ReplyIcon />
+            {t('messenger.replyMessage')}
           </button>
           {contextMenu.msg.own && (
             <button
@@ -766,6 +806,7 @@ export function ChatWindow({
               className={s.contextMenuItem}
               onClick={() => startEdit(contextMenu.msg)}
             >
+              <EditIcon />
               {t('messenger.editMessage')}
             </button>
           )}
@@ -774,14 +815,16 @@ export function ChatWindow({
             className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`}
             disabled
           >
-            {t('messenger.replyMessage')}
+            <ForwardIcon />
+            {t('messenger.forwardMessage')}
           </button>
           <button
             type="button"
-            className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`}
-            disabled
+            className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`}
+            onClick={() => requestDelete(contextMenu.msg)}
           >
-            {t('messenger.forwardMessage')}
+            <TrashIcon />
+            {t('messenger.deleteMessage')}
           </button>
         </div>
       )}
