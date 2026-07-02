@@ -503,11 +503,16 @@ export function ChatWindow({
     const initialViewportHeight = viewport?.height ?? window.innerHeight
     let resizeSettleTimeout: number | null = null
 
-    function finishKeyboardSwitch() {
+    // Резервируем место под клавиатуру только если реально дождались подтверждения через
+    // изменение высоты viewport. Если его нет (например, тестируем в десктопном браузере
+    // в узком окне — там фокус textarea не открывает настоящую виртуальную клавиатуру и
+    // resize не приходит), запасной таймаут ниже завершает переключение БЕЗ резервации —
+    // иначе макет застревал бы с "пустым" зарезервированным местом до следующего blur.
+    function finishKeyboardSwitch(keyboardConfirmed: boolean) {
       clearKeyboardCloseWait()
       updateMobileKeyboardOffset(0)
       setIsEmojiPickerOpen(false)
-      setIsEmojiSpaceReserved(true)
+      setIsEmojiSpaceReserved(keyboardConfirmed)
     }
 
     function handleViewportResize() {
@@ -520,7 +525,7 @@ export function ChatWindow({
       updateMobileInputLayerHeight(keyboardHeight)
 
       if (resizeSettleTimeout !== null) window.clearTimeout(resizeSettleTimeout)
-      resizeSettleTimeout = window.setTimeout(finishKeyboardSwitch, 180)
+      resizeSettleTimeout = window.setTimeout(() => finishKeyboardSwitch(true), 180)
     }
 
     keyboardViewportCleanupRef.current = () => {
@@ -532,7 +537,7 @@ export function ChatWindow({
     }
 
     viewport?.addEventListener('resize', handleViewportResize)
-    keyboardCloseTimeoutRef.current = window.setTimeout(finishKeyboardSwitch, 720)
+    keyboardCloseTimeoutRef.current = window.setTimeout(() => finishKeyboardSwitch(false), 720)
 
     textarea.focus()
     requestAnimationFrame(() => textarea.focus())
