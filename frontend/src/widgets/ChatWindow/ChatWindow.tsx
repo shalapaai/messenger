@@ -118,7 +118,6 @@ export function ChatWindow({
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  const [composerChatId, setComposerChatId] = useState(chatId)
 
   // ── Мобильная раскладка ввода: эмодзи-пикер и виртуальная клавиатура ────────
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
@@ -221,16 +220,9 @@ export function ChatWindow({
   const isReadByOther = (msg: Message) =>
     !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
 
-  // при смене чата старое выделение/редактирование/ответ неактуальны — сбрасываем прямо во время
-  // рендера (без useEffect, чтобы не ловить лишний кадр со старым состоянием поверх нового чата)
-  if (chatId !== composerChatId) {
-    setComposerChatId(chatId)
-    setSelectMode(false)
-    setSelectedIds(new Set())
-    setEditingMsg(null)
-    setReplyingTo(null)
-    setText('')
-  }
+  // per-chat состояние (выделение/редактирование/ответ/мобильная раскладка ввода) не нужно сбрасывать
+  // вручную при смене чата — MessengerPage.tsx монтирует ChatWindow с key={chatId}, так что React сам
+  // полностью пересоздаёт компонент и весь его state при переключении на другой чат
 
   useEffect(() => {
     if (!selectMode) return

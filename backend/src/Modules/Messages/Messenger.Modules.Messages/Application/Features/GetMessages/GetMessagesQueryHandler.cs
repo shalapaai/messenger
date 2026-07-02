@@ -1,5 +1,6 @@
 namespace Messenger.Modules.Messages.Application.Features.GetMessages;
 
+using Messenger.Modules.Messages.Application.Contracts;
 using Messenger.Modules.Messages.Domain;
 using Messenger.Modules.Users.Application.Contracts;
 using Messenger.Shared.Kernel.Abstractions;
@@ -55,7 +56,7 @@ public sealed class GetMessagesQueryHandler(
                 {
                     summaries.TryGetValue(replySrc.SenderId, out var replySummary);
                     replyToSenderName = replySummary?.DisplayName ?? "Пользователь";
-                    replyToContent    = replySrc.Status == MessageStatus.Deleted ? null : replySrc.Content;
+                    replyToContent    = replySrc.Status == MessageStatus.Deleted ? null : MessagePreview.Truncate(replySrc.Content);
                 }
 
                 return new MessageDto(

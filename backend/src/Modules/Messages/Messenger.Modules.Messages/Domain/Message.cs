@@ -59,14 +59,17 @@ public sealed class Message : AggregateRoot<MessageId>
     // Пересланное сообщение — новая независимая копия в целевом чате, автор которой (SenderId) —
     // тот, кто переслал, а не оригинальный отправитель. ForwardedFrom* только для подписи "Переслано от"
     // на клиенте: редактирование/удаление копии подчиняется тем же правилам, что у обычного сообщения.
+    // fileUrl копируется из оригинала — иначе пересылка файла/фото без подписи теряла бы вложение
+    // (пустой Content без fileUrl не проходил бы валидацию и копия молча дропалась).
     public static Result<Message> CreateForwarded(
-        Guid targetChatId, Guid forwarderId, string content, Guid originalMessageId, Guid originalSenderId)
+        Guid targetChatId, Guid forwarderId, string content, string? fileUrl, Guid originalMessageId, Guid originalSenderId)
     {
-        if (string.IsNullOrWhiteSpace(content))
+        if (string.IsNullOrWhiteSpace(content) && string.IsNullOrWhiteSpace(fileUrl))
             return Result.Failure<Message>(Error.Validation("Content", "Message content cannot be empty"));
 
         var message = new Message(MessageId.New(), targetChatId, forwarderId, content.Trim(), null)
         {
+            FileUrl                = fileUrl,
             ForwardedFromMessageId = originalMessageId,
             ForwardedFromUserId    = originalSenderId,
         };

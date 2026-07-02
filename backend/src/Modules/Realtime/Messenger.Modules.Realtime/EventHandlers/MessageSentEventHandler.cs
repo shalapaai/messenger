@@ -19,6 +19,9 @@ public sealed class MessageSentEventHandler(
 {
     public async Task Handle(MessageSentDomainEvent notification, CancellationToken ct)
     {
+        // не зависит от резолва превью/имён ниже — запускаем сразу, дожидаемся только перед использованием
+        var membersTask = chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
+
         // превью цитируемого сообщения — для карточки "в ответ на" на клиенте
         MessagePreviewDto? replyTo = null;
         if (notification.ReplyToMessageId is { } replyId)
@@ -58,7 +61,7 @@ public sealed class MessageSentEventHandler(
             forwardedFromUserName = forwardedFromUser?.DisplayName,
             replyToMessageId   = notification.ReplyToMessageId,
             replyToSenderName  = replyToSender?.DisplayName,
-            replyToContent     = replyTo is null ? null : (replyTo.IsDeleted ? null : Truncate(replyTo.Content))
+            replyToContent     = replyTo is null ? null : (replyTo.IsDeleted ? null : MessagePreview.Truncate(replyTo.Content))
         };
 
         // Рассылаем в группу чата всем подписанным участникам
@@ -68,7 +71,7 @@ public sealed class MessageSentEventHandler(
 
         // Дополнительно рассылаем в личные группы участников-не-отправителей —
         // нужно для случая, когда чат только что создан и получатель ещё не в группе
-        var membersResult = await chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
+        var membersResult = await membersTask;
         if (membersResult.IsSuccess)
         {
             var tasks = membersResult.Value!
@@ -79,7 +82,4 @@ public sealed class MessageSentEventHandler(
             await Task.WhenAll(tasks);
         }
     }
-
-    private static string Truncate(string content, int max = 120) =>
-        content.Length <= max ? content : content[..max] + "…";
 }

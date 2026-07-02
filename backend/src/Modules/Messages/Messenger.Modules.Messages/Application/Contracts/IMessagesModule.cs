@@ -14,6 +14,17 @@ public sealed record MessagePreviewDto(
     string Content,
     bool   IsDeleted);
 
+// Общее правило обрезки текста цитаты — используется и в реалтайм-рассылке (MessageSentEventHandler),
+// и при отдаче истории (GetMessagesQueryHandler), чтобы reply-превью не отличалось в зависимости
+// от того, получил клиент сообщение по WebSocket или подгрузил историю через REST.
+public static class MessagePreview
+{
+    public const int MaxLength = 120;
+
+    public static string Truncate(string content) =>
+        content.Length <= MaxLength ? content : content[..MaxLength] + "…";
+}
+
 // Публичный API модуля для межмодульного взаимодействия.
 // Chats или Notifications вызывают этот интерфейс — не зависят от внутренностей модуля.
 public interface IMessagesModule

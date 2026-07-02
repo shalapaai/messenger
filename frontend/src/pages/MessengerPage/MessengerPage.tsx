@@ -45,7 +45,10 @@ export function MessengerPage() {
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
-  const [forwardMsgs,    setForwardMsgs]    = useState<Message[] | null>(null)
+  // sourceChatId фиксируется вместе с сообщениями в момент выбора — если пользователь уйдёт в
+  // другой чат, пока модалка открыта (например, кнопкой "назад" в браузере), пересылка всё равно
+  // уйдёт из правильного исходного чата, а не из того, что случайно стал активным сейчас
+  const [forwardState,   setForwardState]   = useState<{ sourceChatId: string; messages: Message[] } | null>(null)
   const startTypingRef = useRef<() => void>(() => undefined)
   const stopTypingRef = useRef<() => void>(() => undefined)
 
@@ -87,7 +90,7 @@ export function MessengerPage() {
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, retry, deleteMessage, editMessage,
+    send, retry, deleteMessage, deleteMessages, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -140,16 +143,16 @@ export function MessengerPage() {
   }, [id, messages.length, historyLoaded])
 
   useEffect(() => {
-    const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen || !!forwardMsgs
+    const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen || !!forwardState
     if (!anyOpen) return
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false); setForwardMsgs(null)
+        setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false); setForwardState(null)
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [modalUser, groupModalOpen, editOpen, profileOpen, forwardMsgs])
+  }, [modalUser, groupModalOpen, editOpen, profileOpen, forwardState])
 
   async function handleSend(text: string, replyTo?: Message) {
     typingIndicator.stopOwnTyping()
@@ -197,16 +200,20 @@ export function MessengerPage() {
 
   async function handleBulkDeleteMessages(msgs: Message[]) {
     if (!id) return
-    const results = await Promise.allSettled(msgs.map(msg => deleteMessage(id, msg)))
-    if (results.some(r => r.status === 'rejected')) window.alert(t('messenger.deleteMessageFailed'))
+    try {
+      await deleteMessages(id, msgs)
+    } catch {
+      window.alert(t('messenger.deleteMessageFailed'))
+    }
   }
 
   async function handleForwardConfirm(targetChatId: string) {
-    if (!id || !forwardMsgs) return
-    const messageIds = forwardMsgs.map(m => m.messageId).filter((mid): mid is string => !!mid)
-    setForwardMsgs(null)
+    if (!forwardState) return
+    const { sourceChatId, messages: msgs } = forwardState
+    const messageIds = msgs.map(m => m.messageId).filter((mid): mid is string => !!mid)
+    setForwardState(null)
     try {
-      await forwardMessagesApi(targetChatId, id, messageIds)
+      await forwardMessagesApi(targetChatId, sourceChatId, messageIds)
     } catch {
       window.alert(t('messenger.forwardMessageFailed'))
     }
@@ -355,7 +362,7 @@ export function MessengerPage() {
               onDelete={handleDeleteMessage}
               onEdit={handleEditMessage}
               onBulkDelete={handleBulkDeleteMessages}
-              onForward={setForwardMsgs}
+              onForward={msgs => { if (id) setForwardState({ sourceChatId: id, messages: msgs }) }}
               onTyping={typingIndicator.handleOwnTyping}
               onHeaderClick={() => {
                 if (meta.group) { setGroupModalOpen(true); return }
@@ -431,8 +438,8 @@ export function MessengerPage() {
       )}
 
       <ForwardModal
-        messages={forwardMsgs}
-        onClose={() => setForwardMsgs(null)}
+        messages={forwardState?.messages ?? null}
+        onClose={() => setForwardState(null)}
         onConfirm={handleForwardConfirm}
       />
 

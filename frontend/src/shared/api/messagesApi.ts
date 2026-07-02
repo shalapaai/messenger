@@ -4,6 +4,11 @@ export async function deleteMessage(chatId: string, messageId: string): Promise<
   await apiClient.delete(`/chats/${chatId}/messages/${messageId}`)
 }
 
+/** Удаляет несколько сообщений одним запросом вместо отдельного DELETE на каждое. */
+export async function deleteMessages(chatId: string, messageIds: string[]): Promise<void> {
+  await apiClient.post(`/chats/${chatId}/messages/delete-bulk`, { messageIds })
+}
+
 export async function editMessage(chatId: string, messageId: string, newContent: string): Promise<void> {
   await apiClient.patch(`/chats/${chatId}/messages/${messageId}`, { newContent })
 }

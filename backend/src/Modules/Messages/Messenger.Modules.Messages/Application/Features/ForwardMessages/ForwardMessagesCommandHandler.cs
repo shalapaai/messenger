@@ -16,20 +16,22 @@ public sealed class ForwardMessagesCommandHandler(
         if (command.MessageIds.Count == 0)
             return Result.Failure<List<Guid>>(Error.Validation("MessageIds", "Select at least one message"));
 
-        if (!await membershipChecker.IsMemberAsync(command.SourceChatId, command.RequesterId, ct))
+        // проверки членства в источнике и получателе не зависят друг от друга — гоняем параллельно
+        var sourceMembership = membershipChecker.IsMemberAsync(command.SourceChatId, command.RequesterId, ct);
+        var targetMembership = membershipChecker.IsMemberAsync(command.TargetChatId, command.RequesterId, ct);
+        await Task.WhenAll(sourceMembership, targetMembership);
+
+        if (!sourceMembership.Result)
             return Result.Failure<List<Guid>>(Error.Forbidden("You are not a member of the source chat"));
 
-        if (!await membershipChecker.IsMemberAsync(command.TargetChatId, command.RequesterId, ct))
+        if (!targetMembership.Result)
             return Result.Failure<List<Guid>>(Error.Forbidden("You are not a member of the target chat"));
 
         var ids = command.MessageIds.Select(MessageId.From).ToList();
         var originals = await messageRepository.GetByIdsAsync(ids, ct);
-        var originalsById = originals.ToDictionary(m => m.Id.Value);
 
-        // сохраняем хронологический порядок сообщений в исходном чате, а не порядок id в запросе
-        var ordered = command.MessageIds
-            .Where(id => originalsById.ContainsKey(id))
-            .Select(id => originalsById[id])
+        // хронологический порядок в исходном чате, а не порядок id в запросе
+        var ordered = originals
             .Where(m => m.ChatId == command.SourceChatId && m.Status != MessageStatus.Deleted)
             .OrderBy(m => m.SentAt)
             .ToList();
@@ -41,9 +43,9 @@ public sealed class ForwardMessagesCommandHandler(
         foreach (var original in ordered)
         {
             var result = Message.CreateForwarded(
-                command.TargetChatId, command.RequesterId, original.Content, original.Id.Value, original.SenderId);
+                command.TargetChatId, command.RequesterId, original.Content, original.FileUrl, original.Id.Value, original.SenderId);
 
-            // пустой контент (например, файл без подписи) — пропускаем эту копию, не роняем всю пачку
+            // пустой контент без вложения — пропускаем эту копию, не роняем всю пачку
             if (result.IsSuccess)
                 forwarded.Add(result.Value!);
         }
