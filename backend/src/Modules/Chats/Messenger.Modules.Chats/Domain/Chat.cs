@@ -78,6 +78,14 @@ public sealed class Chat : AggregateRoot<ChatId>
             _members.Add(new ChatMember(Id, userId, role));
     }
 
+    /// <summary>Уведомление "состав участников изменился" — рассылается всем ТЕКУЩИМ участникам
+    /// (а не только вновь добавленному), иначе те, кто уже состоит в группе, не увидят обновлённый
+    /// ростер/счётчик участников в реальном времени. Вызывается явно из хендлера, а не автоматически
+    /// из AddMember — при создании группы в цикле AddMember это дало бы событие на каждого участника
+    /// вместо одного общего.</summary>
+    public void NotifyMembershipChanged() =>
+        RaiseDomainEvent(new ChatUpdatedDomainEvent(Id.Value, _members.Select(m => m.UserId).ToList()));
+
     public Result UpdateInfo(Guid requesterId, string? name, string? avatarUrl)
     {
         var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
@@ -99,6 +107,7 @@ public sealed class Chat : AggregateRoot<ChatId>
         if (avatarUrl is not null)
             AvatarUrl = avatarUrl;
 
+        NotifyMembershipChanged();
         return Result.Success();
     }
 
@@ -115,6 +124,7 @@ public sealed class Chat : AggregateRoot<ChatId>
         if (requesterId == userId)
         {
             _members.Remove(target);
+            NotifyMemberRemoved(userId);
             return Result.Success();
         }
 
@@ -125,8 +135,14 @@ public sealed class Chat : AggregateRoot<ChatId>
             return Result.Failure(Error.Forbidden("Cannot remove the chat owner"));
 
         _members.Remove(target);
+        NotifyMemberRemoved(userId);
         return Result.Success();
     }
+
+    /// <summary>Уведомляет оставшихся участников (чтобы обновить ростер) И самого удалённого
+    /// (чтобы у него этот чат сразу пропал из списка) — на момент вызова removedUserId уже не в _members.</summary>
+    private void NotifyMemberRemoved(Guid removedUserId) =>
+        RaiseDomainEvent(new ChatUpdatedDomainEvent(Id.Value, _members.Select(m => m.UserId).Append(removedUserId).ToList()));
 
     public Result MarkMemberAsRead(Guid userId)
     {

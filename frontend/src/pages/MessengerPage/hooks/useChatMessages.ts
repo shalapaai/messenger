@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
-import { deleteMessage as deleteMessageApi, editMessage as editMessageApi } from '../../../shared/api/messagesApi'
+import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
-type SendFn = (content: string) => Promise<{ messageId: string }>
+type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
+
+// должно совпадать с MessagePreview.MaxLength на бэкенде (GetMessagesQueryHandler/MessageSentEventHandler) —
+// цитата в ответе живая: показывает текущий текст оригинала, обрезанный так же, как при отправке/загрузке истории
+const REPLY_PREVIEW_MAX_LENGTH = 120
+
+function truncateReplyPreview(content: string): string {
+  return content.length <= REPLY_PREVIEW_MAX_LENGTH ? content : content.slice(0, REPLY_PREVIEW_MAX_LENGTH) + '…'
+}
 
 interface UseChatMessagesOptions {
   /** Новое сообщение добавлено в текущий открытый чат — повод проскроллить вниз */
@@ -64,7 +72,10 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   }, [id])
 
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
-    if (msg.senderId === getMyUserId()) return
+    // обычную отправку своего сообщения уже показал optimistic-UI в send() — этот echo игнорируем.
+    // Пересылка — исключение: у неё нет локального оптимистичного добавления, поэтому свою же
+    // пересланную копию нужно показать по этому же realtime-событию
+    if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId) return
 
     setChatMessages(prev => {
       // если чат ещё не открывали — его историю подтянет fetchMessages при открытии
@@ -73,13 +84,15 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       // сервер шлёт ReceiveMessage и в группу чата, и в личную группу участника —
       // если получатель уже состоит в обеих (обычное дело), событие приходит дважды
       if (chatMsgs.some(m => m.messageId === msg.messageId)) return prev
+
+      const own = msg.senderId === getMyUserId()
       return {
         ...prev,
         [msg.chatId]: [...chatMsgs, {
           id:              nextMessageId(),
           messageId:       msg.messageId,
           text:            msg.content,
-          own:             false,
+          own,
           senderId:        msg.senderId,
           senderName:      msg.senderName,
           senderInitials:  initials(msg.senderName),
@@ -88,6 +101,14 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           time:            new Date(msg.sentAt).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
           sentAt:          msg.sentAt,
           date:            i18n.t('common.today'),
+          // свои сообщения сюда попадают только пересланными (см. guard выше) — сервер уже
+          // подтвердил отправку, значит статус сразу 'sent', иначе галочка никогда бы не появилась
+          status:          own ? 'sent' as const : undefined,
+          forwardedFromUserId:   msg.forwardedFromUserId ?? undefined,
+          forwardedFromUserName: msg.forwardedFromUserName ?? undefined,
+          replyToMessageId:   msg.replyToMessageId ?? undefined,
+          replyToSenderName:  msg.replyToSenderName ?? undefined,
+          replyToContent:     msg.replyToContent,
         }],
       }
     })
@@ -105,7 +126,11 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       if (!chatMsgs) return prev
       return {
         ...prev,
-        [event.chatId]: chatMsgs.filter(m => m.messageId !== event.messageId),
+        // цитата — живая ссылка на оригинал: если он удалён, ответы на него сразу показывают
+        // плейсхолдер "Исходное сообщение удалено" вместо застрявшего старого текста
+        [event.chatId]: chatMsgs
+          .filter(m => m.messageId !== event.messageId)
+          .map(m => m.replyToMessageId === event.messageId ? { ...m, replyToContent: null } : m),
       }
     })
   }, [])
@@ -119,15 +144,32 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }))
   }, [])
 
+  const deleteMessages = useCallback(async (chatId: string, msgs: Message[]) => {
+    const messageIds = msgs.map(m => m.messageId).filter((mid): mid is string => !!mid)
+    if (messageIds.length === 0) return
+    await deleteMessagesApi(chatId, messageIds)
+    const localIds = new Set(msgs.map(m => m.id))
+    setChatMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] ?? []).filter(m => !localIds.has(m.id)),
+    }))
+  }, [])
+
   const handleEditedMessage = useCallback((event: MessageEdited) => {
     setChatMessages(prev => {
       const chatMsgs = prev[event.chatId]
       if (!chatMsgs) return prev
+      const replyPreview = truncateReplyPreview(event.newContent)
       return {
         ...prev,
-        [event.chatId]: chatMsgs.map(m =>
-          m.messageId === event.messageId ? { ...m, text: event.newContent, edited: true } : m
-        ),
+        // цитата — живая ссылка на оригинал: правим и сам отредактированный текст, и превью
+        // цитаты у всех сообщений, которые на него ссылаются (иначе цитата "протухнет" до
+        // следующей загрузки истории с сервера)
+        [event.chatId]: chatMsgs.map(m => {
+          if (m.messageId === event.messageId) return { ...m, text: event.newContent, edited: true }
+          if (m.replyToMessageId === event.messageId) return { ...m, replyToContent: replyPreview }
+          return m
+        }),
       }
     })
   }, [])
@@ -151,19 +193,35 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     setLoadingHistory(true)
     onBeforePrepend()
 
-    fetchMessages(id, { before: nextCursor[id] }).then(({ messages: older, nextCursor: cursor }) => {
+    // страница целиком из удалённых сообщений после фильтрации на клиенте (см. fetchMessages)
+    // даёт messages.length === 0 при непустом nextCursor — IntersectionObserver в этом случае
+    // больше не пересечётся заново, и подгрузка молча зависнет. Поэтому тянем страницы подряд,
+    // пока не найдём хоть одно видимое сообщение или не закончится история.
+    async function fetchUntilVisible(before: string | null) {
+      const { messages: older, nextCursor: cursor } = await fetchMessages(id!, { before })
+      setNextCursor(prev => ({ ...prev, [id!]: cursor }))
+
       if (older.length > 0) {
-        setChatMessages(prev => ({ ...prev, [id]: [...older, ...(prev[id] ?? [])] }))
+        setChatMessages(prev => ({ ...prev, [id!]: [...older, ...(prev[id!] ?? [])] }))
         onAfterPrepend()
+        setHistoryLoaded(prev => ({ ...prev, [id!]: cursor === null }))
+        return
       }
-      setNextCursor(prev => ({ ...prev, [id]: cursor }))
-      setHistoryLoaded(prev => ({ ...prev, [id]: cursor === null }))
-    }).finally(() => setLoadingHistory(false))
+
+      if (cursor === null) {
+        setHistoryLoaded(prev => ({ ...prev, [id!]: true }))
+        return
+      }
+
+      await fetchUntilVisible(cursor)
+    }
+
+    fetchUntilVisible(nextCursor[id]).finally(() => setLoadingHistory(false))
   }, [id, loadingHistory, historyLoaded, nextCursor])
 
-  const doSend = useCallback(async (chatId: string, text: string, tempId: number, signalRSend: SendFn) => {
+  const doSend = useCallback(async (chatId: string, text: string, tempId: number, signalRSend: SendFn, replyToMessageId?: string) => {
     try {
-      const { messageId } = await signalRSend(text)
+      const { messageId } = await signalRSend(text, replyToMessageId)
       setChatMessages(prev => ({
         ...prev,
         [chatId]: (prev[chatId] ?? []).map(m =>
@@ -180,7 +238,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }
   }, [])
 
-  const send = useCallback((chatId: string, text: string, signalRSend: SendFn, meSender: Sender) => {
+  const send = useCallback((chatId: string, text: string, signalRSend: SendFn, meSender: Sender, replyTo?: Message) => {
     const tempId = nextMessageId()
     const now = new Date()
     const newMsg: Message = {
@@ -189,10 +247,13 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       sentAt: now.toISOString(),
       date: i18n.t('common.today'),
       status: 'pending',
+      replyToMessageId:  replyTo?.messageId,
+      replyToSenderName: replyTo?.senderName,
+      replyToContent:    replyTo?.text,
     }
     setChatMessages(prev => ({ ...prev, [chatId]: [...(prev[chatId] ?? []), newMsg] }))
     opts.onAppend?.(true)
-    doSend(chatId, text, tempId, signalRSend)
+    doSend(chatId, text, tempId, signalRSend, replyTo?.messageId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doSend])
 
@@ -203,7 +264,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
         m.id === msg.id ? { ...m, status: 'pending' as const } : m
       ),
     }))
-    doSend(chatId, msg.text, msg.id, signalRSend)
+    doSend(chatId, msg.text, msg.id, signalRSend, msg.replyToMessageId)
   }, [doSend])
 
   return {
@@ -220,6 +281,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     send,
     retry,
     deleteMessage,
+    deleteMessages,
     editMessage,
   }
 }

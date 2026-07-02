@@ -17,6 +17,11 @@ export interface IncomingMessage {
   senderAvatarColor: string
   content: string
   sentAt: string
+  forwardedFromUserId?: string | null
+  forwardedFromUserName?: string | null
+  replyToMessageId?: string | null
+  replyToSenderName?: string | null
+  replyToContent?: string | null
 }
 
 export interface MessageEdited {
@@ -45,6 +50,11 @@ export interface TypingEvent {
 export interface UserOnlineEvent {
   userId: string
   isOnline: boolean
+}
+
+/** Чат создан / состав участников изменился / переименован — сигнал перезагрузить список чатов. */
+export interface ChatUpdatedEvent {
+  chatId: string
 }
 
 // ── Клиент ────────────────────────────────────────────────────────────────────
@@ -154,6 +164,11 @@ export class SignalRClient {
   onUserOnline(handler: (event: UserOnlineEvent) => void): () => void {
     this.connection.on('UserOnline', handler)
     return () => this.connection.off('UserOnline', handler)
+  }
+
+  onChatUpdated(handler: (event: ChatUpdatedEvent) => void): () => void {
+    this.connection.on('ChatUpdated', handler)
+    return () => this.connection.off('ChatUpdated', handler)
   }
 
   onReconnecting(handler: () => void): void {

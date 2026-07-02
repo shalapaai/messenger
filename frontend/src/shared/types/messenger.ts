@@ -28,10 +28,12 @@ export interface ChatMeta {
 }
 
 export interface GroupMember {
+  userId: string
   name: string
   initials: string
   color: string
-  role: 'Администратор' | 'Участник'
+  avatarUrl: string | null
+  role: 'owner' | 'admin' | 'member'
   online: boolean
 }
 
@@ -51,6 +53,12 @@ export interface Message {
   date: string
   status?: 'pending' | 'sent' | 'failed'
   edited?: boolean
+  forwardedFromUserId?: string
+  forwardedFromUserName?: string
+  replyToMessageId?: string
+  replyToSenderName?: string
+  /** null, если оригинал удалён/недоступен — тогда показываем плейсхолдер вместо цитаты */
+  replyToContent?: string | null
 }
 
 export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date' | 'sentAt'>

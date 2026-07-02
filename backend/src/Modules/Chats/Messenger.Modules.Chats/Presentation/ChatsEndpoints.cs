@@ -10,6 +10,7 @@ using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Modules.Chats.Application.Features.MarkChatRead;
+using Messenger.Modules.Chats.Application.Features.UploadChatAvatar;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -95,6 +96,17 @@ public static class ChatsEndpoints
                              "Текущий пользователь становится владельцем (Owner), переданные участники добавляются с ролью Member.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
+
+        group.MapPost("/{id:guid}/avatar", UploadChatAvatar)
+            .WithName("UploadChatAvatar")
+            .WithSummary("Загрузить аватарку группового чата")
+            .WithDescription("Доступно только Admin и Owner. Заменяет предыдущую аватарку группы, если была.")
+            .Accepts<IFormFile>("multipart/form-data")
+            .Produces<UploadChatAvatarResponse>(StatusCodes.Status200OK)
+            .DisableAntiforgery()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         return app;
     }
@@ -228,9 +240,31 @@ public static class ChatsEndpoints
             ? Results.Created($"/api/chats/{result.Value}", result.Value)
             : result.Error.ToHttpResult();
     }
+
+    private static async Task<IResult> UploadChatAvatar(
+        Guid              id,
+        IFormFile         file,
+        HttpContext       httpContext,
+        ISender           sender,
+        CancellationToken ct)
+    {
+        if (file.Length == 0)
+            return Results.BadRequest(new { error = "File is empty" });
+
+        var requesterId = httpContext.GetUserId();
+
+        await using var stream = file.OpenReadStream();
+        var command = new UploadChatAvatarCommand(id, requesterId, stream, file.FileName, file.ContentType, file.Length);
+        var result  = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.Ok(new UploadChatAvatarResponse(result.Value!))
+            : result.Error.ToHttpResult();
+    }
 }
 
 public sealed record UpdateChatRequest(string? Name, string? AvatarUrl);
 public sealed record AddChatMemberRequest(Guid UserId);
 public sealed record CreateDirectChatRequest(Guid OtherUserId);
 public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds);
+public sealed record UploadChatAvatarResponse(string Url);

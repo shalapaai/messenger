@@ -14,5 +14,9 @@ public sealed record ChatDetailDto(
 
 public sealed record ChatMemberDto(
     Guid     UserId,
+    string   DisplayName,
+    string?  AvatarUrl,
+    string   AvatarColor,
     string   Role,
-    DateTime JoinedAt);
+    DateTime JoinedAt,
+    bool     Online);

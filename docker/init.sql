@@ -121,16 +121,18 @@ CREATE INDEX IF NOT EXISTS idx_chats_members_user_id ON chats.members (user_id);
 -- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS messages.message (
-    id                  UUID          PRIMARY KEY,
-    chat_id             UUID          NOT NULL,
-    sender_id           UUID          NOT NULL,
-    content             VARCHAR(4096) NOT NULL,
-    file_url            VARCHAR(2048) DEFAULT NULL,
-    status              VARCHAR(20)   NOT NULL,
-    sent_at             TIMESTAMPTZ   NOT NULL,
-    edited_at           TIMESTAMPTZ   DEFAULT NULL,
-    deleted_at          TIMESTAMPTZ   DEFAULT NULL,
-    reply_to_message_id UUID          DEFAULT NULL,
+    id                        UUID          PRIMARY KEY,
+    chat_id                   UUID          NOT NULL,
+    sender_id                 UUID          NOT NULL,
+    content                   VARCHAR(4096) NOT NULL,
+    file_url                  VARCHAR(2048) DEFAULT NULL,
+    status                    VARCHAR(20)   NOT NULL,
+    sent_at                   TIMESTAMPTZ   NOT NULL,
+    edited_at                 TIMESTAMPTZ   DEFAULT NULL,
+    deleted_at                TIMESTAMPTZ   DEFAULT NULL,
+    reply_to_message_id       UUID          DEFAULT NULL,
+    forwarded_from_message_id UUID          DEFAULT NULL,
+    forwarded_from_user_id    UUID          DEFAULT NULL,
 
     CONSTRAINT fk_message_chat_id
         FOREIGN KEY (chat_id) REFERENCES chats.chats (id) ON DELETE CASCADE,
@@ -139,7 +141,15 @@ CREATE TABLE IF NOT EXISTS messages.message (
         FOREIGN KEY (sender_id) REFERENCES auth.user (id) ON DELETE CASCADE,
 
     CONSTRAINT fk_message_reply_to_message_id
-        FOREIGN KEY (reply_to_message_id) REFERENCES messages.message (id) ON DELETE SET NULL
+        FOREIGN KEY (reply_to_message_id) REFERENCES messages.message (id) ON DELETE SET NULL,
+
+    -- пересланное сообщение — независимая копия; если оригинал/автор удалён, копия остаётся,
+    -- просто пропадает подпись "Переслано от"
+    CONSTRAINT fk_message_forwarded_from_message_id
+        FOREIGN KEY (forwarded_from_message_id) REFERENCES messages.message (id) ON DELETE SET NULL,
+
+    CONSTRAINT fk_message_forwarded_from_user_id
+        FOREIGN KEY (forwarded_from_user_id) REFERENCES auth.user (id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS ix_message_chat_id_sent_at

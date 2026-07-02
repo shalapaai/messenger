@@ -4,6 +4,7 @@ using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
+using Microsoft.EntityFrameworkCore;
 
 public sealed class AddChatMemberCommandHandler(
     IChatRepository chatRepository,
@@ -27,9 +28,23 @@ public sealed class AddChatMemberCommandHandler(
         if (requester.Role == ChatMemberRole.Member)
             return Result.Failure(Error.Forbidden("Only admins can add members"));
 
-        chat.AddMember(command.UserId);
+        if (chat.Members.Any(m => m.UserId == command.UserId))
+            return Result.Failure(Error.Validation("UserId", "User is already a member of this chat"));
 
-        await unitOfWork.SaveChangesAsync(ct);
+        chat.AddMember(command.UserId);
+        chat.NotifyMembershipChanged();
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // TOCTOU: два одновременных add-member на одного userId оба проходят проверку выше —
+            // второй SaveChangesAsync падает на составном PK (chat_id, user_id). Превращаем в ту же
+            // дружелюбную ошибку валидации, а не 500.
+            return Result.Failure(Error.Validation("UserId", "User is already a member of this chat"));
+        }
 
         return Result.Success();
     }

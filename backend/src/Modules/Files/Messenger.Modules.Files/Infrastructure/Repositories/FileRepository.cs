@@ -14,6 +14,12 @@ public sealed class FileRepository(FilesDbContext dbContext) : IFileRepository
             .OrderByDescending(f => f.UploadedAt)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<FileUpload?> GetGroupAvatarByChatIdAsync(Guid chatId, CancellationToken ct = default) =>
+        await dbContext.FileUploads
+            .Where(f => f.ChatId == chatId && f.Category == FileCategory.GroupAvatar)
+            .OrderByDescending(f => f.UploadedAt)
+            .FirstOrDefaultAsync(ct);
+
     public void Add(FileUpload file)    => dbContext.FileUploads.Add(file);
     public void Remove(FileUpload file) => dbContext.FileUploads.Remove(file);
 }

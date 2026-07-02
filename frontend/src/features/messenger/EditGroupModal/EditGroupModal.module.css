@@ -1,0 +1,82 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 20px;
+}
+
+.modalPanel {
+  background: var(--color-surface-raised);
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 380px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border);
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-surface-muted);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.modalClose:hover { background: var(--color-border); }
+
+.title { font-size: 20px; font-weight: 800; margin-bottom: 18px; color: var(--color-text); }
+
+.avatarBlock { display: flex; justify-content: center; margin-bottom: 18px; }
+
+.nameInput {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  border-radius: 14px;
+  padding: 13px 16px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.nameInput::placeholder { color: var(--color-text-faint); }
+.nameInput:focus { border-color: var(--color-primary); background: var(--color-surface); }
+
+.error { color: var(--color-danger-strong); font-size: 13px; font-weight: 600; margin: 10px 0 0; }
+
+.actions { display: flex; gap: 10px; margin-top: 20px; }
+.cancelBtn, .saveBtn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.cancelBtn { background: var(--color-surface-muted); color: var(--color-text); }
+.cancelBtn:hover { background: var(--color-border); }
+.saveBtn { background: var(--color-primary); color: var(--color-on-primary); }
+.saveBtn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }

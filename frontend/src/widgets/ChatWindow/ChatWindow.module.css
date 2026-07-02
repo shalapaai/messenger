@@ -8,6 +8,51 @@
   flex-shrink: 0;
 }
 
+/* ── Панель множественного выделения сообщений ────────────────────────────── */
+.selectionBar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.selectionBarCancel {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  font-size: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.selectionBarCancel:hover { color: var(--color-text); }
+
+.selectionBarCount { flex: 1; font-size: 15px; font-weight: 700; color: var(--color-text); }
+
+.selectionBarActions { display: flex; align-items: center; gap: 6px; }
+
+.selectionBarBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: var(--color-text-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.selectionBarBtn:hover:not(:disabled) { background: var(--color-surface-muted); color: var(--color-text); }
+.selectionBarBtn:disabled { opacity: 0.35; cursor: default; }
+.selectionBarBtnDanger:hover:not(:disabled) { background: #fee2e2; color: #e03b3b; }
+
 .chatHeaderTrigger {
   display: flex;
   align-items: center;
@@ -83,10 +128,32 @@
   align-items: flex-end;
   gap: 10px;
   max-width: 72%;
+  border-radius: 12px;
+  transition: background 0.12s;
 }
 
 .msgRow + .msgRow { margin-top: 2px; }
 .senderSwitch { margin-top: 12px; }
+
+.msgRowSelectable { cursor: pointer; }
+.msgRowSelectable:hover { background: var(--color-surface-muted); }
+.msgRowSelected { background: var(--color-surface-muted); }
+
+.msgCheckbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.msgCheckboxChecked { background: var(--color-primary); border-color: var(--color-primary); }
+.msgCheckboxDisabled { opacity: 0.3; }
 
 .msgAvatar {
   width: 36px;
@@ -122,6 +189,7 @@
 .bubbleOwn { background: var(--color-primary); color: var(--color-on-primary); }
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
+.forwardedLabel { display: block; font-size: 12px; font-weight: 700; opacity: 0.75; margin-bottom: 2px; }
 
 .msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 46px; }
 .msgEdited { margin-right: 4px; font-style: italic; }
@@ -498,3 +566,42 @@
   padding: 2px 6px;
 }
 .editingBarCancel:hover { color: var(--color-text); }
+
+/* ── Панель ответа на сообщение ───────────────────────────────────────────── */
+.replyingBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 24px;
+  background: var(--color-surface-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+.replyingBarInfo { min-width: 0; }
+.replyingBarSender { font-size: 13px; font-weight: 700; color: var(--color-primary); }
+.replyingBarText {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Цитата отвечаемого сообщения внутри бабла ────────────────────────────── */
+.replyQuote {
+  border-left: 3px solid currentColor;
+  opacity: 0.85;
+  padding: 2px 0 4px 8px;
+  margin-bottom: 4px;
+}
+.replyQuoteSender { font-size: 12px; font-weight: 700; }
+.replyQuoteText {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}

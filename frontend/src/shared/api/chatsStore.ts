@@ -42,13 +42,17 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
 
   handleNewMessage: (msg, activeChatId) => {
     const target = get().chats.find(c => c.id === msg.chatId)
+    // свои же сообщения (обычные — в открытом чате, пересланные — в любой) никогда не непрочитанные;
+    // без этой проверки пересылка в чат, который сейчас не открыт, помечала бы его непрочитанным
+    // собственным же сообщением отправителя
+    const isOwnMessage = msg.senderId === getMyUserId()
 
     if (!target) {
       // сообщение пришло в чат, которого ещё нет в списке — собеседник только что создал
       // его первым сообщением. Подтягиваем список целиком, чтобы чат появился сразу,
       // без перезагрузки страницы.
       get().loadChats().then(() => {
-        if (msg.chatId === activeChatId) return
+        if (msg.chatId === activeChatId || isOwnMessage) return
         set((s) => ({
           chats: s.chats.map(c =>
             c.id === msg.chatId ? { ...c, unread: c.unread + 1, lastMessageId: msg.messageId } : c
@@ -71,8 +75,8 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
               preview: msg.content,
               time,
               lastMessageId: msg.messageId,
-              // не считаем непрочитанными если чат сейчас открыт
-              unread: msg.chatId === activeChatId ? chat.unread : chat.unread + 1,
+              // не считаем непрочитанными если чат сейчас открыт или сообщение отправлено мной же
+              unread: (msg.chatId === activeChatId || isOwnMessage) ? chat.unread : chat.unread + 1,
             }
           : chat
       )
