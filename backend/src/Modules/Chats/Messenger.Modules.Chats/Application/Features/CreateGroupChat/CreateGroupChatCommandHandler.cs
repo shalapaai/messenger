@@ -22,6 +22,8 @@ public sealed class CreateGroupChatCommandHandler(
         foreach (var memberId in command.MemberIds.Where(id => id != command.CreatorId))
             chat.AddMember(memberId);
 
+        chat.NotifyMembershipChanged();
+
         chatRepository.Add(chat);
         await unitOfWork.SaveChangesAsync(ct);
 

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { searchUsers, type UserSearchResult } from '../../../shared/api/usersApi'
+import type { UserSearchResult } from '../../../shared/api/usersApi'
 import { useChatsStore } from '../../../shared/api/chatsStore'
 import { colorFromId, initials } from '../../../shared/api/chatsApi'
+import { useUserSearch } from '../../../shared/hooks/useUserSearch'
 import s from './NewChatModal.module.css'
 
 interface NewChatModalProps {
@@ -13,45 +13,8 @@ interface NewChatModalProps {
 
 export function NewChatModal({ isOpen, onClose, onSelect }: NewChatModalProps) {
   const { t } = useTranslation()
-  const [query, setQuery]     = useState('')
-  const [results, setResults] = useState<UserSearchResult[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(false)
+  const { query, setQuery, results, loading, error } = useUserSearch(isOpen)
   const chats = useChatsStore((s) => s.chats)
-
-  useEffect(() => {
-    if (isOpen) return
-
-    const timer = setTimeout(() => {
-      setQuery('')
-      setResults([])
-      setError(false)
-    }, 0)
-
-    return () => clearTimeout(timer)
-  }, [isOpen])
-
-  useEffect(() => {
-    const q = query.trim()
-
-    const timer = setTimeout(() => {
-      if (!q) {
-        setResults([])
-        setError(false)
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-      setError(false)
-      searchUsers(q)
-        .then(setResults)
-        .catch(() => setError(true))
-        .finally(() => setLoading(false))
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [query])
 
   if (!isOpen) return null
 

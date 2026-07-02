@@ -16,15 +16,13 @@ public sealed class ForwardMessagesCommandHandler(
         if (command.MessageIds.Count == 0)
             return Result.Failure<List<Guid>>(Error.Validation("MessageIds", "Select at least one message"));
 
-        // проверки членства в источнике и получателе не зависят друг от друга — гоняем параллельно
-        var sourceMembership = membershipChecker.IsMemberAsync(command.SourceChatId, command.RequesterId, ct);
-        var targetMembership = membershipChecker.IsMemberAsync(command.TargetChatId, command.RequesterId, ct);
-        await Task.WhenAll(sourceMembership, targetMembership);
-
-        if (!sourceMembership.Result)
+        // Task.WhenAll здесь было бы некорректно: оба вызова идут через один и тот же scoped
+        // DbContext, а EF Core не поддерживает параллельные операции на одном инстансе —
+        // падает с "A second operation was started on this context instance..." на каждый форвард
+        if (!await membershipChecker.IsMemberAsync(command.SourceChatId, command.RequesterId, ct))
             return Result.Failure<List<Guid>>(Error.Forbidden("You are not a member of the source chat"));
 
-        if (!targetMembership.Result)
+        if (!await membershipChecker.IsMemberAsync(command.TargetChatId, command.RequesterId, ct))
             return Result.Failure<List<Guid>>(Error.Forbidden("You are not a member of the target chat"));
 
         var ids = command.MessageIds.Select(MessageId.From).ToList();

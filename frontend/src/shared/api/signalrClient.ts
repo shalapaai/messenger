@@ -52,6 +52,11 @@ export interface UserOnlineEvent {
   isOnline: boolean
 }
 
+/** Чат создан / состав участников изменился / переименован — сигнал перезагрузить список чатов. */
+export interface ChatUpdatedEvent {
+  chatId: string
+}
+
 // ── Клиент ────────────────────────────────────────────────────────────────────
 
 export class SignalRClient {
@@ -159,6 +164,11 @@ export class SignalRClient {
   onUserOnline(handler: (event: UserOnlineEvent) => void): () => void {
     this.connection.on('UserOnline', handler)
     return () => this.connection.off('UserOnline', handler)
+  }
+
+  onChatUpdated(handler: (event: ChatUpdatedEvent) => void): () => void {
+    this.connection.on('ChatUpdated', handler)
+    return () => this.connection.off('ChatUpdated', handler)
   }
 
   onReconnecting(handler: () => void): void {

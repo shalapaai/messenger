@@ -28,10 +28,12 @@ export interface ChatMeta {
 }
 
 export interface GroupMember {
+  userId: string
   name: string
   initials: string
   color: string
-  role: 'Администратор' | 'Участник'
+  avatarUrl: string | null
+  role: 'owner' | 'admin' | 'member'
   online: boolean
 }
 

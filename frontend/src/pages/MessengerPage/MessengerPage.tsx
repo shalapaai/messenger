@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import type { Filter, ModalUser, Message } from '../../shared/types/messenger'
-import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead } from '../../shared/api/chatsApi'
+import type { Filter, ModalUser, Message, GroupMember } from '../../shared/types/messenger'
+import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead, createGroupChat, addChatMember, updateChat, fetchChatDetail } from '../../shared/api/chatsApi'
 import { forwardMessages as forwardMessagesApi } from '../../shared/api/messagesApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -19,6 +19,9 @@ import { ProfilePanel }     from '../../widgets/ProfilePanel'
 import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
+import { NewGroupModal }    from '../../features/messenger/NewGroupModal'
+import { EditGroupModal }   from '../../features/messenger/EditGroupModal'
+import { AddMemberModal }   from '../../features/messenger/AddMemberModal'
 import { ForwardModal }     from '../../features/messenger/ForwardModal'
 import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
 import s from './MessengerPage.module.css'
@@ -45,6 +48,11 @@ export function MessengerPage() {
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
+  const [newGroupModalOpen,  setNewGroupModalOpen]  = useState(false)
+  const [editGroupModalOpen, setEditGroupModalOpen] = useState(false)
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false)
+  const [groupMembers,        setGroupMembers]        = useState<GroupMember[]>([])
+  const [groupMembersLoading, setGroupMembersLoading] = useState(false)
   // sourceChatId фиксируется вместе с сообщениями в момент выбора — если пользователь уйдёт в
   // другой чат, пока модалка открыта (например, кнопкой "назад" в браузере), пересылка всё равно
   // уйдёт из правильного исходного чата, а не из того, что случайно стал активным сейчас
@@ -86,6 +94,36 @@ export function MessengerPage() {
   useEffect(() => { loadChats() }, [loadChats])
   useEffect(() => { if (id) resetUnread(id) }, [id, resetUnread])
 
+  // ── Участники группового чата — резолвятся отдельно (имя/аватар/онлайн), т.к.
+  // список чатов их не содержит; подгружаем при открытии карточки группы ─────────
+  // requestedGroupChatIdRef защищает от гонки ответов: если открыть карточку группы A,
+  // сразу закрыть и открыть карточку группы B, а ответ по A придёт позже ответа по B,
+  // устаревший ответ по A не должен затереть уже показанных участников группы B
+  const requestedGroupChatIdRef = useRef<string | null>(null)
+
+  async function loadGroupMembers(chatId: string) {
+    requestedGroupChatIdRef.current = chatId
+    setGroupMembersLoading(true)
+    try {
+      const members = await fetchChatDetail(chatId)
+      if (requestedGroupChatIdRef.current === chatId) setGroupMembers(members)
+    } catch {
+      if (requestedGroupChatIdRef.current === chatId) setGroupMembers([])
+    } finally {
+      if (requestedGroupChatIdRef.current === chatId) setGroupMembersLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      if (groupModalOpen && id) loadGroupMembers(id)
+      else { requestedGroupChatIdRef.current = null; setGroupMembers([]) }
+    })
+    return () => { cancelled = true }
+  }, [groupModalOpen, id])
+
   // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
@@ -117,6 +155,10 @@ export function MessengerPage() {
     onMessagesRead: (event) => handleMessagesRead(event.chatId, event.readerId, event.readAt),
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
+    onChatUpdated: (event) => {
+      loadChats()
+      if (event.chatId === id && groupModalOpen) loadGroupMembers(id)
+    },
   })
 
   useEffect(() => {
@@ -144,15 +186,17 @@ export function MessengerPage() {
 
   useEffect(() => {
     const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen || !!forwardState
+      || newGroupModalOpen || editGroupModalOpen || addMemberModalOpen
     if (!anyOpen) return
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
         setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false); setForwardState(null)
+        setNewGroupModalOpen(false); setEditGroupModalOpen(false); setAddMemberModalOpen(false)
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [modalUser, groupModalOpen, editOpen, profileOpen, forwardState])
+  }, [modalUser, groupModalOpen, editOpen, profileOpen, forwardState, newGroupModalOpen, editGroupModalOpen, addMemberModalOpen])
 
   async function handleSend(text: string, replyTo?: Message) {
     typingIndicator.stopOwnTyping()
@@ -239,6 +283,42 @@ export function MessengerPage() {
       navigate('/chats')
     } catch {
       window.alert(t('messenger.leaveGroupFailed'))
+    }
+  }
+
+  // ошибку намеренно не глотаем здесь — модалки сами показывают inline-сообщение об ошибке
+  async function handleCreateGroup(name: string, memberIds: string[]) {
+    const newChatId = await createGroupChat(name, memberIds)
+    await loadChats()
+    setNewGroupModalOpen(false)
+    navigate(`/chats/${newChatId}`)
+  }
+
+  async function handleAddMemberSelect(user: UserSearchResult) {
+    if (!id) return
+    try {
+      await addChatMember(id, user.userId)
+      setAddMemberModalOpen(false)
+      await loadGroupMembers(id)
+    } catch {
+      window.alert(t('messenger.addMemberFailed'))
+    }
+  }
+
+  async function handleEditGroupSave(name: string) {
+    if (!id) return
+    await updateChat(id, { name })
+    await loadChats()
+    setEditGroupModalOpen(false)
+  }
+
+  async function handleRemoveMember(userId: string) {
+    if (!id) return
+    try {
+      await leaveGroupChat(id, userId)
+      await loadGroupMembers(id)
+    } catch {
+      window.alert(t('messenger.removeMemberFailed'))
     }
   }
 
@@ -331,7 +411,7 @@ export function MessengerPage() {
             discardInputHistoryLayer()
             navigate(`/chats/${cid}`)
           }}
-          onNewChat={() => alert(t('messenger.groupCreationInProgress'))}
+          onNewChat={() => setNewGroupModalOpen(true)}
           onUserClick={userId => {
             const chat = chats.find(c => c.otherUserId === userId)
             openUserModal(userId, chat?.name ?? '', onlineStatuses[userId] ?? false)
@@ -430,12 +510,43 @@ export function MessengerPage() {
           isOpen={groupModalOpen}
           chatId={id}
           meta={meta}
-          members={[]}
+          members={groupMembers}
+          membersLoading={groupMembersLoading}
+          currentUserId={profile?.userId}
           onClose={() => setGroupModalOpen(false)}
           onMemberClick={user => { setGroupModalOpen(false); setModalUserIsChatPartner(false); setModalUser(user) }}
           onLeave={handleLeaveGroup}
+          onAddMember={() => setAddMemberModalOpen(true)}
+          onEditGroup={() => setEditGroupModalOpen(true)}
+          onRemoveMember={handleRemoveMember}
         />
       )}
+
+      <NewGroupModal
+        isOpen={newGroupModalOpen}
+        onClose={() => setNewGroupModalOpen(false)}
+        onCreate={handleCreateGroup}
+      />
+
+      {id && meta && (
+        <EditGroupModal
+          isOpen={editGroupModalOpen}
+          chatId={id}
+          currentName={meta.name}
+          currentAvatarUrl={meta.avatarUrl}
+          currentColor={meta.color}
+          onClose={() => setEditGroupModalOpen(false)}
+          onSave={handleEditGroupSave}
+          onAvatarUploaded={() => loadChats()}
+        />
+      )}
+
+      <AddMemberModal
+        isOpen={addMemberModalOpen}
+        excludeUserIds={groupMembers.map(m => m.userId)}
+        onClose={() => setAddMemberModalOpen(false)}
+        onSelect={handleAddMemberSelect}
+      />
 
       <ForwardModal
         messages={forwardState?.messages ?? null}

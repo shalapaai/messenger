@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent } from './signalrClient'
+import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent, type ChatUpdatedEvent } from './signalrClient'
 import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
 export type { ConnectionStatus }
@@ -13,6 +13,7 @@ interface UseSignalROptions {
   onTyping?: (event: TypingEvent) => void
   onStoppedTyping?: (event: TypingEvent) => void
   onUserOnline?: (event: UserOnlineEvent) => void
+  onChatUpdated?: (event: ChatUpdatedEvent) => void
 }
 
 export function useSignalR(options: UseSignalROptions = {}) {
@@ -33,19 +34,25 @@ export function useSignalR(options: UseSignalROptions = {}) {
   }, [options.chatId, status])
 
   // ── Подписки на события ───────────────────────────────────────────────────
+  // Подписываемся ОДИН раз (пустой deps) через стабильные trampoline-колбэки, которые на
+  // каждый вызов читают actuals из optionsRef — иначе, поскольку вызывающий код (MessengerPage)
+  // передаёт options как новый объект с новыми инлайн-функциями на каждый рендер, эффект
+  // пересоздавал бы ВСЕ 8 подписок при каждом ре-рендере страницы (а не только изменившуюся),
+  // с окном рассинхронизации между off() и повторным on(), где событие могло бы потеряться
   useEffect(() => {
     const off = [
-      options.onMessage       && signalR.onReceiveMessage(options.onMessage),
-      options.onMessageEdited  && signalR.onMessageEdited(options.onMessageEdited),
-      options.onMessageDeleted && signalR.onMessageDeleted(options.onMessageDeleted),
-      options.onMessagesRead  && signalR.onMessagesRead(options.onMessagesRead),
-      options.onTyping        && signalR.onUserTyping(options.onTyping),
-      options.onStoppedTyping && signalR.onUserStoppedTyping(options.onStoppedTyping),
-      options.onUserOnline    && signalR.onUserOnline(options.onUserOnline),
-    ].filter(Boolean) as Array<() => void>
+      signalR.onReceiveMessage(msg => optionsRef.current.onMessage?.(msg)),
+      signalR.onMessageEdited(event => optionsRef.current.onMessageEdited?.(event)),
+      signalR.onMessageDeleted(event => optionsRef.current.onMessageDeleted?.(event)),
+      signalR.onMessagesRead(event => optionsRef.current.onMessagesRead?.(event)),
+      signalR.onUserTyping(event => optionsRef.current.onTyping?.(event)),
+      signalR.onUserStoppedTyping(event => optionsRef.current.onStoppedTyping?.(event)),
+      signalR.onUserOnline(event => optionsRef.current.onUserOnline?.(event)),
+      signalR.onChatUpdated(event => optionsRef.current.onChatUpdated?.(event)),
+    ]
 
     return () => off.forEach(fn => fn())
-  }, [options.onMessage, options.onMessageEdited, options.onMessageDeleted, options.onMessagesRead, options.onTyping, options.onStoppedTyping, options.onUserOnline])
+  }, [])
 
   const sendMessage = useCallback((content: string, replyToMessageId?: string) => {
     const { chatId } = optionsRef.current

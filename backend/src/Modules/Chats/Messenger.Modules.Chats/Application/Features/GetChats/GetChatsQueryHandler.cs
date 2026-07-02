@@ -67,6 +67,19 @@ public sealed class GetChatsQueryHandler(
                     otherMemberLastReadAt = c.Members
                         .FirstOrDefault(m => m.UserId == otherUserId)?.LastReadAt;
                 }
+                else if (c.Type == ChatType.Group)
+                {
+                    // "прочитано хотя бы одним из остальных участников" — та же приблизительная
+                    // семантика, что уже применяется live через SignalR-событие MessagesRead
+                    // (chatsStore.handleMessagesRead просто запоминает последнее чтение любого
+                    // не-себя). Без этого чекмарки "прочитано" в группах после перезагрузки
+                    // страницы откатывались на "отправлено", хотя во время сессии уже стояли
+                    // двойной галочкой.
+                    otherMemberLastReadAt = c.Members
+                        .Where(m => m.UserId != query.CurrentUserId)
+                        .Select(m => m.LastReadAt)
+                        .Max();
+                }
 
                 return new ChatSummaryDto(
                     c.Id.Value,

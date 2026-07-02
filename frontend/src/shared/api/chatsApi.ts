@@ -1,12 +1,14 @@
 import { apiClient } from './apiClient'
 import { getMyUserId } from '../lib/auth/authTokens'
 import i18n, { getCurrentLocale } from '../i18n'
-import type { Chat, Message } from '../types/messenger'
+import type { Chat, Message, GroupMember } from '../types/messenger'
 
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
 
 interface LastMessageDto { messageId: string; senderId: string; content: string; sentAt: string }
 interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean; otherMemberLastReadAt: string | null }
+interface ChatMemberDto { userId: string; displayName: string; avatarUrl: string | null; avatarColor: string; role: 'owner' | 'admin' | 'member'; joinedAt: string; online: boolean }
+interface ChatDetailDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; createdAt: string; members: ChatMemberDto[] }
 interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null; replyToMessageId: string | null; replyToSenderName: string | null; replyToContent: string | null; forwardedFromUserId: string | null; forwardedFromUserName: string | null }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 
@@ -96,6 +98,10 @@ export async function fetchMessages(
       messageId:      dto.id,
       text:           dto.content,
       own:            dto.senderId === myId,
+      // history отдаёт только уже персистентные (не deleted) сообщения — для своих это
+      // всегда минимум 'sent'; без этого поля галочка "отправлено/прочитано" пропадала
+      // у любого своего сообщения после перезахода в чат (в т.ч. у пересланных)
+      status:         dto.senderId === myId ? 'sent' as const : undefined,
       senderId:       dto.senderId,
       senderName:     dto.senderName,
       senderInitials: initials(dto.senderName),
@@ -124,6 +130,46 @@ export async function markChatRead(chatId: string): Promise<void> {
 export async function createDirectChat(otherUserId: string): Promise<string> {
   const res = await apiClient.post<string>('/chats/direct', { otherUserId })
   return res.data
+}
+
+/** Создаёт новый групповой чат — текущий пользователь становится владельцем. */
+export async function createGroupChat(name: string, memberIds: string[]): Promise<string> {
+  const res = await apiClient.post<string>('/chats/group', { name, memberIds })
+  return res.data
+}
+
+/** Добавляет участника в групповой чат (доступно admin/owner). */
+export async function addChatMember(chatId: string, userId: string): Promise<void> {
+  await apiClient.post(`/chats/${chatId}/members`, { userId })
+}
+
+/** Обновляет название/аватарку группового чата (доступно admin/owner). */
+export async function updateChat(chatId: string, patch: { name?: string; avatarUrl?: string }): Promise<void> {
+  await apiClient.patch(`/chats/${chatId}`, patch)
+}
+
+/** Загружает (и заменяет предыдущую) аватарку группового чата — доступно admin/owner. */
+export async function uploadChatAvatar(chatId: string, file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await apiClient.post<{ url: string }>(`/chats/${chatId}/avatar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return res.data.url
+}
+
+/** Детальная информация о чате с резолвленными данными участников (имя, аватар, онлайн). */
+export async function fetchChatDetail(chatId: string): Promise<GroupMember[]> {
+  const res = await apiClient.get<ChatDetailDto>(`/chats/${chatId}`)
+  return res.data.members.map(m => ({
+    userId:    m.userId,
+    name:      m.displayName,
+    initials:  initials(m.displayName),
+    color:     m.avatarColor,
+    avatarUrl: m.avatarUrl,
+    role:      m.role,
+    online:    m.online,
+  }))
 }
 
 /** Полностью удаляет личный чат — для обеих сторон. */
