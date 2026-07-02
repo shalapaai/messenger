@@ -14,7 +14,9 @@ import { EmojiPicker } from '../../shared/ui/EmojiPicker'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
-const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 340
+const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 300
+const MIN_MOBILE_INPUT_LAYER_HEIGHT = 180
+const MAX_MOBILE_INPUT_LAYER_RATIO = 0.45
 
 type RenderedItem =
   | { type: 'sep'; label: string }
@@ -121,19 +123,21 @@ export function ChatWindow({
 
   // ── Мобильная раскладка ввода: эмодзи-пикер и виртуальная клавиатура ────────
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
-  const [isEmojiSpaceReserved, setIsEmojiSpaceReserved] = useState(false)
   const [isInputLayerActive, setIsInputLayerActive] = useState(false)
-  const [mobileInputLayerHeight, setMobileInputLayerHeight] = useState(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
-  const [mobileKeyboardOffset, setMobileKeyboardOffset] = useState(0)
-
+  const [mobileInputLayerHeight, setMobileInputLayerHeight] = useState(
+    DEFAULT_MOBILE_INPUT_LAYER_HEIGHT,
+  )
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiAreaRef = useRef<HTMLDivElement>(null)
   const keyboardCloseTimeoutRef = useRef<number | null>(null)
   const keyboardViewportCleanupRef = useRef<(() => void) | null>(null)
   const inputHistoryEntryRef = useRef(false)
-  const keyboardOpenedFromEmojiRef = useRef(false)
+  const isEmojiPickerOpenRef = useRef(false)
+  const keyboardWasOpenRef = useRef(false)
+  const openingEmojiPickerRef = useRef(false)
   const keyboardClosedViewportHeightRef = useRef<number | null>(null)
   const mobileInputLayerHeightRef = useRef(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
+  const textSelectionRef = useRef({ start: 0, end: 0 })
 
   const clearKeyboardCloseWait = useCallback(() => {
     if (keyboardCloseTimeoutRef.current !== null) {
@@ -154,21 +158,41 @@ export function ChatWindow({
   }
 
   function updateMobileInputLayerHeight(nextHeight: number) {
-    const roundedHeight = Math.round(nextHeight)
-    if (roundedHeight < 180) return
+    const maxHeight = Math.round(
+      (keyboardClosedViewportHeightRef.current ?? window.innerHeight) *
+        MAX_MOBILE_INPUT_LAYER_RATIO,
+    )
+    const roundedHeight = Math.min(Math.round(nextHeight), maxHeight)
+
+    if (roundedHeight < MIN_MOBILE_INPUT_LAYER_HEIGHT) return
+
     mobileInputLayerHeightRef.current = roundedHeight
     setMobileInputLayerHeight(roundedHeight)
-  }
-
-  function updateMobileKeyboardOffset(nextOffset: number) {
-    setMobileKeyboardOffset(Math.max(0, Math.round(nextOffset)))
   }
 
   function getMeasuredKeyboardHeight() {
     const viewport = window.visualViewport
     if (!viewport) return 0
-    const closedHeight = keyboardClosedViewportHeightRef.current ?? window.innerHeight
-    return closedHeight - viewport.height
+
+    const closedHeight =
+      keyboardClosedViewportHeightRef.current ?? window.innerHeight
+
+    const measuredHeights = [
+      closedHeight - viewport.height,
+      window.innerHeight - viewport.height - viewport.offsetTop,
+    ].filter((height) => height >= MIN_MOBILE_INPUT_LAYER_HEIGHT)
+
+    return measuredHeights.length > 0 ? Math.min(...measuredHeights) : 0
+  }
+
+  function rememberTextSelection() {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    textSelectionRef.current = {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd,
+    }
   }
 
   function ensureInputHistoryEntry() {
@@ -188,10 +212,9 @@ export function ChatWindow({
     clearKeyboardCloseWait()
     textareaRef.current?.blur()
     setIsEmojiPickerOpen(false)
-    setIsEmojiSpaceReserved(false)
     setIsInputLayerActive(false)
-    keyboardOpenedFromEmojiRef.current = false
-    setMobileKeyboardOffset(0)
+    keyboardWasOpenRef.current = false
+    openingEmojiPickerRef.current = false
   }, [clearKeyboardCloseWait])
 
   const removeSyntheticInputHistoryEntry = useCallback(() => {
@@ -247,13 +270,18 @@ export function ChatWindow({
   }, [contextMenu, messagesRef])
 
   useEffect(() => {
+    isEmojiPickerOpenRef.current = isEmojiPickerOpen
+  }, [isEmojiPickerOpen])
+
+  useEffect(() => {
     if (!isEmojiPickerOpen) return
+
+    openingEmojiPickerRef.current = false
 
     function handlePointerDown(event: PointerEvent) {
       if (emojiAreaRef.current && !emojiAreaRef.current.contains(event.target as Node)) {
         clearKeyboardCloseWait()
         setIsEmojiPickerOpen(false)
-        setIsEmojiSpaceReserved(false)
       }
     }
 
@@ -261,7 +289,6 @@ export function ChatWindow({
       if (event.key === 'Escape') {
         clearKeyboardCloseWait()
         setIsEmojiPickerOpen(false)
-        setIsEmojiSpaceReserved(false)
       }
     }
 
@@ -273,6 +300,26 @@ export function ChatWindow({
       document.removeEventListener('keydown', handleDocumentKeyDown)
     }
   }, [clearKeyboardCloseWait, isEmojiPickerOpen])
+
+  useEffect(() => {
+    if (!isEmojiPickerOpen || !isMobileInputMode()) return
+
+    const html = document.documentElement
+    const body = document.body
+    const previousHtmlOverscroll = html.style.overscrollBehavior
+    const previousBodyOverscroll = body.style.overscrollBehavior
+    const previousBodyOverflow = body.style.overflow
+
+    html.style.overscrollBehavior = 'none'
+    body.style.overscrollBehavior = 'none'
+    body.style.overflow = 'hidden'
+
+    return () => {
+      html.style.overscrollBehavior = previousHtmlOverscroll
+      body.style.overscrollBehavior = previousBodyOverscroll
+      body.style.overflow = previousBodyOverflow
+    }
+  }, [isEmojiPickerOpen])
 
   useEffect(
     () => () => {
@@ -298,7 +345,7 @@ export function ChatWindow({
   }, [closeInputLayer])
 
   useEffect(() => {
-    if (!isInputLayerActive || isEmojiPickerOpen || !isMobileInputMode()) return
+    if (!isInputLayerActive || !isMobileInputMode()) return
 
     const viewport = window.visualViewport
     if (!viewport) return
@@ -310,21 +357,44 @@ export function ChatWindow({
       const keyboardClosed = activeViewport.height >= closedHeight - 40
 
       if (keyboardHeight >= 180) {
+        keyboardWasOpenRef.current = true
         updateMobileInputLayerHeight(keyboardHeight)
-        updateMobileKeyboardOffset(0)
-        setIsEmojiSpaceReserved(keyboardOpenedFromEmojiRef.current)
+
+        if (!openingEmojiPickerRef.current) {
+          clearKeyboardCloseWait()
+          isEmojiPickerOpenRef.current = false
+          setIsEmojiPickerOpen(false)
+        }
+
         return
       }
 
       if (!keyboardClosed) return
+
+      if (openingEmojiPickerRef.current && !isEmojiPickerOpenRef.current) {
+        clearKeyboardCloseWait()
+        isEmojiPickerOpenRef.current = true
+        setIsEmojiPickerOpen(true)
+        return
+      }
+
+      if (!keyboardWasOpenRef.current) return
+      if (openingEmojiPickerRef.current || isEmojiPickerOpenRef.current) return
 
       closeInputLayer()
       removeSyntheticInputHistoryEntry()
     }
 
     activeViewport.addEventListener('resize', handleViewportResize)
-    return () => activeViewport.removeEventListener('resize', handleViewportResize)
-  }, [closeInputLayer, isEmojiPickerOpen, isInputLayerActive, removeSyntheticInputHistoryEntry])
+
+    return () =>
+      activeViewport.removeEventListener('resize', handleViewportResize)
+  }, [
+    closeInputLayer,
+    isInputLayerActive,
+    removeSyntheticInputHistoryEntry,
+    clearKeyboardCloseWait,
+  ])
 
   useEffect(() => {
     window.addEventListener('messenger:discard-input-history', discardInputHistoryLayer)
@@ -438,7 +508,6 @@ export function ChatWindow({
     setText('')
     clearKeyboardCloseWait()
     setIsEmojiPickerOpen(false)
-    setIsEmojiSpaceReserved(false)
     textareaRef.current?.focus()
   }
 
@@ -460,15 +529,24 @@ export function ChatWindow({
       return
     }
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
+    const savedSelection = textSelectionRef.current
+    const start = isMobile
+      ? Math.min(savedSelection.start, text.length)
+      : textarea.selectionStart
+    const end = isMobile
+      ? Math.min(savedSelection.end, text.length)
+      : textarea.selectionEnd
     const nextText = text.slice(0, start) + emoji + text.slice(end)
+    const cursorPosition = start + emoji.length
 
     setText(nextText)
+    textSelectionRef.current = {
+      start: cursorPosition,
+      end: cursorPosition,
+    }
     onTyping()
 
     requestAnimationFrame(() => {
-      const cursorPosition = start + emoji.length
       textarea.setSelectionRange(cursorPosition, cursorPosition)
       if (!isMobile) textarea.focus()
     })
@@ -478,11 +556,37 @@ export function ChatWindow({
     clearKeyboardCloseWait()
     ensureInputHistoryEntry()
     setContextMenu(null)
-    updateMobileInputLayerHeight(getMeasuredKeyboardHeight() || mobileInputLayerHeightRef.current)
-    updateMobileKeyboardOffset(0)
-    setIsEmojiSpaceReserved(true)
+    openingEmojiPickerRef.current = true
+    rememberTextSelection()
+
+    const keyboardHeight = getMeasuredKeyboardHeight()
+
+    updateMobileInputLayerHeight(
+      keyboardHeight || mobileInputLayerHeightRef.current,
+    )
+
+    if (isMobileInputMode() && keyboardHeight >= 180) {
+      isEmojiPickerOpenRef.current = false
+      setIsEmojiPickerOpen(false)
+      textareaRef.current?.blur()
+
+      keyboardCloseTimeoutRef.current = window.setTimeout(() => {
+        keyboardCloseTimeoutRef.current = null
+
+        if (!openingEmojiPickerRef.current || isEmojiPickerOpenRef.current) {
+          return
+        }
+
+        isEmojiPickerOpenRef.current = true
+        setIsEmojiPickerOpen(true)
+      }, 220)
+
+      return
+    }
+
+    isEmojiPickerOpenRef.current = true
     setIsEmojiPickerOpen(true)
-    textareaRef.current?.blur()
+    requestAnimationFrame(() => textareaRef.current?.blur())
   }
 
   function switchFromEmojiToKeyboard() {
@@ -491,62 +595,30 @@ export function ChatWindow({
     if (!textarea) {
       clearKeyboardCloseWait()
       setIsEmojiPickerOpen(false)
-      setIsEmojiSpaceReserved(false)
       return
     }
 
     clearKeyboardCloseWait()
     ensureInputHistoryEntry()
-    keyboardOpenedFromEmojiRef.current = true
-
-    const viewport = window.visualViewport
-    const initialViewportHeight = viewport?.height ?? window.innerHeight
-    let resizeSettleTimeout: number | null = null
-
-    // Резервируем место под клавиатуру только если реально дождались подтверждения через
-    // изменение высоты viewport. Если его нет (например, тестируем в десктопном браузере
-    // в узком окне — там фокус textarea не открывает настоящую виртуальную клавиатуру и
-    // resize не приходит), запасной таймаут ниже завершает переключение БЕЗ резервации —
-    // иначе макет застревал бы с "пустым" зарезервированным местом до следующего blur.
-    function finishKeyboardSwitch(keyboardConfirmed: boolean) {
-      clearKeyboardCloseWait()
-      updateMobileKeyboardOffset(0)
-      setIsEmojiPickerOpen(false)
-      setIsEmojiSpaceReserved(keyboardConfirmed)
-    }
-
-    function handleViewportResize() {
-      const nextViewportHeight = viewport?.height ?? window.innerHeight
-      const keyboardHeight = initialViewportHeight - nextViewportHeight
-      const keyboardProbablyOpened = nextViewportHeight < initialViewportHeight - 60
-
-      if (!keyboardProbablyOpened) return
-
-      updateMobileInputLayerHeight(keyboardHeight)
-
-      if (resizeSettleTimeout !== null) window.clearTimeout(resizeSettleTimeout)
-      resizeSettleTimeout = window.setTimeout(() => finishKeyboardSwitch(true), 180)
-    }
-
-    keyboardViewportCleanupRef.current = () => {
-      viewport?.removeEventListener('resize', handleViewportResize)
-      if (resizeSettleTimeout !== null) {
-        window.clearTimeout(resizeSettleTimeout)
-        resizeSettleTimeout = null
-      }
-    }
-
-    viewport?.addEventListener('resize', handleViewportResize)
-    keyboardCloseTimeoutRef.current = window.setTimeout(() => finishKeyboardSwitch(false), 720)
+    rememberTextSelection()
 
     textarea.focus()
     requestAnimationFrame(() => textarea.focus())
+
+    keyboardCloseTimeoutRef.current = window.setTimeout(() => {
+      keyboardCloseTimeoutRef.current = null
+      const keyboardHeight = getMeasuredKeyboardHeight()
+
+      if (keyboardHeight < 180) {
+        isEmojiPickerOpenRef.current = false
+        setIsEmojiPickerOpen(false)
+      }
+    }, 150)
   }
 
   const isTyping = typingChats[chatId] && !meta.group
   const inputLayerStyle = {
     '--mobile-input-layer-height': `${mobileInputLayerHeight}px`,
-    '--mobile-keyboard-offset': `${mobileKeyboardOffset}px`,
   } as CSSProperties
 
   return (
@@ -619,11 +691,7 @@ export function ChatWindow({
           <p className={s.emptyChatSub}>{t('messenger.firstMessage', { name: meta.name.split(' ')[0] })}</p>
         </div>
       ) : (
-        <div
-          className={`${s.messages} ${isEmojiSpaceReserved ? s.messagesInputLayerOpen : ''}`}
-          ref={messagesRef}
-          style={inputLayerStyle}
-        >
+        <div className={s.messages} ref={messagesRef}>
           <div ref={topSentinelRef} />
 
           {loadingHistory && (
@@ -727,7 +795,7 @@ export function ChatWindow({
       )}
 
       <div
-        className={`${s.inputArea} ${isEmojiSpaceReserved ? s.inputAreaEmojiOpen : ''}`}
+        className={`${s.inputArea} ${isEmojiPickerOpen ? s.inputAreaEmojiOpen : ''}`}
         ref={emojiAreaRef}
         style={inputLayerStyle}
       >
@@ -775,12 +843,24 @@ export function ChatWindow({
               rows={1}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}
               onKeyDown={handleKeyDown}
+              onSelect={rememberTextSelection}
               onPointerDown={() => {
-                if (isMobileInputMode() && isEmojiPickerOpen) switchFromEmojiToKeyboard()
+                if (isMobileInputMode() && isEmojiPickerOpen) {
+                  switchFromEmojiToKeyboard()
+                }
               }}
-              onFocus={() => ensureInputHistoryEntry()}
+              onFocus={() => {
+                ensureInputHistoryEntry()
+                rememberTextSelection()
+
+                if (isMobileInputMode() && isEmojiPickerOpen) {
+                  clearKeyboardCloseWait()
+                }
+              }}
               onBlur={() => {
-                if (!isEmojiPickerOpen) setIsEmojiSpaceReserved(false)
+                if (!isEmojiPickerOpen && !openingEmojiPickerRef.current) {
+                  setIsEmojiPickerOpen(false)
+                }
               }}
             />
 
@@ -809,8 +889,15 @@ export function ChatWindow({
         <div
           className={`${s.emojiPanel} ${isEmojiPickerOpen ? s.emojiPanelOpen : ''}`}
           aria-hidden={!isEmojiPickerOpen}
+          onWheel={(event) => event.stopPropagation()}
+          onTouchMove={(event) => event.stopPropagation()}
         >
-          <EmojiPicker onSelect={handleEmojiSelect} disabled={!isEmojiPickerOpen} />
+          {isEmojiPickerOpen && (
+            <EmojiPicker
+              onSelect={handleEmojiSelect}
+              disabled={!isEmojiPickerOpen}
+            />
+          )}
         </div>
       </div>
 
