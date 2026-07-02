@@ -235,7 +235,13 @@ export function MessengerPage() {
     }
   }
 
+  function discardInputHistoryLayer() {
+    window.dispatchEvent(new Event('messenger:discard-input-history'))
+  }
+
   function navigateToUserChat(user: UserSearchResult) {
+    discardInputHistoryLayer()
+
     const existing = chats.find(c => c.otherUserId === user.userId)
     if (existing) {
       navigate(`/chats/${existing.id}`)
@@ -314,7 +320,10 @@ export function MessengerPage() {
           query={query}
           onFilterChange={setFilter}
           onQueryChange={setQuery}
-          onSelect={cid => navigate(`/chats/${cid}`)}
+          onSelect={cid => {
+            discardInputHistoryLayer()
+            navigate(`/chats/${cid}`)
+          }}
           onNewChat={() => alert(t('messenger.groupCreationInProgress'))}
           onUserClick={userId => {
             const chat = chats.find(c => c.otherUserId === userId)
@@ -326,6 +335,7 @@ export function MessengerPage() {
         <main className={`${s.content}${!inChatView ? ` ${s.contentMobileHidden}` : ''}`}>
           {chatId && meta ? (
             <ChatWindow
+              key={chatId}
               chatId={chatId}
               meta={meta}
               messages={messages}

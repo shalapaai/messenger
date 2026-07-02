@@ -1,7 +1,20 @@
-import { useState, useRef, useEffect, type RefObject, type KeyboardEvent, type ChangeEvent, type MouseEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  type RefObject,
+  type KeyboardEvent,
+  type ChangeEvent,
+  type MouseEvent,
+  type CSSProperties,
+} from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmojiPicker } from '../../shared/ui/EmojiPicker'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
+
+const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 340
 
 type RenderedItem =
   | { type: 'sep'; label: string }
@@ -106,7 +119,104 @@ export function ChatWindow({
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [composerChatId, setComposerChatId] = useState(chatId)
+
+  // ── Мобильная раскладка ввода: эмодзи-пикер и виртуальная клавиатура ────────
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
+  const [isEmojiSpaceReserved, setIsEmojiSpaceReserved] = useState(false)
+  const [isInputLayerActive, setIsInputLayerActive] = useState(false)
+  const [mobileInputLayerHeight, setMobileInputLayerHeight] = useState(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
+  const [mobileKeyboardOffset, setMobileKeyboardOffset] = useState(0)
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const emojiAreaRef = useRef<HTMLDivElement>(null)
+  const keyboardCloseTimeoutRef = useRef<number | null>(null)
+  const keyboardViewportCleanupRef = useRef<(() => void) | null>(null)
+  const inputHistoryEntryRef = useRef(false)
+  const keyboardOpenedFromEmojiRef = useRef(false)
+  const keyboardClosedViewportHeightRef = useRef<number | null>(null)
+  const mobileInputLayerHeightRef = useRef(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
+
+  const clearKeyboardCloseWait = useCallback(() => {
+    if (keyboardCloseTimeoutRef.current !== null) {
+      window.clearTimeout(keyboardCloseTimeoutRef.current)
+      keyboardCloseTimeoutRef.current = null
+    }
+
+    keyboardViewportCleanupRef.current?.()
+    keyboardViewportCleanupRef.current = null
+  }, [])
+
+  function isMobileInputMode() {
+    return window.matchMedia('(max-width: 1024px)').matches
+  }
+
+  function rememberKeyboardClosedViewportHeight() {
+    keyboardClosedViewportHeightRef.current = window.visualViewport?.height ?? window.innerHeight
+  }
+
+  function updateMobileInputLayerHeight(nextHeight: number) {
+    const roundedHeight = Math.round(nextHeight)
+    if (roundedHeight < 180) return
+    mobileInputLayerHeightRef.current = roundedHeight
+    setMobileInputLayerHeight(roundedHeight)
+  }
+
+  function updateMobileKeyboardOffset(nextOffset: number) {
+    setMobileKeyboardOffset(Math.max(0, Math.round(nextOffset)))
+  }
+
+  function getMeasuredKeyboardHeight() {
+    const viewport = window.visualViewport
+    if (!viewport) return 0
+    const closedHeight = keyboardClosedViewportHeightRef.current ?? window.innerHeight
+    return closedHeight - viewport.height
+  }
+
+  function ensureInputHistoryEntry() {
+    if (!isMobileInputMode() || inputHistoryEntryRef.current) return
+
+    rememberKeyboardClosedViewportHeight()
+    window.history.pushState(
+      { ...(window.history.state ?? {}), messengerInputLayer: true },
+      '',
+      window.location.href,
+    )
+    inputHistoryEntryRef.current = true
+    setIsInputLayerActive(true)
+  }
+
+  const closeInputLayer = useCallback(() => {
+    clearKeyboardCloseWait()
+    textareaRef.current?.blur()
+    setIsEmojiPickerOpen(false)
+    setIsEmojiSpaceReserved(false)
+    setIsInputLayerActive(false)
+    keyboardOpenedFromEmojiRef.current = false
+    setMobileKeyboardOffset(0)
+  }, [clearKeyboardCloseWait])
+
+  const removeSyntheticInputHistoryEntry = useCallback(() => {
+    if (!inputHistoryEntryRef.current) return
+
+    inputHistoryEntryRef.current = false
+    setIsInputLayerActive(false)
+
+    if (window.history.state?.messengerInputLayer) {
+      window.history.back()
+    }
+  }, [])
+
+  const discardInputHistoryLayer = useCallback(() => {
+    inputHistoryEntryRef.current = false
+    setIsInputLayerActive(false)
+    closeInputLayer()
+
+    if (window.history.state?.messengerInputLayer) {
+      const state = { ...window.history.state }
+      delete state.messengerInputLayer
+      window.history.replaceState(state, '', window.location.href)
+    }
+  }, [closeInputLayer])
 
   const isReadByOther = (msg: Message) =>
     !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
@@ -144,6 +254,91 @@ export function ChatWindow({
     }
   }, [contextMenu, messagesRef])
 
+  useEffect(() => {
+    if (!isEmojiPickerOpen) return
+
+    function handlePointerDown(event: PointerEvent) {
+      if (emojiAreaRef.current && !emojiAreaRef.current.contains(event.target as Node)) {
+        clearKeyboardCloseWait()
+        setIsEmojiPickerOpen(false)
+        setIsEmojiSpaceReserved(false)
+      }
+    }
+
+    function handleDocumentKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === 'Escape') {
+        clearKeyboardCloseWait()
+        setIsEmojiPickerOpen(false)
+        setIsEmojiSpaceReserved(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleDocumentKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleDocumentKeyDown)
+    }
+  }, [clearKeyboardCloseWait, isEmojiPickerOpen])
+
+  useEffect(
+    () => () => {
+      if (keyboardCloseTimeoutRef.current !== null) {
+        window.clearTimeout(keyboardCloseTimeoutRef.current)
+      }
+      keyboardViewportCleanupRef.current?.()
+    },
+    [],
+  )
+
+  useEffect(() => {
+    function handleBackButton() {
+      if (!inputHistoryEntryRef.current) return
+
+      inputHistoryEntryRef.current = false
+      setIsInputLayerActive(false)
+      closeInputLayer()
+    }
+
+    window.addEventListener('popstate', handleBackButton)
+    return () => window.removeEventListener('popstate', handleBackButton)
+  }, [closeInputLayer])
+
+  useEffect(() => {
+    if (!isInputLayerActive || isEmojiPickerOpen || !isMobileInputMode()) return
+
+    const viewport = window.visualViewport
+    if (!viewport) return
+    const activeViewport = viewport
+
+    function handleViewportResize() {
+      const closedHeight = keyboardClosedViewportHeightRef.current ?? window.innerHeight
+      const keyboardHeight = closedHeight - activeViewport.height
+      const keyboardClosed = activeViewport.height >= closedHeight - 40
+
+      if (keyboardHeight >= 180) {
+        updateMobileInputLayerHeight(keyboardHeight)
+        updateMobileKeyboardOffset(0)
+        setIsEmojiSpaceReserved(keyboardOpenedFromEmojiRef.current)
+        return
+      }
+
+      if (!keyboardClosed) return
+
+      closeInputLayer()
+      removeSyntheticInputHistoryEntry()
+    }
+
+    activeViewport.addEventListener('resize', handleViewportResize)
+    return () => activeViewport.removeEventListener('resize', handleViewportResize)
+  }, [closeInputLayer, isEmojiPickerOpen, isInputLayerActive, removeSyntheticInputHistoryEntry])
+
+  useEffect(() => {
+    window.addEventListener('messenger:discard-input-history', discardInputHistoryLayer)
+    return () => window.removeEventListener('messenger:discard-input-history', discardInputHistoryLayer)
+  }, [discardInputHistoryLayer])
+
   function openContextMenu(e: MouseEvent, msg: Message) {
     // в режиме выделения правый клик не нужен — клик по сообщению уже переключает чекбокс
     if (selectMode) return
@@ -158,6 +353,7 @@ export function ChatWindow({
     setEditingMsg(msg)
     setText(msg.text)
     setContextMenu(null)
+    setIsEmojiPickerOpen(false)
     textareaRef.current?.focus()
   }
 
@@ -171,6 +367,7 @@ export function ChatWindow({
     cancelEdit()
     setReplyingTo(msg)
     setContextMenu(null)
+    setIsEmojiPickerOpen(false)
     textareaRef.current?.focus()
   }
 
@@ -237,6 +434,7 @@ export function ChatWindow({
   function send() {
     const trimmed = text.trim()
     if (!trimmed) return
+
     if (editingMsg) {
       if (trimmed !== editingMsg.text) onEdit(editingMsg, trimmed)
       setEditingMsg(null)
@@ -244,7 +442,11 @@ export function ChatWindow({
       onSend(trimmed, replyingTo ?? undefined)
       setReplyingTo(null)
     }
+
     setText('')
+    clearKeyboardCloseWait()
+    setIsEmojiPickerOpen(false)
+    setIsEmojiSpaceReserved(false)
     textareaRef.current?.focus()
   }
 
@@ -256,7 +458,99 @@ export function ChatWindow({
     }
   }
 
+  function handleEmojiSelect(emoji: string) {
+    const textarea = textareaRef.current
+    const isMobile = isMobileInputMode()
+
+    if (!textarea) {
+      setText((prev) => prev + emoji)
+      onTyping()
+      return
+    }
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const nextText = text.slice(0, start) + emoji + text.slice(end)
+
+    setText(nextText)
+    onTyping()
+
+    requestAnimationFrame(() => {
+      const cursorPosition = start + emoji.length
+      textarea.setSelectionRange(cursorPosition, cursorPosition)
+      if (!isMobile) textarea.focus()
+    })
+  }
+
+  function openEmojiPicker() {
+    clearKeyboardCloseWait()
+    ensureInputHistoryEntry()
+    setContextMenu(null)
+    updateMobileInputLayerHeight(getMeasuredKeyboardHeight() || mobileInputLayerHeightRef.current)
+    updateMobileKeyboardOffset(0)
+    setIsEmojiSpaceReserved(true)
+    setIsEmojiPickerOpen(true)
+    textareaRef.current?.blur()
+  }
+
+  function switchFromEmojiToKeyboard() {
+    const textarea = textareaRef.current
+
+    if (!textarea) {
+      clearKeyboardCloseWait()
+      setIsEmojiPickerOpen(false)
+      setIsEmojiSpaceReserved(false)
+      return
+    }
+
+    clearKeyboardCloseWait()
+    ensureInputHistoryEntry()
+    keyboardOpenedFromEmojiRef.current = true
+
+    const viewport = window.visualViewport
+    const initialViewportHeight = viewport?.height ?? window.innerHeight
+    let resizeSettleTimeout: number | null = null
+
+    function finishKeyboardSwitch() {
+      clearKeyboardCloseWait()
+      updateMobileKeyboardOffset(0)
+      setIsEmojiPickerOpen(false)
+      setIsEmojiSpaceReserved(true)
+    }
+
+    function handleViewportResize() {
+      const nextViewportHeight = viewport?.height ?? window.innerHeight
+      const keyboardHeight = initialViewportHeight - nextViewportHeight
+      const keyboardProbablyOpened = nextViewportHeight < initialViewportHeight - 60
+
+      if (!keyboardProbablyOpened) return
+
+      updateMobileInputLayerHeight(keyboardHeight)
+
+      if (resizeSettleTimeout !== null) window.clearTimeout(resizeSettleTimeout)
+      resizeSettleTimeout = window.setTimeout(finishKeyboardSwitch, 180)
+    }
+
+    keyboardViewportCleanupRef.current = () => {
+      viewport?.removeEventListener('resize', handleViewportResize)
+      if (resizeSettleTimeout !== null) {
+        window.clearTimeout(resizeSettleTimeout)
+        resizeSettleTimeout = null
+      }
+    }
+
+    viewport?.addEventListener('resize', handleViewportResize)
+    keyboardCloseTimeoutRef.current = window.setTimeout(finishKeyboardSwitch, 720)
+
+    textarea.focus()
+    requestAnimationFrame(() => textarea.focus())
+  }
+
   const isTyping = typingChats[chatId] && !meta.group
+  const inputLayerStyle = {
+    '--mobile-input-layer-height': `${mobileInputLayerHeight}px`,
+    '--mobile-keyboard-offset': `${mobileKeyboardOffset}px`,
+  } as CSSProperties
 
   return (
     <>
@@ -328,7 +622,11 @@ export function ChatWindow({
           <p className={s.emptyChatSub}>{t('messenger.firstMessage', { name: meta.name.split(' ')[0] })}</p>
         </div>
       ) : (
-        <div className={s.messages} ref={messagesRef}>
+        <div
+          className={`${s.messages} ${isEmojiSpaceReserved ? s.messagesInputLayerOpen : ''}`}
+          ref={messagesRef}
+          style={inputLayerStyle}
+        >
           <div ref={topSentinelRef} />
 
           {loadingHistory && (
@@ -431,39 +729,92 @@ export function ChatWindow({
         </div>
       )}
 
-      {editingMsg && (
-        <div className={s.editingBar}>
-          <span>{t('messenger.editingMessage')}</span>
-          <button type="button" className={s.editingBarCancel} onClick={cancelEdit}>✕</button>
-        </div>
-      )}
-
-      {replyingTo && (
-        <div className={s.replyingBar}>
-          <div className={s.replyingBarInfo}>
-            <div className={s.replyingBarSender}>{t('messenger.replyingTo', { name: replyingTo.senderName })}</div>
-            <div className={s.replyingBarText}>{replyingTo.text}</div>
+      <div
+        className={`${s.inputArea} ${isEmojiSpaceReserved ? s.inputAreaEmojiOpen : ''}`}
+        ref={emojiAreaRef}
+        style={inputLayerStyle}
+      >
+        {editingMsg && (
+          <div className={s.editingBar}>
+            <span>{t('messenger.editingMessage')}</span>
+            <button type="button" className={s.editingBarCancel} onClick={cancelEdit}>✕</button>
           </div>
-          <button type="button" className={s.editingBarCancel} onClick={cancelReply}>✕</button>
-        </div>
-      )}
+        )}
 
-      <div className={s.inputBar}>
-        <textarea
-          ref={textareaRef}
-          className={s.textInput}
-          placeholder={t('messenger.messagePlaceholder')}
-          value={text}
-          rows={1}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}
-          onKeyDown={handleKeyDown}
-        />
-        <button className={s.sendBtn} disabled={!text.trim()} onClick={send}>
-          <svg className={s.sendIcon} viewBox="0 0 24 24">
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
+        {replyingTo && (
+          <div className={s.replyingBar}>
+            <div className={s.replyingBarInfo}>
+              <div className={s.replyingBarSender}>{t('messenger.replyingTo', { name: replyingTo.senderName })}</div>
+              <div className={s.replyingBarText}>{replyingTo.text}</div>
+            </div>
+            <button type="button" className={s.editingBarCancel} onClick={cancelReply}>✕</button>
+          </div>
+        )}
+
+        <div className={s.inputBar}>
+          <div className={s.messageInputShell}>
+            <button
+              type="button"
+              className={`${s.emojiBtn} ${s.mobileEmojiBtn} ${isEmojiPickerOpen ? s.emojiBtnActive : ''}`}
+              onClick={() => {
+                if (isEmojiPickerOpen) {
+                  switchFromEmojiToKeyboard()
+                } else {
+                  openEmojiPicker()
+                }
+              }}
+              aria-label={isEmojiPickerOpen ? t('emoji.keyboard') : t('emoji.open')}
+              aria-expanded={isEmojiPickerOpen}
+              aria-pressed={isEmojiPickerOpen}
+            >
+              {isEmojiPickerOpen ? '⌨' : '☺'}
+            </button>
+
+            <textarea
+              ref={textareaRef}
+              className={s.textInput}
+              placeholder={t('messenger.messagePlaceholder')}
+              value={text}
+              rows={1}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}
+              onKeyDown={handleKeyDown}
+              onPointerDown={() => {
+                if (isMobileInputMode() && isEmojiPickerOpen) switchFromEmojiToKeyboard()
+              }}
+              onFocus={() => ensureInputHistoryEntry()}
+              onBlur={() => {
+                if (!isEmojiPickerOpen) setIsEmojiSpaceReserved(false)
+              }}
+            />
+
+            <div className={`${s.emojiWrap} ${s.desktopEmojiWrap}`}>
+              <button
+                type="button"
+                className={`${s.emojiBtn} ${isEmojiPickerOpen ? s.emojiBtnActive : ''}`}
+                onClick={() => setIsEmojiPickerOpen((value) => !value)}
+                aria-label={t('emoji.open')}
+                aria-expanded={isEmojiPickerOpen}
+                aria-pressed={isEmojiPickerOpen}
+              >
+                ☺
+              </button>
+            </div>
+          </div>
+
+          <button className={s.sendBtn} disabled={!text.trim()} onClick={send}>
+            <svg className={s.sendIcon} viewBox="0 0 24 24">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+
+        <div
+          className={`${s.emojiPanel} ${isEmojiPickerOpen ? s.emojiPanelOpen : ''}`}
+          aria-hidden={!isEmojiPickerOpen}
+        >
+          <EmojiPicker onSelect={handleEmojiSelect} disabled={!isEmojiPickerOpen} />
+        </div>
       </div>
 
       {contextMenu && (

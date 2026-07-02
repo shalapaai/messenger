@@ -5,7 +5,7 @@ import { login } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
-import { useFeatures } from '../../../shared/context/FeaturesContext'
+import { useFeatures } from '../../../shared/context/useFeatures'
 import styles from './LoginForm.module.css'
 
 function LoginForm() {

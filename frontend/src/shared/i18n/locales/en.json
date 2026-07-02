@@ -193,5 +193,21 @@
     "imagePrepare": "Could not prepare image",
     "imageCrop": "Could not crop image",
     "imageLoad": "Could not load image"
+  },
+  "emoji": {
+    "open": "Open emoji picker",
+    "keyboard": "Open keyboard",
+    "search": "Search",
+    "searchResults": "Search results",
+    "smiles": "Smileys and people",
+    "recent": "Recent",
+    "nothingFound": "Nothing found",
+    "categories": {
+      "smiles": "Smileys and people",
+      "gestures": "Gestures",
+      "hearts": "Hearts and effects",
+      "objects": "Objects",
+      "symbols": "Symbols"
+    }
   }
 }
