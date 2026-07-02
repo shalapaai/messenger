@@ -97,10 +97,11 @@ CREATE TABLE IF NOT EXISTS chats.chats (
 );
 
 CREATE TABLE IF NOT EXISTS chats.members (
-    chat_id   UUID        NOT NULL,
-    user_id   UUID        NOT NULL,
-    role      VARCHAR(10) NOT NULL DEFAULT 'member',
-    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    chat_id      UUID        NOT NULL,
+    user_id      UUID        NOT NULL,
+    role         VARCHAR(10) NOT NULL DEFAULT 'member',
+    joined_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_read_at TIMESTAMPTZ DEFAULT NULL,
 
     PRIMARY KEY (chat_id, user_id),
 

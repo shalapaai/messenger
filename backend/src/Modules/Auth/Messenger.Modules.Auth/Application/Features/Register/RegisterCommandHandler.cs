@@ -5,42 +5,73 @@ using Messenger.Modules.Auth.Application.Features.Login;
 using Messenger.Modules.Auth.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 
 public sealed class RegisterCommandHandler(
-    IUserAuthRepository userRepository,
-    IPasswordHasher passwordHasher,
-    IJwtTokenService jwtTokenService,
+    IUserAuthRepository     userRepository,
+    IPasswordHasher         passwordHasher,
+    IJwtTokenService        jwtTokenService,
     IRefreshTokenRepository refreshTokenRepository,
-    IUnitOfWork unitOfWork,
-    IConfiguration configuration)
-    : ICommandHandler<RegisterCommand, TokenPairDto>
+    IUnitOfWork             unitOfWork,
+    IEmailService           emailService,
+    IMemoryCache            cache,
+    IConfiguration          configuration)
+    : ICommandHandler<RegisterCommand, LoginResultDto>
 {
-    public async Task<Result<TokenPairDto>> Handle(RegisterCommand command, CancellationToken ct)
+    private const string CacheKeyPrefix = "otp:";
+
+    public async Task<Result<LoginResultDto>> Handle(RegisterCommand command, CancellationToken ct)
     {
         var emailExists = await userRepository.ExistsByEmailAsync(command.Email, ct);
         if (emailExists)
-            return Result.Failure<TokenPairDto>(Error.Conflict("Auth.EmailAlreadyExists"));
+            return Result.Failure<LoginResultDto>(Error.Conflict("Auth.EmailAlreadyExists"));
 
         var passwordHash = passwordHasher.Hash(command.Password);
         var userResult   = UserAuth.Create(command.Email, passwordHash);
 
         if (userResult.IsFailure)
-            return Result.Failure<TokenPairDto>(userResult.Error);
+            return Result.Failure<LoginResultDto>(userResult.Error);
 
-        var user              = userResult.Value!;
+        var user = userResult.Value!;
+        userRepository.Add(user);
+        await unitOfWork.SaveChangesAsync(ct);
+
+        var twoFactorEnabled = configuration.GetValue<bool>("TwoFactor:Enabled");
+
+        if (!twoFactorEnabled)
+        {
+            // Email verification skipped — mark verified immediately and issue tokens
+            user.VerifyEmail();
+            var tokens = await IssueTokensAsync(user, ct);
+            return Result.Success(LoginResultDto.WithTokens(tokens));
+        }
+
+        // Send OTP for email confirmation
+        var code = GenerateCode();
+        cache.Set(
+            CacheKeyPrefix + user.Email,
+            code,
+            new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
+
+        await emailService.SendOtpAsync(user.Email, code, ct);
+
+        return Result.Success(LoginResultDto.WithOtp(user.Email));
+    }
+
+    private async Task<TokenPairDto> IssueTokensAsync(UserAuth user, CancellationToken ct)
+    {
         var accessToken       = jwtTokenService.GenerateAccessToken(user.Id, user.Email);
         var refreshTokenValue = jwtTokenService.GenerateRefreshToken();
         var expirationDays    = configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays", 7);
-        var refreshToken      = RefreshToken.Create(user.Id, refreshTokenValue, expirationDays);
 
-        userRepository.Add(user);
+        var refreshToken = RefreshToken.Create(user.Id, refreshTokenValue, expirationDays);
         refreshTokenRepository.Add(refreshToken);
         await unitOfWork.SaveChangesAsync(ct);
 
-        return Result.Success(new TokenPairDto(
-            accessToken.Token,
-            refreshTokenValue,
-            accessToken.ExpiresAt));
+        return new TokenPairDto(accessToken.Token, refreshTokenValue, accessToken.ExpiresAt);
     }
+
+    private static string GenerateCode() =>
+        Random.Shared.Next(100_000, 999_999).ToString();
 }

@@ -31,4 +31,6 @@ public sealed class UserAuth : AggregateRoot<Guid>
     }
 
     public void VerifyEmail() => IsEmailVerified = true;
+
+    public void ChangePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
 }

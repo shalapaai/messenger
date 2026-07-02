@@ -10,8 +10,10 @@ using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Behaviors;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Resend;
 
 public sealed class AuthModule : IModuleInstaller
 {
@@ -27,6 +29,23 @@ public sealed class AuthModule : IModuleInstaller
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
+
+        // Email — включается если нужна хотя бы одна email-фича
+        services.AddMemoryCache();
+        var twoFactorEnabled    = configuration.GetValue<bool>("TwoFactor:Enabled");
+        var passwordResetEnabled = configuration.GetValue<bool>("PasswordReset:Enabled");
+        if (twoFactorEnabled || passwordResetEnabled)
+        {
+            services.AddOptions<ResendClientOptions>()
+                .Configure(o => o.ApiToken = configuration["Resend:ApiKey"]!);
+            services.AddHttpClient<ResendClient>();
+            services.AddTransient<IResend, ResendClient>();
+            services.AddScoped<IEmailService, ResendEmailService>();
+        }
+        else
+        {
+            services.AddSingleton<IEmailService, NullEmailService>();
+        }
 
         services.AddMediatR(cfg =>
         {

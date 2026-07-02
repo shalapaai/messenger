@@ -1,30 +1,31 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
+import { useFeatures } from '../../../shared/context/FeaturesContext'
 import styles from './LoginForm.module.css'
 
 function LoginForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { refetchProfile } = useUserProfile()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const { passwordResetEnabled } = useFeatures()
+
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [error, setError]         = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function handleSubmit(e: { preventDefault(): void }) {
+    e.preventDefault()
 
     if (!email.trim() || !password.trim()) {
       setError(t('auth.errors.requiredLogin'))
       return
     }
-
     if (!isValidEmail(email)) {
       setError(t('auth.errors.invalidEmail'))
       return
@@ -34,15 +35,9 @@ function LoginForm() {
     setIsLoading(true)
 
     try {
-      const tokens = await login({
-        email: email.trim(),
-        password,
-      })
-
-      saveAuthTokens(tokens)
-      console.log('[Login] tokens saved:', tokens)
+      const result = await login({ email: email.trim(), password })
+      saveAuthTokens({ accessToken: result.accessToken!, refreshToken: result.refreshToken })
       const profile = await refetchProfile()
-      console.log('[Login] profile after fetch:', profile)
       navigate(profile ? '/chats' : '/profile/setup')
     } catch {
       setError(t('auth.errors.loginFailed'))
@@ -65,7 +60,7 @@ function LoginForm() {
           type="email"
           name="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={e => setEmail(e.target.value)}
           placeholder={t('auth.emailPlaceholder')}
           autoComplete="email"
         />
@@ -78,7 +73,7 @@ function LoginForm() {
           type="password"
           name="password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={e => setPassword(e.target.value)}
           placeholder={t('auth.passwordPlaceholder')}
           autoComplete="current-password"
         />
@@ -93,6 +88,12 @@ function LoginForm() {
       <p className={styles.footerText}>
         {t('auth.loginFooter')} <Link to="/register">{t('auth.loginFooterLink')}</Link>
       </p>
+
+      {passwordResetEnabled && (
+        <p className={styles.footerText}>
+          <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+        </p>
+      )}
     </form>
   )
 }

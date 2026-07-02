@@ -65,7 +65,7 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
   return (
     <aside className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}>
       <div className={s.clHeader}>
-        <h2 className={s.clTitle}>{t('messenger.messages')}</h2>
+        {/* <h2 className={s.clTitle}>{t('messenger.messages')}</h2> */}
       </div>
 
       <div className={s.clSearch}>

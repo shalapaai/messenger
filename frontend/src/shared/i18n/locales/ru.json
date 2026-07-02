@@ -39,6 +39,7 @@
     "loginSubtitle": "Введите данные, чтобы продолжить общение.",
     "loginButton": "Войти",
     "loginLoading": "Входим...",
+    "forgotPassword": "Забыли пароль?",
     "loginFooter": "Нет аккаунта?",
     "loginFooterLink": "Зарегистрироваться",
     "loginHeroTitle": "Мессенджер для команды",
