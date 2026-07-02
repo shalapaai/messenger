@@ -48,6 +48,23 @@ function TrashIcon() {
   )
 }
 
+function SelectIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
@@ -64,10 +81,12 @@ interface ChatWindowProps {
   messagesRef: RefObject<HTMLDivElement | null>
   topSentinelRef: RefObject<HTMLDivElement | null>
   bottomRef: RefObject<HTMLDivElement | null>
-  onSend: (text: string) => void
+  onSend: (text: string, replyTo?: Message) => void
   onRetry: (msg: Message) => void
   onDelete: (msg: Message) => void
   onEdit: (msg: Message, newText: string) => void
+  onBulkDelete: (msgs: Message[]) => void
+  onForward: (msgs: Message[]) => void
   onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
@@ -77,16 +96,38 @@ export function ChatWindow({
   chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onRetry, onDelete, onEdit, onTyping, onHeaderClick, onAvatarClick,
+  onSend, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [editingMsg, setEditingMsg] = useState<Message | null>(null)
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [composerChatId, setComposerChatId] = useState(chatId)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const isReadByOther = (msg: Message) =>
     !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
+
+  // при смене чата старое выделение/редактирование/ответ неактуальны — сбрасываем прямо во время
+  // рендера (без useEffect, чтобы не ловить лишний кадр со старым состоянием поверх нового чата)
+  if (chatId !== composerChatId) {
+    setComposerChatId(chatId)
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    setEditingMsg(null)
+    setReplyingTo(null)
+    setText('')
+  }
+
+  useEffect(() => {
+    if (!selectMode) return
+    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') exitSelectMode() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectMode])
 
   useEffect(() => {
     if (!contextMenu) return
@@ -104,6 +145,8 @@ export function ChatWindow({
   }, [contextMenu, messagesRef])
 
   function openContextMenu(e: MouseEvent, msg: Message) {
+    // в режиме выделения правый клик не нужен — клик по сообщению уже переключает чекбокс
+    if (selectMode) return
     // действия доступны только для сообщений, уже подтверждённых сервером
     if (!msg.messageId) return
     e.preventDefault()
@@ -111,6 +154,7 @@ export function ChatWindow({
   }
 
   function startEdit(msg: Message) {
+    cancelReply()
     setEditingMsg(msg)
     setText(msg.text)
     setContextMenu(null)
@@ -122,9 +166,59 @@ export function ChatWindow({
     setText('')
   }
 
+  function startReply(msg: Message) {
+    if (!msg.messageId) return
+    cancelEdit()
+    setReplyingTo(msg)
+    setContextMenu(null)
+    textareaRef.current?.focus()
+  }
+
+  function cancelReply() {
+    setReplyingTo(null)
+  }
+
   function requestDelete(msg: Message) {
     setContextMenu(null)
     if (window.confirm(t('messenger.confirmDeleteMessage'))) onDelete(msg)
+  }
+
+  function enterSelectMode(msg: Message) {
+    if (!msg.messageId) return
+    cancelEdit()
+    cancelReply()
+    setContextMenu(null)
+    setSelectMode(true)
+    setSelectedIds(new Set([msg.id]))
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+  }
+
+  function toggleSelect(msg: Message) {
+    if (!msg.messageId) return
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(msg.id)) next.delete(msg.id); else next.add(msg.id)
+      return next
+    })
+  }
+
+  function requestBulkDelete() {
+    const selected = messages.filter(m => selectedIds.has(m.id))
+    if (selected.length === 0) return
+    if (!window.confirm(t('messenger.confirmBulkDelete', { count: selected.length }))) return
+    onBulkDelete(selected)
+    exitSelectMode()
+  }
+
+  function requestBulkForward() {
+    const selected = messages.filter(m => selectedIds.has(m.id))
+    if (selected.length === 0) return
+    onForward(selected)
+    exitSelectMode()
   }
 
   const rendered: RenderedItem[] = []
@@ -147,7 +241,8 @@ export function ChatWindow({
       if (trimmed !== editingMsg.text) onEdit(editingMsg, trimmed)
       setEditingMsg(null)
     } else {
-      onSend(trimmed)
+      onSend(trimmed, replyingTo ?? undefined)
+      setReplyingTo(null)
     }
     setText('')
     textareaRef.current?.focus()
@@ -155,36 +250,66 @@ export function ChatWindow({
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
-    if (e.key === 'Escape' && editingMsg) { cancelEdit() }
+    if (e.key === 'Escape') {
+      if (editingMsg) cancelEdit()
+      if (replyingTo) cancelReply()
+    }
   }
 
   const isTyping = typingChats[chatId] && !meta.group
 
   return (
     <>
-      <div className={s.chatHeader}>
-        <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
-          <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
-            {meta.avatarUrl
-              ? <img src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
-              : meta.initials
-            }
+      {selectMode ? (
+        <div className={s.selectionBar}>
+          <button type="button" className={s.selectionBarCancel} onClick={exitSelectMode}>✕</button>
+          <span className={s.selectionBarCount}>{t('messenger.selectedCount', { count: selectedIds.size })}</span>
+          <div className={s.selectionBarActions}>
+            <button
+              type="button"
+              className={s.selectionBarBtn}
+              disabled={selectedIds.size === 0}
+              title={t('messenger.forwardMessage')}
+              onClick={requestBulkForward}
+            >
+              <ForwardIcon />
+            </button>
+            <button
+              type="button"
+              className={`${s.selectionBarBtn} ${s.selectionBarBtnDanger}`}
+              disabled={selectedIds.size === 0}
+              title={t('messenger.deleteMessage')}
+              onClick={requestBulkDelete}
+            >
+              <TrashIcon />
+            </button>
           </div>
-          <div className={s.chatHeaderInfo}>
-            <div className={s.chatHeaderName}>{meta.name}</div>
-            <div className={s.chatHeaderSub}>
-              {isTyping
-                ? <span className={s.typingText}>{t('messenger.typing')}</span>
-                : meta.online
-                  ? <><span className={s.chatHeaderOnlineDot} />{t('common.online')}</>
-                  : meta.group
-                    ? t('group.label')
-                    : t('common.recently')
+        </div>
+      ) : (
+        <div className={s.chatHeader}>
+          <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
+            <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
+              {meta.avatarUrl
+                ? <img src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
+                : meta.initials
               }
             </div>
-          </div>
-        </button>
-      </div>
+            <div className={s.chatHeaderInfo}>
+              <div className={s.chatHeaderName}>{meta.name}</div>
+              <div className={s.chatHeaderSub}>
+                {isTyping
+                  ? <span className={s.typingText}>{t('messenger.typing')}</span>
+                  : meta.online
+                    ? <><span className={s.chatHeaderOnlineDot} />{t('common.online')}</>
+                    : meta.group
+                      ? t('group.label')
+                      : t('common.recently')
+                }
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
 
       {loadingInitial ? (
         <div className={s.emptyChat}>
@@ -229,16 +354,29 @@ export function ChatWindow({
                   <div
                     className={`${s.senderName} ${s.senderNameClickable}`}
                     style={{ color: displaySender.senderColor }}
-                    onClick={() => onAvatarClick(item.msg)}
+                    onClick={() => selectMode ? toggleSelect(item.msg) : onAvatarClick(item.msg)}
                   >
                     {displaySender.senderName}
                   </div>
                 )}
-                <div className={`${s.msgRow} ${item.senderSwitch && !item.showName ? s.senderSwitch : ''}`}>
+                <div
+                  className={[
+                    s.msgRow,
+                    item.senderSwitch && !item.showName ? s.senderSwitch : '',
+                    selectMode && item.msg.messageId ? s.msgRowSelectable : '',
+                    selectMode && selectedIds.has(item.msg.id) ? s.msgRowSelected : '',
+                  ].join(' ')}
+                  onClick={() => selectMode && toggleSelect(item.msg)}
+                >
+                  {selectMode && (
+                    <div className={`${s.msgCheckbox} ${selectedIds.has(item.msg.id) ? s.msgCheckboxChecked : ''} ${!item.msg.messageId ? s.msgCheckboxDisabled : ''}`}>
+                      {selectedIds.has(item.msg.id) && <CheckIcon />}
+                    </div>
+                  )}
                   <div
                     className={`${s.msgAvatar} ${item.showAvatar ? s.msgAvatarClickable : s.msgAvatarHidden}`}
                     style={displaySender.senderAvatarUrl ? undefined : { background: displaySender.senderColor }}
-                    onClick={() => item.showAvatar ? onAvatarClick(item.msg) : undefined}
+                    onClick={(e) => { if (selectMode) return; e.stopPropagation(); if (item.showAvatar) onAvatarClick(item.msg) }}
                   >
                     {displaySender.senderAvatarUrl
                       ? <img src={displaySender.senderAvatarUrl} alt={displaySender.senderInitials} className={s.msgAvatarImg} />
@@ -255,6 +393,17 @@ export function ChatWindow({
                     ].join(' ')}
                     onContextMenu={(e) => openContextMenu(e, item.msg)}
                   >
+                    {item.msg.forwardedFromUserName && (
+                      <div className={s.forwardedLabel}>{t('messenger.forwardedFrom', { name: item.msg.forwardedFromUserName })}</div>
+                    )}
+                    {item.msg.replyToMessageId && (
+                      <div className={s.replyQuote}>
+                        <div className={s.replyQuoteSender}>{item.msg.replyToSenderName}</div>
+                        <div className={s.replyQuoteText}>
+                          {item.msg.replyToContent ?? t('messenger.originalMessageDeleted')}
+                        </div>
+                      </div>
+                    )}
                     {item.msg.text}
                   </div>
                 </div>
@@ -289,6 +438,16 @@ export function ChatWindow({
         </div>
       )}
 
+      {replyingTo && (
+        <div className={s.replyingBar}>
+          <div className={s.replyingBarInfo}>
+            <div className={s.replyingBarSender}>{t('messenger.replyingTo', { name: replyingTo.senderName })}</div>
+            <div className={s.replyingBarText}>{replyingTo.text}</div>
+          </div>
+          <button type="button" className={s.editingBarCancel} onClick={cancelReply}>✕</button>
+        </div>
+      )}
+
       <div className={s.inputBar}>
         <textarea
           ref={textareaRef}
@@ -312,10 +471,10 @@ export function ChatWindow({
           className={s.contextMenu}
           style={{
             left: Math.min(contextMenu.x, window.innerWidth - 190),
-            top:  Math.min(contextMenu.y, window.innerHeight - (contextMenu.msg.own ? 156 : 120)),
+            top:  Math.min(contextMenu.y, window.innerHeight - (contextMenu.msg.own ? 192 : 156)),
           }}
         >
-          <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`} disabled>
+          <button type="button" className={s.contextMenuItem} onClick={() => startReply(contextMenu.msg)}>
             <ReplyIcon />{t('messenger.replyMessage')}
           </button>
           {contextMenu.msg.own && (
@@ -323,11 +482,14 @@ export function ChatWindow({
               <EditIcon />{t('messenger.editMessage')}
             </button>
           )}
-          <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDisabled}`} disabled>
+          <button type="button" className={s.contextMenuItem} onClick={() => { onForward([contextMenu.msg]); setContextMenu(null) }}>
             <ForwardIcon />{t('messenger.forwardMessage')}
           </button>
           <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => requestDelete(contextMenu.msg)}>
             <TrashIcon />{t('messenger.deleteMessage')}
+          </button>
+          <button type="button" className={s.contextMenuItem} onClick={() => enterSelectMode(contextMenu.msg)}>
+            <SelectIcon />{t('messenger.selectMessage')}
           </button>
         </div>
       )}

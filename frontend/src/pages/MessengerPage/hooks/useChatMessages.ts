@@ -6,7 +6,7 @@ import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
-type SendFn = (content: string) => Promise<{ messageId: string }>
+type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
 
 interface UseChatMessagesOptions {
   /** Новое сообщение добавлено в текущий открытый чат — повод проскроллить вниз */
@@ -64,7 +64,10 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   }, [id])
 
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
-    if (msg.senderId === getMyUserId()) return
+    // обычную отправку своего сообщения уже показал optimistic-UI в send() — этот echo игнорируем.
+    // Пересылка — исключение: у неё нет локального оптимистичного добавления, поэтому свою же
+    // пересланную копию нужно показать по этому же realtime-событию
+    if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId) return
 
     setChatMessages(prev => {
       // если чат ещё не открывали — его историю подтянет fetchMessages при открытии
@@ -79,7 +82,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           id:              nextMessageId(),
           messageId:       msg.messageId,
           text:            msg.content,
-          own:             false,
+          own:             msg.senderId === getMyUserId(),
           senderId:        msg.senderId,
           senderName:      msg.senderName,
           senderInitials:  initials(msg.senderName),
@@ -88,6 +91,11 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           time:            new Date(msg.sentAt).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
           sentAt:          msg.sentAt,
           date:            i18n.t('common.today'),
+          forwardedFromUserId:   msg.forwardedFromUserId ?? undefined,
+          forwardedFromUserName: msg.forwardedFromUserName ?? undefined,
+          replyToMessageId:   msg.replyToMessageId ?? undefined,
+          replyToSenderName:  msg.replyToSenderName ?? undefined,
+          replyToContent:     msg.replyToContent,
         }],
       }
     })
@@ -161,9 +169,9 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }).finally(() => setLoadingHistory(false))
   }, [id, loadingHistory, historyLoaded, nextCursor])
 
-  const doSend = useCallback(async (chatId: string, text: string, tempId: number, signalRSend: SendFn) => {
+  const doSend = useCallback(async (chatId: string, text: string, tempId: number, signalRSend: SendFn, replyToMessageId?: string) => {
     try {
-      const { messageId } = await signalRSend(text)
+      const { messageId } = await signalRSend(text, replyToMessageId)
       setChatMessages(prev => ({
         ...prev,
         [chatId]: (prev[chatId] ?? []).map(m =>
@@ -180,7 +188,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }
   }, [])
 
-  const send = useCallback((chatId: string, text: string, signalRSend: SendFn, meSender: Sender) => {
+  const send = useCallback((chatId: string, text: string, signalRSend: SendFn, meSender: Sender, replyTo?: Message) => {
     const tempId = nextMessageId()
     const now = new Date()
     const newMsg: Message = {
@@ -189,10 +197,13 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       sentAt: now.toISOString(),
       date: i18n.t('common.today'),
       status: 'pending',
+      replyToMessageId:  replyTo?.messageId,
+      replyToSenderName: replyTo?.senderName,
+      replyToContent:    replyTo?.text,
     }
     setChatMessages(prev => ({ ...prev, [chatId]: [...(prev[chatId] ?? []), newMsg] }))
     opts.onAppend?.(true)
-    doSend(chatId, text, tempId, signalRSend)
+    doSend(chatId, text, tempId, signalRSend, replyTo?.messageId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doSend])
 
@@ -203,7 +214,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
         m.id === msg.id ? { ...m, status: 'pending' as const } : m
       ),
     }))
-    doSend(chatId, msg.text, msg.id, signalRSend)
+    doSend(chatId, msg.text, msg.id, signalRSend, msg.replyToMessageId)
   }, [doSend])
 
   return {

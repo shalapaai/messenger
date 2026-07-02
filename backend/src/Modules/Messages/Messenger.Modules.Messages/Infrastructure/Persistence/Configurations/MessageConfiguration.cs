@@ -33,6 +33,8 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(m => m.DeletedAt).HasColumnName("deleted_at");
         builder.Property(m => m.ReplyToMessageId).HasColumnName("reply_to_message_id");
         builder.Property(m => m.FileUrl).HasColumnName("file_url").HasMaxLength(2048);
+        builder.Property(m => m.ForwardedFromMessageId).HasColumnName("forwarded_from_message_id");
+        builder.Property(m => m.ForwardedFromUserId).HasColumnName("forwarded_from_user_id");
 
         builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_message_chat_id_sent_at");
         builder.HasIndex(m => m.SenderId).HasDatabaseName("ix_message_sender_id");

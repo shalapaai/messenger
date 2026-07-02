@@ -24,8 +24,19 @@ public sealed class GetMessagesQueryHandler(
         var hasMore = raw.Count > limit;
         var items = hasMore ? raw.Take(limit).ToList() : raw;
 
-        var senderIds = items.Select(m => m.SenderId).Distinct().ToList();
-        var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(senderIds, ct);
+        // сообщения-источники цитат (reply) — подгружаем одним запросом, а не по одному на каждое
+        var replyIds = items.Where(m => m.ReplyToMessageId.HasValue).Select(m => m.ReplyToMessageId!.Value).Distinct().ToList();
+        var replySources = replyIds.Count > 0
+            ? await messageRepository.GetByIdsAsync(replyIds.Select(MessageId.From).ToList(), ct)
+            : [];
+        var replySourceById = replySources.ToDictionary(m => m.Id.Value);
+
+        var userIds = items
+            .SelectMany(m => m.ForwardedFromUserId is { } fwId ? new[] { m.SenderId, fwId } : [m.SenderId])
+            .Concat(replySources.Select(m => m.SenderId))
+            .Distinct()
+            .ToList();
+        var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(userIds, ct);
         if (summariesResult.IsFailure)
             return Result.Failure<MessagesPageDto>(summariesResult.Error);
 
@@ -35,6 +46,18 @@ public sealed class GetMessagesQueryHandler(
             .Select(m =>
             {
                 summaries.TryGetValue(m.SenderId, out var summary);
+                UserSummaryDto? forwardedFromUser = null;
+                if (m.ForwardedFromUserId is { } fwId) summaries.TryGetValue(fwId, out forwardedFromUser);
+
+                string? replyToSenderName = null;
+                string? replyToContent = null;
+                if (m.ReplyToMessageId is { } replyId && replySourceById.TryGetValue(replyId, out var replySrc))
+                {
+                    summaries.TryGetValue(replySrc.SenderId, out var replySummary);
+                    replyToSenderName = replySummary?.DisplayName ?? "Пользователь";
+                    replyToContent    = replySrc.Status == MessageStatus.Deleted ? null : replySrc.Content;
+                }
+
                 return new MessageDto(
                     m.Id.Value,
                     m.ChatId,
@@ -47,7 +70,11 @@ public sealed class GetMessagesQueryHandler(
                     m.Status.ToString().ToLower(),
                     m.SentAt,
                     m.EditedAt,
-                    m.ReplyToMessageId);
+                    m.ReplyToMessageId,
+                    replyToSenderName,
+                    replyToContent,
+                    m.ForwardedFromUserId,
+                    forwardedFromUser?.DisplayName);
             })
             .ToList();
 

@@ -3,6 +3,7 @@ namespace Messenger.Modules.Messages.Presentation;
 using MediatR;
 using Messenger.Modules.Messages.Application.Features.DeleteMessage;
 using Messenger.Modules.Messages.Application.Features.EditMessage;
+using Messenger.Modules.Messages.Application.Features.ForwardMessages;
 using Messenger.Modules.Messages.Application.Features.GetMessages;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
 using Messenger.Modules.Messages.Application.Features.UploadAndSendMessage;
@@ -47,8 +48,15 @@ public static class MessagesEndpoints
         group.MapDelete("/{messageId:guid}", DeleteMessage)
             .WithName("DeleteMessage")
             .WithSummary("Удалить сообщение")
-            .WithDescription("Удаляет (soft-delete) сообщение. Доступно только автору сообщения.")
+            .WithDescription("Удаляет (soft-delete) сообщение. Доступно любому участнику чата.")
             .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem();
+
+        group.MapPost("/forward", ForwardMessages)
+            .WithName("ForwardMessages")
+            .WithSummary("Переслать сообщения в другой чат")
+            .WithDescription("{chatId} в маршруте — целевой чат, куда пересылаем. sourceChatId в теле — чат-источник, откуда взяты messageIds.")
+            .Produces<List<Guid>>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
         return app;
@@ -141,7 +149,24 @@ public static class MessagesEndpoints
             ? Results.NoContent()
             : result.Error.ToHttpResult();
     }
+
+    private static async Task<IResult> ForwardMessages(
+        Guid chatId,
+        ForwardMessagesRequest request,
+        HttpContext httpContext,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var userId = httpContext.GetUserId();
+        var command = new ForwardMessagesCommand(request.MessageIds, request.SourceChatId, chatId, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.Created($"/api/chats/{chatId}/messages", result.Value)
+            : result.Error.ToHttpResult();
+    }
 }
 
 public sealed record SendMessageRequest(string Content, Guid? ReplyToMessageId = null);
 public sealed record EditMessageRequest(string NewContent);
+public sealed record ForwardMessagesRequest(Guid SourceChatId, List<Guid> MessageIds);

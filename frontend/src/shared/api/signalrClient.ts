@@ -17,6 +17,11 @@ export interface IncomingMessage {
   senderAvatarColor: string
   content: string
   sentAt: string
+  forwardedFromUserId?: string | null
+  forwardedFromUserName?: string | null
+  replyToMessageId?: string | null
+  replyToSenderName?: string | null
+  replyToContent?: string | null
 }
 
 export interface MessageEdited {

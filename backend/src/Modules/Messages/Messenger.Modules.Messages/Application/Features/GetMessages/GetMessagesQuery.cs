@@ -24,4 +24,8 @@ public sealed record MessageDto(
     string    Status,
     DateTime  SentAt,
     DateTime? EditedAt,
-    Guid?     ReplyToMessageId);
+    Guid?     ReplyToMessageId,
+    string?   ReplyToSenderName,
+    string?   ReplyToContent,
+    Guid?     ForwardedFromUserId,
+    string?   ForwardedFromUserName);

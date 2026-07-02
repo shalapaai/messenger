@@ -8,8 +8,13 @@ public sealed record MessageSentDomainEvent(
     Guid MessageId,
     Guid ChatId,
     Guid SenderId,
-    string Content) : IDomainEvent
+    string Content,
+    Guid? ForwardedFromMessageId,
+    Guid? ForwardedFromUserId,
+    Guid? ReplyToMessageId) : IDomainEvent
 {
-    public MessageSentDomainEvent(Guid messageId, Guid chatId, Guid senderId, string content)
-        : this(Guid.NewGuid(), DateTime.UtcNow, messageId, chatId, senderId, content) { }
+    public MessageSentDomainEvent(
+        Guid messageId, Guid chatId, Guid senderId, string content,
+        Guid? forwardedFromMessageId = null, Guid? forwardedFromUserId = null, Guid? replyToMessageId = null)
+        : this(Guid.NewGuid(), DateTime.UtcNow, messageId, chatId, senderId, content, forwardedFromMessageId, forwardedFromUserId, replyToMessageId) { }
 }

@@ -44,4 +44,20 @@ internal sealed class MessagesModuleApi(
 
         return Result.Success(dict);
     }
+
+    public async Task<Result<Dictionary<Guid, MessagePreviewDto>>> GetMessagePreviewsByIdsAsync(
+        IReadOnlyList<Guid> messageIds, CancellationToken ct = default)
+    {
+        if (messageIds.Count == 0)
+            return Result.Success(new Dictionary<Guid, MessagePreviewDto>());
+
+        var ids = messageIds.Select(MessageId.From).ToList();
+        var messages = await messageRepository.GetByIdsAsync(ids, ct);
+
+        var dict = messages.ToDictionary(
+            m => m.Id.Value,
+            m => new MessagePreviewDto(m.Id.Value, m.SenderId, m.Content, m.Status == MessageStatus.Deleted));
+
+        return Result.Success(dict);
+    }
 }

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { Filter, ModalUser, Message } from '../../shared/types/messenger'
 import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead } from '../../shared/api/chatsApi'
+import { forwardMessages as forwardMessagesApi } from '../../shared/api/messagesApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
@@ -18,6 +19,7 @@ import { ProfilePanel }     from '../../widgets/ProfilePanel'
 import { EditProfileModal } from '../../features/messenger/EditProfileModal'
 import { UserProfileModal } from '../../features/messenger/UserProfileModal'
 import { GroupModal }       from '../../features/messenger/GroupModal'
+import { ForwardModal }     from '../../features/messenger/ForwardModal'
 import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
 import s from './MessengerPage.module.css'
 
@@ -43,6 +45,7 @@ export function MessengerPage() {
   const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
   const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
   const [groupModalOpen, setGroupModalOpen] = useState(false)
+  const [forwardMsgs,    setForwardMsgs]    = useState<Message[] | null>(null)
   const startTypingRef = useRef<() => void>(() => undefined)
   const stopTypingRef = useRef<() => void>(() => undefined)
 
@@ -137,18 +140,18 @@ export function MessengerPage() {
   }, [id, messages.length, historyLoaded])
 
   useEffect(() => {
-    const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen
+    const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen || !!forwardMsgs
     if (!anyOpen) return
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false)
+        setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false); setForwardMsgs(null)
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [modalUser, groupModalOpen, editOpen, profileOpen])
+  }, [modalUser, groupModalOpen, editOpen, profileOpen, forwardMsgs])
 
-  async function handleSend(text: string) {
+  async function handleSend(text: string, replyTo?: Message) {
     typingIndicator.stopOwnTyping()
 
     // Черновик (чат с этим пользователем ещё не создан) — создаём чат и шлём
@@ -166,7 +169,7 @@ export function MessengerPage() {
     }
 
     if (!id) return
-    send(id, text, signalRSend, meSender)
+    send(id, text, signalRSend, meSender, replyTo)
   }
 
   function handleRetrySend(msg: Parameters<typeof retry>[1]) {
@@ -189,6 +192,23 @@ export function MessengerPage() {
       await editMessage(id, msg, newText)
     } catch {
       window.alert(t('messenger.editMessageFailed'))
+    }
+  }
+
+  async function handleBulkDeleteMessages(msgs: Message[]) {
+    if (!id) return
+    const results = await Promise.allSettled(msgs.map(msg => deleteMessage(id, msg)))
+    if (results.some(r => r.status === 'rejected')) window.alert(t('messenger.deleteMessageFailed'))
+  }
+
+  async function handleForwardConfirm(targetChatId: string) {
+    if (!id || !forwardMsgs) return
+    const messageIds = forwardMsgs.map(m => m.messageId).filter((mid): mid is string => !!mid)
+    setForwardMsgs(null)
+    try {
+      await forwardMessagesApi(targetChatId, id, messageIds)
+    } catch {
+      window.alert(t('messenger.forwardMessageFailed'))
     }
   }
 
@@ -324,6 +344,8 @@ export function MessengerPage() {
               onRetry={handleRetrySend}
               onDelete={handleDeleteMessage}
               onEdit={handleEditMessage}
+              onBulkDelete={handleBulkDeleteMessages}
+              onForward={setForwardMsgs}
               onTyping={typingIndicator.handleOwnTyping}
               onHeaderClick={() => {
                 if (meta.group) { setGroupModalOpen(true); return }
@@ -397,6 +419,12 @@ export function MessengerPage() {
           onLeave={handleLeaveGroup}
         />
       )}
+
+      <ForwardModal
+        messages={forwardMsgs}
+        onClose={() => setForwardMsgs(null)}
+        onConfirm={handleForwardConfirm}
+      />
 
     </div>
   )
