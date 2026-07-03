@@ -9,7 +9,8 @@ interface LastMessageDto { messageId: string; senderId: string; content: string;
 interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean; otherMemberLastReadAt: string | null }
 interface ChatMemberDto { userId: string; displayName: string; avatarUrl: string | null; avatarColor: string; role: 'owner' | 'admin' | 'member'; joinedAt: string; online: boolean }
 interface ChatDetailDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; createdAt: string; members: ChatMemberDto[] }
-interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; fileUrl: string | null; status: string; sentAt: string; editedAt: string | null; replyToMessageId: string | null; replyToSenderName: string | null; replyToContent: string | null; forwardedFromUserId: string | null; forwardedFromUserName: string | null }
+interface AttachmentDto  { fileUrl: string; fileName: string; contentType: string; fileSizeBytes: number }
+interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; attachments: AttachmentDto[]; status: string; sentAt: string; editedAt: string | null; replyToMessageId: string | null; replyToSenderName: string | null; replyToContent: string | null; forwardedFromUserId: string | null; forwardedFromUserName: string | null }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 
 // ── Вспомогательные ──────────────────────────────────────────────────────────
@@ -114,6 +115,12 @@ export async function fetchMessages(
       time:           formatMessageTime(dto.sentAt),
       sentAt:         dto.sentAt,
       date:           formatDate(dto.sentAt),
+      attachments: dto.attachments.map(a => ({
+        fileUrl:         a.fileUrl,
+        fileName:        a.fileName,
+        fileContentType: a.contentType,
+        fileSizeBytes:   a.fileSizeBytes,
+      })),
       forwardedFromUserId:   dto.forwardedFromUserId ?? undefined,
       forwardedFromUserName: dto.forwardedFromUserName ?? undefined,
       replyToMessageId:   dto.replyToMessageId ?? undefined,

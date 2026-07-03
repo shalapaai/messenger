@@ -11,6 +11,7 @@ using Messenger.Modules.Messages.Application.Features.UploadAndSendMessage;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 public static class MessagesEndpoints
@@ -34,10 +35,10 @@ public static class MessagesEndpoints
 
         group.MapPost("/upload", UploadAndSendMessage)
             .WithName("UploadAndSendMessage")
-            .WithSummary("Отправить файл/фото")
-            .WithDescription("Загружает файл и отправляет его как сообщение. Поддерживает любые типы файлов до 20 МБ. Необязательное поле caption — подпись к файлу.")
-            .Accepts<IFormFile>("multipart/form-data")
-            .Produces<Guid>(StatusCodes.Status201Created)
+            .WithSummary("Отправить файл(ы)/фото")
+            .WithDescription("Загружает один или несколько файлов и отправляет их одним сообщением. Изображения/документы/архивы/аудио/видео до 25 МБ каждый. Необязательное поле caption — подпись ко всему сообщению.")
+            .Accepts<IFormFileCollection>("multipart/form-data")
+            .Produces<UploadAndSendMessageResult>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .DisableAntiforgery();
 
@@ -104,25 +105,36 @@ public static class MessagesEndpoints
 
     private static async Task<IResult> UploadAndSendMessage(
         Guid              chatId,
-        IFormFile         file,
-        HttpContext        httpContext,
+        HttpContext       httpContext,
         ISender           sender,
         CancellationToken ct,
-        string?           caption = null)
+        [FromQuery] string? caption = null)
     {
-        if (file is null || file.Length == 0)
-            return Results.BadRequest(new { error = "File is empty" });
+        var form = await httpContext.Request.ReadFormAsync(ct);
+        var files = form.Files;
+        if (files.Count == 0)
+            return Results.BadRequest(new { error = "No files provided" });
 
         var userId = httpContext.GetUserId();
 
-        await using var stream = file.OpenReadStream();
-        var command = new UploadAndSendMessageCommand(
-            chatId, userId, stream, file.FileName, file.ContentType, file.Length, caption);
-        var result = await sender.Send(command, ct);
+        var streams = files.Select(f => f.OpenReadStream()).ToList();
+        try
+        {
+            var uploadedFiles = files
+                .Zip(streams, (f, s) => new UploadedFile(s, f.FileName, f.ContentType, f.Length))
+                .ToList();
+            var command = new UploadAndSendMessageCommand(chatId, userId, uploadedFiles, caption);
+            var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? Results.Created($"/api/chats/{chatId}/messages/{result.Value}", result.Value)
-            : result.Error.ToHttpResult();
+            return result.IsSuccess
+                ? Results.Created($"/api/chats/{chatId}/messages/{result.Value!.MessageId}", result.Value)
+                : result.Error.ToHttpResult();
+        }
+        finally
+        {
+            foreach (var stream in streams)
+                await stream.DisposeAsync();
+        }
     }
 
     private static async Task<IResult> EditMessage(

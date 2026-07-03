@@ -6,6 +6,8 @@ using Messenger.Shared.Kernel.Results;
 
 public sealed class Message : AggregateRoot<MessageId>
 {
+    private readonly List<MessageAttachment> _attachments = [];
+
     private Message() { } // EF Core
 
     private Message(MessageId id, Guid chatId, Guid senderId, string content, Guid? replyToMessageId)
@@ -22,7 +24,7 @@ public sealed class Message : AggregateRoot<MessageId>
     public Guid ChatId { get; private set; }
     public Guid SenderId { get; private set; }
     public string Content { get; private set; } = string.Empty;
-    public string? FileUrl { get; private set; }
+    public IReadOnlyList<MessageAttachment> Attachments => _attachments;
     public MessageStatus Status { get; private set; }
     public DateTime SentAt { get; private set; }
     public DateTime? EditedAt { get; private set; }
@@ -45,36 +47,48 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    public static Result<Message> CreateFile(Guid chatId, Guid senderId, string fileUrl, string? caption = null)
+    // Одно сообщение может нести несколько вложений — отправлены ли они одним выбором файлов
+    // в чате или это единственный файл, путь один и тот же: без вложений отправить нельзя,
+    // подпись (caption) необязательна и относится ко всему сообщению целиком, а не к файлу
+    public static Result<Message> CreateWithAttachments(
+        Guid chatId, Guid senderId, IReadOnlyList<MessageAttachment> attachments, string? caption = null)
     {
-        if (string.IsNullOrWhiteSpace(fileUrl))
-            return Result.Failure<Message>(Error.Validation("FileUrl", "File URL cannot be empty"));
+        if (attachments.Count == 0)
+            return Result.Failure<Message>(Error.Validation("Attachments", "At least one file is required"));
 
         var message = new Message(MessageId.New(), chatId, senderId, caption?.Trim() ?? string.Empty, null);
-        message.FileUrl = fileUrl;
-        message.RaiseDomainEvent(new MessageSentDomainEvent(message.Id.Value, chatId, senderId, caption ?? string.Empty));
+        message._attachments.AddRange(attachments);
+        message.RaiseDomainEvent(new MessageSentDomainEvent(
+            message.Id.Value, chatId, senderId, message.Content, attachments: attachments));
         return Result.Success(message);
     }
 
     // Пересланное сообщение — новая независимая копия в целевом чате, автор которой (SenderId) —
     // тот, кто переслал, а не оригинальный отправитель. ForwardedFrom* только для подписи "Переслано от"
     // на клиенте: редактирование/удаление копии подчиняется тем же правилам, что у обычного сообщения.
-    // fileUrl копируется из оригинала — иначе пересылка файла/фото без подписи теряла бы вложение
-    // (пустой Content без fileUrl не проходил бы валидацию и копия молча дропалась).
+    // Вложения копируются целиком (новые MessageAttachment с новыми Id — owned-сущность нельзя
+    // разделить между двумя родителями), иначе пересылка файла без подписи теряла бы вложение
+    // (пустой Content без вложений не проходил бы валидацию и копия молча дропалась).
     public static Result<Message> CreateForwarded(
-        Guid targetChatId, Guid forwarderId, string content, string? fileUrl, Guid originalMessageId, Guid originalSenderId)
+        Guid targetChatId, Guid forwarderId, string content, IReadOnlyList<MessageAttachment> attachments,
+        Guid originalMessageId, Guid originalSenderId)
     {
-        if (string.IsNullOrWhiteSpace(content) && string.IsNullOrWhiteSpace(fileUrl))
+        if (string.IsNullOrWhiteSpace(content) && attachments.Count == 0)
             return Result.Failure<Message>(Error.Validation("Content", "Message content cannot be empty"));
+
+        var clonedAttachments = attachments
+            .Select(a => MessageAttachment.Create(a.FileUrl, a.FileName, a.ContentType, a.FileSizeBytes, a.SortOrder))
+            .ToList();
 
         var message = new Message(MessageId.New(), targetChatId, forwarderId, content.Trim(), null)
         {
-            FileUrl                = fileUrl,
             ForwardedFromMessageId = originalMessageId,
             ForwardedFromUserId    = originalSenderId,
         };
+        message._attachments.AddRange(clonedAttachments);
         message.RaiseDomainEvent(new MessageSentDomainEvent(
-            message.Id.Value, targetChatId, forwarderId, message.Content, originalMessageId, originalSenderId));
+            message.Id.Value, targetChatId, forwarderId, message.Content, originalMessageId, originalSenderId,
+            attachments: clonedAttachments));
         return Result.Success(message);
     }
 

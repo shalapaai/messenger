@@ -43,7 +43,8 @@ public sealed class ForwardMessagesCommandHandler(
             // если пересылают уже пересланное сообщение — показываем оригинального автора, а не форвардера
             var originalAuthorId = original.ForwardedFromUserId ?? original.SenderId;
             var result = Message.CreateForwarded(
-                command.TargetChatId, command.RequesterId, original.Content, original.FileUrl, original.Id.Value, originalAuthorId);
+                command.TargetChatId, command.RequesterId, original.Content, original.Attachments,
+                original.Id.Value, originalAuthorId);
 
             // пустой контент без вложения — пропускаем эту копию, не роняем всю пачку
             if (result.IsSuccess)

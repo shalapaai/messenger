@@ -125,7 +125,6 @@ CREATE TABLE IF NOT EXISTS messages.message (
     chat_id                   UUID          NOT NULL,
     sender_id                 UUID          NOT NULL,
     content                   VARCHAR(4096) NOT NULL,
-    file_url                  VARCHAR(2048) DEFAULT NULL,
     status                    VARCHAR(20)   NOT NULL,
     sent_at                   TIMESTAMPTZ   NOT NULL,
     edited_at                 TIMESTAMPTZ   DEFAULT NULL,
@@ -157,6 +156,25 @@ CREATE INDEX IF NOT EXISTS ix_message_chat_id_sent_at
 
 CREATE INDEX IF NOT EXISTS ix_message_sender_id
     ON messages.message (sender_id);
+
+-- Одно сообщение может нести несколько вложений (несколько файлов, отправленных разом,
+-- одним сообщением) — отдельная таблица вместо колонок на message; sort_order сохраняет
+-- порядок, в котором пользователь выбрал файлы
+CREATE TABLE IF NOT EXISTS messages.message_attachment (
+    id                UUID          PRIMARY KEY,
+    message_id        UUID          NOT NULL,
+    file_url          VARCHAR(2048) NOT NULL,
+    file_name         VARCHAR(255)  NOT NULL,
+    content_type      VARCHAR(100)  NOT NULL,
+    file_size_bytes   BIGINT        NOT NULL,
+    sort_order        INT           NOT NULL DEFAULT 0,
+
+    CONSTRAINT fk_message_attachment_message_id
+        FOREIGN KEY (message_id) REFERENCES messages.message (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS ix_message_attachment_message_id
+    ON messages.message_attachment (message_id);
 
 -- ══════════════════════════════════════════════════════════════════════════════
 --  СХЕМА: files

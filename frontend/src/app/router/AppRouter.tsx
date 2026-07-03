@@ -15,6 +15,7 @@ import { useOnlineStore } from '../../shared/api/onlineStore'
 import { useConnectionStore } from '../../shared/api/connectionStore'
 import { signalR } from '../../shared/api/signalrClient'
 import { ConnectionBanner } from '../../shared/ui/ConnectionBanner/ConnectionBanner'
+import { ErrorModal } from '../../shared/ui/ErrorModal'
 import type { IncomingMessage, UserOnlineEvent } from '../../shared/api/signalrClient'
 import { AppLoadingSkeleton } from './AppLoadingSkeleton'
 
@@ -62,6 +63,7 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
     <>
       {children}
       <ConnectionBanner />
+      <ErrorModal />
     </>
   )
 }

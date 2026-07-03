@@ -8,6 +8,7 @@ import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
 import { useIsOnline, useOnlineStore } from '../../shared/api/onlineStore'
+import { useErrorModalStore } from '../../shared/api/errorModalStore'
 import type { UserSearchResult } from '../../shared/api/usersApi'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
@@ -40,6 +41,7 @@ export function MessengerPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { profile, setProfile } = useUserProfile()
+  const showError = useErrorModalStore(st => st.showError)
 
   const [filter, setFilter] = useState<Filter>('all')
   const [query,  setQuery]  = useState('')
@@ -146,7 +148,7 @@ export function MessengerPage() {
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, retry, deleteMessage, deleteMessages, editMessage,
+    send, sendFiles, retry, deleteMessage, deleteMessages, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -233,13 +235,29 @@ export function MessengerPage() {
         await loadChats()
         navigate(`/chats/${newChatId}`, { replace: true, state: { focusInput: true } })
       } catch {
-        window.alert(t('messenger.sendFailed'))
+        showError(t('messenger.sendFailed'))
       }
       return
     }
 
     if (!id) return
     send(id, text, signalRSend, meSender, replyTo)
+  }
+
+  async function handleSendFiles(files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) {
+    // Черновик — как и в handleSend, сначала создаём чат (один раз, а не по разу на файл —
+    // все файлы уходят одним запросом, поэтому гонки параллельных createDirectChat здесь нет);
+    // ошибки здесь и ниже ловит сам ChatWindow (см. send() там) и показывает модалку ошибки
+    if (newUserId) {
+      const newChatId = await createDirectChat(newUserId)
+      await sendFiles(newChatId, files, caption, meSender, onUploadProgress)
+      await loadChats()
+      navigate(`/chats/${newChatId}`, { replace: true })
+      return
+    }
+
+    if (!id) return
+    await sendFiles(id, files, caption, meSender, onUploadProgress)
   }
 
   function handleRetrySend(msg: Parameters<typeof retry>[1]) {
@@ -252,7 +270,7 @@ export function MessengerPage() {
     try {
       await deleteMessage(id, msg)
     } catch {
-      window.alert(t('messenger.deleteMessageFailed'))
+      showError(t('messenger.deleteMessageFailed'))
     }
   }
 
@@ -261,7 +279,7 @@ export function MessengerPage() {
     try {
       await editMessage(id, msg, newText)
     } catch {
-      window.alert(t('messenger.editMessageFailed'))
+      showError(t('messenger.editMessageFailed'))
     }
   }
 
@@ -270,7 +288,7 @@ export function MessengerPage() {
     try {
       await deleteMessages(id, msgs)
     } catch {
-      window.alert(t('messenger.deleteMessageFailed'))
+      showError(t('messenger.deleteMessageFailed'))
     }
   }
 
@@ -282,7 +300,7 @@ export function MessengerPage() {
     try {
       await forwardMessagesApi(targetChatId, sourceChatId, messageIds)
     } catch {
-      window.alert(t('messenger.forwardMessageFailed'))
+      showError(t('messenger.forwardMessageFailed'))
     }
   }
 
@@ -293,7 +311,7 @@ export function MessengerPage() {
       removeChat(id)
       navigate('/chats')
     } catch {
-      window.alert(t('messenger.deleteChatFailed'))
+      showError(t('messenger.deleteChatFailed'))
     }
   }
 
@@ -305,7 +323,7 @@ export function MessengerPage() {
       setGroupModalOpen(false)
       navigate('/chats')
     } catch {
-      window.alert(t('messenger.leaveGroupFailed'))
+      showError(t('messenger.leaveGroupFailed'))
     }
   }
 
@@ -325,7 +343,7 @@ export function MessengerPage() {
       setAddMemberModalOpen(false)
       await loadGroupMembers(id)
     } catch {
-      window.alert(t('messenger.addMemberFailed'))
+      showError(t('messenger.addMemberFailed'))
     }
   }
 
@@ -342,7 +360,7 @@ export function MessengerPage() {
       await leaveGroupChat(id, userId)
       await loadGroupMembers(id)
     } catch {
-      window.alert(t('messenger.removeMemberFailed'))
+      showError(t('messenger.removeMemberFailed'))
     }
   }
 
@@ -476,6 +494,7 @@ export function MessengerPage() {
               topSentinelRef={scroll.topSentinelRef}
               bottomRef={scroll.bottomRef}
               onSend={handleSend}
+              onSendFiles={handleSendFiles}
               onRetry={handleRetrySend}
               onDelete={handleDeleteMessage}
               onEdit={handleEditMessage}

@@ -12,6 +12,12 @@ public sealed record MessagesPageDto(
     List<MessageDto> Items,
     Guid?            NextCursor);
 
+public sealed record AttachmentDto(
+    string FileUrl,
+    string FileName,
+    string ContentType,
+    long   FileSizeBytes);
+
 public sealed record MessageDto(
     Guid      Id,
     Guid      ChatId,
@@ -20,7 +26,7 @@ public sealed record MessageDto(
     string?   SenderAvatarUrl,
     string    SenderAvatarColor,
     string    Content,
-    string?   FileUrl,
+    List<AttachmentDto> Attachments,
     string    Status,
     DateTime  SentAt,
     DateTime? EditedAt,

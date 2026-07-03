@@ -67,7 +67,10 @@ public sealed class GetMessagesQueryHandler(
                     summary?.AvatarUrl,
                     summary?.AvatarColor ?? "#2C5BF0",
                     m.Content,
-                    m.FileUrl,
+                    m.Attachments
+                        .OrderBy(a => a.SortOrder)
+                        .Select(a => new AttachmentDto(a.FileUrl, a.FileName, a.ContentType, a.FileSizeBytes))
+                        .ToList(),
                     m.Status.ToString().ToLower(),
                     m.SentAt,
                     m.EditedAt,
