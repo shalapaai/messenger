@@ -130,7 +130,7 @@ export function MessengerPage() {
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, sendFile, retry, deleteMessage, deleteMessages, editMessage,
+    send, sendFiles, retry, deleteMessage, deleteMessages, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -221,19 +221,20 @@ export function MessengerPage() {
     send(id, text, signalRSend, meSender, replyTo)
   }
 
-  async function handleSendFile(file: File, caption: string | undefined, onUploadProgress?: (percent: number) => void) {
-    // Черновик — как и в handleSend, сначала создаём чат; ошибки здесь и ниже ловит
-    // сам ChatWindow (см. send() там) и показывает единый alert
+  async function handleSendFiles(files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) {
+    // Черновик — как и в handleSend, сначала создаём чат (один раз, а не по разу на файл —
+    // все файлы уходят одним запросом, поэтому гонки параллельных createDirectChat здесь нет);
+    // ошибки здесь и ниже ловит сам ChatWindow (см. send() там) и показывает модалку ошибки
     if (newUserId) {
       const newChatId = await createDirectChat(newUserId)
-      await sendFile(newChatId, file, caption, meSender, onUploadProgress)
+      await sendFiles(newChatId, files, caption, meSender, onUploadProgress)
       await loadChats()
       navigate(`/chats/${newChatId}`, { replace: true })
       return
     }
 
     if (!id) return
-    await sendFile(id, file, caption, meSender, onUploadProgress)
+    await sendFiles(id, files, caption, meSender, onUploadProgress)
   }
 
   function handleRetrySend(msg: Parameters<typeof retry>[1]) {
@@ -455,7 +456,7 @@ export function MessengerPage() {
               topSentinelRef={scroll.topSentinelRef}
               bottomRef={scroll.bottomRef}
               onSend={handleSend}
-              onSendFile={handleSendFile}
+              onSendFiles={handleSendFiles}
               onRetry={handleRetrySend}
               onDelete={handleDeleteMessage}
               onEdit={handleEditMessage}

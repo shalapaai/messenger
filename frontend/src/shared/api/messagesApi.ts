@@ -19,26 +19,33 @@ export async function forwardMessages(targetChatId: string, sourceChatId: string
   await apiClient.post(`/chats/${targetChatId}/messages/forward`, { sourceChatId, messageIds })
 }
 
-export interface UploadedMessageResult {
-  messageId: string
-  content: string
+export interface UploadedAttachment {
   fileUrl: string
   fileName: string
   contentType: string
   fileSizeBytes: number
+}
+
+export interface UploadedMessageResult {
+  messageId: string
+  content: string
+  attachments: UploadedAttachment[]
   sentAt: string
 }
 
-/** Загружает файл и отправляет его как сообщение — сервер не эхо-шлёт отправителю его же
- *  сообщение по SignalR, поэтому клиент строит bubble сам из этого ответа (см. useChatMessages). */
-export async function uploadChatMessageFile(
+/** Загружает один или несколько файлов и отправляет их одним сообщением — сервер не эхо-шлёт
+ *  отправителю его же сообщение по SignalR, поэтому клиент строит bubble сам из этого ответа
+ *  (см. useChatMessages). Прогресс общий на весь запрос — одна из причин отправлять всё разом
+ *  одним HTTP-запросом, а не по файлу за раз: только так браузер шлёт всё одним чатом и не
+ *  создаёт N отдельных чатов гонкой параллельных запросов на "черновом" (ещё не созданном) чате. */
+export async function uploadChatMessageFiles(
   chatId: string,
-  file: File,
+  files: File[],
   caption?: string,
   onUploadProgress?: (percent: number) => void,
 ): Promise<UploadedMessageResult> {
   const formData = new FormData()
-  formData.append('file', file)
+  files.forEach(file => formData.append('files', file))
   const res = await apiClient.post<UploadedMessageResult>(
     `/chats/${chatId}/messages/upload`,
     formData,

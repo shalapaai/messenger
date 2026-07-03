@@ -8,6 +8,13 @@ import { getAccessToken } from '../lib/auth/authTokens'
 
 // ── Типы событий от сервера ───────────────────────────────────────────────────
 
+export interface IncomingAttachment {
+  fileUrl: string
+  fileName: string
+  fileContentType: string
+  fileSizeBytes: number
+}
+
 export interface IncomingMessage {
   messageId: string
   chatId: string
@@ -17,10 +24,7 @@ export interface IncomingMessage {
   senderAvatarColor: string
   content: string
   sentAt: string
-  fileUrl?: string | null
-  fileName?: string | null
-  fileContentType?: string | null
-  fileSizeBytes?: number | null
+  attachments?: IncomingAttachment[]
   forwardedFromUserId?: string | null
   forwardedFromUserName?: string | null
   replyToMessageId?: string | null

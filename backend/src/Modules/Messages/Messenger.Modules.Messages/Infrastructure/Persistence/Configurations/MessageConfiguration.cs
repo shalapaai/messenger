@@ -32,12 +32,25 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(m => m.EditedAt).HasColumnName("edited_at");
         builder.Property(m => m.DeletedAt).HasColumnName("deleted_at");
         builder.Property(m => m.ReplyToMessageId).HasColumnName("reply_to_message_id");
-        builder.Property(m => m.FileUrl).HasColumnName("file_url").HasMaxLength(2048);
-        builder.Property(m => m.FileName).HasColumnName("file_name").HasMaxLength(255);
-        builder.Property(m => m.FileContentType).HasColumnName("file_content_type").HasMaxLength(100);
-        builder.Property(m => m.FileSizeBytes).HasColumnName("file_size_bytes");
         builder.Property(m => m.ForwardedFromMessageId).HasColumnName("forwarded_from_message_id");
         builder.Property(m => m.ForwardedFromUserId).HasColumnName("forwarded_from_user_id");
+
+        builder.Navigation(m => m.Attachments).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.OwnsMany(m => m.Attachments, a =>
+        {
+            a.ToTable("message_attachment");
+            a.WithOwner().HasForeignKey("message_id");
+
+            a.HasKey(x => x.Id);
+            a.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            a.Property(x => x.FileUrl).HasColumnName("file_url").HasMaxLength(2048).IsRequired();
+            a.Property(x => x.FileName).HasColumnName("file_name").HasMaxLength(255).IsRequired();
+            a.Property(x => x.ContentType).HasColumnName("content_type").HasMaxLength(100).IsRequired();
+            a.Property(x => x.FileSizeBytes).HasColumnName("file_size_bytes").IsRequired();
+            a.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
+
+            a.HasIndex("message_id").HasDatabaseName("ix_message_attachment_message_id");
+        });
 
         builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_message_chat_id_sent_at");
         builder.HasIndex(m => m.SenderId).HasDatabaseName("ix_message_sender_id");

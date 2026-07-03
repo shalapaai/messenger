@@ -37,6 +37,13 @@ export interface GroupMember {
   online: boolean
 }
 
+export interface Attachment {
+  fileUrl: string
+  fileName: string
+  fileContentType: string
+  fileSizeBytes: number
+}
+
 export interface Message {
   id: number
   messageId?: string
@@ -53,10 +60,8 @@ export interface Message {
   date: string
   status?: 'pending' | 'sent' | 'failed'
   edited?: boolean
-  fileUrl?: string | null
-  fileName?: string | null
-  fileContentType?: string | null
-  fileSizeBytes?: number | null
+  /** несколько файлов, отправленных одним сообщением — пусто/undefined, если сообщение без вложений */
+  attachments?: Attachment[]
   forwardedFromUserId?: string
   forwardedFromUserName?: string
   replyToMessageId?: string

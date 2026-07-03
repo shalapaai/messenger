@@ -57,10 +57,16 @@ public sealed class MessageSentEventHandler(
             senderAvatarColor = sender?.AvatarColor ?? "#2C5BF0",
             content          = notification.Content,
             sentAt           = notification.OccurredOn,
-            fileUrl          = notification.FileUrl,
-            fileName         = notification.FileName,
-            fileContentType  = notification.FileContentType,
-            fileSizeBytes    = notification.FileSizeBytes,
+            attachments      = notification.Attachments
+                .OrderBy(a => a.SortOrder)
+                .Select(a => new
+                {
+                    fileUrl         = a.FileUrl,
+                    fileName        = a.FileName,
+                    fileContentType = a.ContentType,
+                    fileSizeBytes   = a.FileSizeBytes,
+                })
+                .ToList(),
             forwardedFromUserId   = notification.ForwardedFromUserId,
             forwardedFromUserName = forwardedFromUser?.DisplayName,
             replyToMessageId   = notification.ReplyToMessageId,
