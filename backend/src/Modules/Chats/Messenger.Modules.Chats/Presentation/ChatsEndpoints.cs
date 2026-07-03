@@ -10,6 +10,7 @@ using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
 using Messenger.Modules.Chats.Application.Features.GetChats;
 using Messenger.Modules.Chats.Application.Features.MarkChatRead;
+using Messenger.Modules.Chats.Application.Features.SetChatMemberRole;
 using Messenger.Modules.Chats.Application.Features.UploadChatAvatar;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -96,6 +97,15 @@ public static class ChatsEndpoints
                              "Текущий пользователь становится владельцем (Owner), переданные участники добавляются с ролью Member.")
             .Produces<Guid>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
+
+        group.MapPatch("/{id:guid}/members/{userId:guid}/role", SetChatMemberRole)
+            .WithName("SetChatMemberRole")
+            .WithSummary("Изменить роль участника группового чата")
+            .WithDescription("Только Owner может назначать или снимать Admin. Назначить Owner нельзя.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapPost("/{id:guid}/avatar", UploadChatAvatar)
             .WithName("UploadChatAvatar")
@@ -241,6 +251,23 @@ public static class ChatsEndpoints
             : result.Error.ToHttpResult();
     }
 
+    private static async Task<IResult> SetChatMemberRole(
+        Guid                       id,
+        Guid                       userId,
+        SetChatMemberRoleRequest   request,
+        HttpContext                httpContext,
+        ISender                    sender,
+        CancellationToken          ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var command = new SetChatMemberRoleCommand(id, requesterId, userId, request.Role);
+        var result  = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
     private static async Task<IResult> UploadChatAvatar(
         Guid              id,
         IFormFile         file,
@@ -267,4 +294,5 @@ public sealed record UpdateChatRequest(string? Name, string? AvatarUrl);
 public sealed record AddChatMemberRequest(Guid UserId);
 public sealed record CreateDirectChatRequest(Guid OtherUserId);
 public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds);
+public sealed record SetChatMemberRoleRequest(string Role);
 public sealed record UploadChatAvatarResponse(string Url);

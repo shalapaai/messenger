@@ -48,7 +48,6 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       setNextCursor(prev => ({ ...prev, [chatId]: cursor }))
       setHistoryLoaded(prev => ({ ...prev, [chatId]: cursor === null }))
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))
-      opts.onAppend?.(false)
     }).catch(() => {
       setLoadError(prev => ({ ...prev, [chatId]: true }))
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))

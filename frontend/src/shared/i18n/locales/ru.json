@@ -174,7 +174,8 @@
     "deleteChatTitle": "Удалить чат?",
     "deleteChatText": "Вся переписка с {{name}} будет удалена безвозвратно.",
     "deleteChatFailed": "Не удалось удалить чат.",
-    "leaveGroupFailed": "Не удалось выйти из группы."
+    "leaveGroupFailed": "Не удалось выйти из группы.",
+    "setMemberRoleFailed": "Не удалось изменить роль участника."
   },
   "group": {
     "members_one": "Участник ({{count}})",
@@ -200,7 +201,11 @@
       "owner": "Владелец",
       "admin": "Администратор",
       "member": "Участник"
-    }
+    },
+    "promoteToAdmin": "Назначить администратором",
+    "demoteFromAdmin": "Снять права администратора",
+    "removeMemberTitle": "Удалить участника?",
+    "leaveGroupTitle": "Выйти из группы?"
   },
   "connection": {
     "connected": "✓ Подключено",

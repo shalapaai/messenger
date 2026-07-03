@@ -12,10 +12,9 @@
 .modalPanel {
   background: var(--color-surface-raised);
   border-radius: 24px;
-  padding: 32px;
+  padding: 24px 28px 28px;
   width: 100%;
   max-width: 420px;
-  position: relative;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -23,13 +22,25 @@
   border: 1px solid var(--color-border);
 }
 
+/* ── Заголовок ─────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
 .modalClose {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   border: none;
   background: var(--color-surface-muted);
   cursor: pointer;
@@ -39,31 +50,41 @@
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+  flex-shrink: 0;
+}
+.modalClose:hover { background: var(--color-border); color: var(--color-text); }
+
+/* ── Аватарка ──────────────────────────────────────────────────────────────── */
+.avatarBlock {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+  flex-shrink: 0;
 }
 
-.modalClose:hover { background: var(--color-border); }
-
-.title { font-size: 20px; font-weight: 800; margin-bottom: 18px; color: var(--color-text); }
-
+/* ── Поля ввода ────────────────────────────────────────────────────────────── */
+.nameInput,
 .searchInput {
   border: 1px solid var(--color-border);
   background: var(--color-surface-muted);
   border-radius: 14px;
-  padding: 13px 16px;
+  padding: 12px 16px;
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
   color: var(--color-text);
   outline: none;
   transition: border-color 0.15s, background 0.15s;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
-
+.nameInput::placeholder,
 .searchInput::placeholder { color: var(--color-text-faint); }
+.nameInput:focus,
 .searchInput:focus { border-color: var(--color-primary); background: var(--color-surface); }
 
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; flex-shrink: 0; }
+/* ── Чипы выбранных участников ─────────────────────────────────────────────── */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; flex-shrink: 0; }
 .chip {
   display: flex;
   align-items: center;
@@ -80,9 +101,16 @@
 }
 .chipRemove { font-size: 11px; opacity: 0.7; }
 
-.results { overflow-y: auto; display: flex; flex-direction: column; min-height: 60px; flex: 1; }
+/* ── Список результатов ─────────────────────────────────────────────────────── */
+.results { overflow-y: auto; display: flex; flex-direction: column; min-height: 40px; flex: 1; }
 
-.hint { text-align: center; font-size: 13px; font-weight: 600; color: var(--color-text-faint); padding: 28px 0; }
+.hint {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-faint);
+  padding: 10px 0;
+}
 
 .row { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-radius: 12px; }
 .rowClickable { cursor: pointer; transition: background 0.12s; }
@@ -95,7 +123,6 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-
 .avatar { color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
 .avatarImg { object-fit: cover; }
 
@@ -117,10 +144,10 @@
 }
 .checkboxChecked { background: var(--color-primary); border-color: var(--color-primary); }
 
-.error { color: var(--color-danger-strong); font-size: 13px; font-weight: 600; margin: 10px 0 0; text-align: center; }
+.error { color: var(--color-danger-strong); font-size: 13px; font-weight: 600; margin: 8px 0 0; text-align: center; flex-shrink: 0; }
 
 .createBtn {
-  margin-top: 18px;
+  margin-top: 16px;
   width: 100%;
   padding: 14px;
   border-radius: 14px;

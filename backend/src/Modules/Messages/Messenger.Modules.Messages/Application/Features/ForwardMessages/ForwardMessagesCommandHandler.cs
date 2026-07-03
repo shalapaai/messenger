@@ -40,8 +40,10 @@ public sealed class ForwardMessagesCommandHandler(
         var forwarded = new List<Message>();
         foreach (var original in ordered)
         {
+            // если пересылают уже пересланное сообщение — показываем оригинального автора, а не форвардера
+            var originalAuthorId = original.ForwardedFromUserId ?? original.SenderId;
             var result = Message.CreateForwarded(
-                command.TargetChatId, command.RequesterId, original.Content, original.FileUrl, original.Id.Value, original.SenderId);
+                command.TargetChatId, command.RequesterId, original.Content, original.FileUrl, original.Id.Value, originalAuthorId);
 
             // пустой контент без вложения — пропускаем эту копию, не роняем всю пачку
             if (result.IsSuccess)

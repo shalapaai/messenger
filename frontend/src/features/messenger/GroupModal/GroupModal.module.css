@@ -64,8 +64,24 @@
 .umRoleBadgeAdmin { background: var(--color-warning-soft); color: var(--color-warning); }
 .umRemoveMemberBtn { width: 22px; height: 22px; border-radius: 50%; border: none; background: var(--color-danger-soft); color: var(--color-danger-strong); font-size: 11px; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; transition: background 0.15s; }
 .umRemoveMemberBtn:hover { background: var(--color-danger-soft-hover); }
+.umRoleToggleBtn { width: 22px; height: 22px; border-radius: 50%; border: none; font-size: 14px; font-weight: 700; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 4px; transition: background 0.15s; }
+.umRoleToggleBtnPromote { background: var(--color-primary-softer); color: var(--color-primary); }
+.umRoleToggleBtnPromote:hover { background: var(--color-primary-soft); }
+.umRoleToggleBtnDemote { background: var(--color-warning-soft); color: var(--color-warning); }
+.umRoleToggleBtnDemote:hover { filter: brightness(0.9); }
 .umGroupActions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
 .umEditGroupBtn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--color-primary); color: var(--color-on-primary); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
 .umEditGroupBtn:hover { background: var(--color-primary-hover); }
 .umLeaveGroupBtn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--color-danger-soft); color: var(--color-danger-strong); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
 .umLeaveGroupBtn:hover { background: var(--color-danger-soft-hover); }
+
+/* ── Confirm modals ─────────────────────────────────────────────────────────── */
+.confirmOverlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 600; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.confirmPanel { background: var(--color-surface-raised); border-radius: 20px; padding: 24px; max-width: 340px; width: 100%; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); border: 1px solid var(--color-border); }
+.confirmTitle { font-size: 17px; font-weight: 800; color: var(--color-text); text-align: center; margin-bottom: 8px; }
+.confirmBody { font-size: 14px; color: var(--color-text-subtle); text-align: center; margin-bottom: 20px; }
+.confirmActions { display: flex; gap: 10px; }
+.confirmCancel { flex: 1; padding: 12px; border-radius: 12px; border: none; background: var(--color-surface-muted); color: var(--color-text); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.confirmCancel:hover { background: var(--color-border); }
+.confirmDeleteBtn { flex: 1; padding: 12px; border-radius: 12px; border: none; background: var(--color-danger-soft); color: var(--color-danger-strong); font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+.confirmDeleteBtn:hover { background: var(--color-danger-soft-hover); }

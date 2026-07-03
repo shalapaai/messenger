@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { Filter, ModalUser, Message, GroupMember } from '../../shared/types/messenger'
-import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead, createGroupChat, addChatMember, updateChat, fetchChatDetail } from '../../shared/api/chatsApi'
+import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead, createGroupChat, addChatMember, updateChat, fetchChatDetail, uploadChatAvatar, setMemberRole } from '../../shared/api/chatsApi'
 import { forwardMessages as forwardMessagesApi } from '../../shared/api/messagesApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -60,8 +60,9 @@ export function MessengerPage() {
   const startTypingRef = useRef<() => void>(() => undefined)
   const stopTypingRef = useRef<() => void>(() => undefined)
 
-  const inChatView = !!id || !!newUserId
-  const draftUser  = newUserId ? (location.state as DraftUserState | null) : null
+  const inChatView   = !!id || !!newUserId
+  const draftUser    = newUserId ? (location.state as DraftUserState | null) : null
+  const focusInput   = !!(location.state as { focusInput?: boolean } | null)?.focusInput
 
   // ── Реальный профиль (вместо мок-"Анны Соколовой") ─────────────────────────
   const profileInitials = profile
@@ -105,8 +106,22 @@ export function MessengerPage() {
     requestedGroupChatIdRef.current = chatId
     setGroupMembersLoading(true)
     try {
-      const members = await fetchChatDetail(chatId)
-      if (requestedGroupChatIdRef.current === chatId) setGroupMembers(members)
+      const fresh = await fetchChatDetail(chatId)
+      if (requestedGroupChatIdRef.current !== chatId) return
+      setGroupMembers(prev => {
+        if (prev.length === 0) return fresh
+        // Preserve existing display order: update data in-place, then append new members,
+        // drop removed ones — so a role change never moves anyone in the list
+        const freshMap = new Map(fresh.map(m => [m.userId, m]))
+        const merged = prev
+          .filter(m => freshMap.has(m.userId))
+          .map(m => ({ ...freshMap.get(m.userId)! }))
+        const existingIds = new Set(prev.map(m => m.userId))
+        for (const m of fresh) {
+          if (!existingIds.has(m.userId)) merged.push(m)
+        }
+        return merged
+      })
     } catch {
       if (requestedGroupChatIdRef.current === chatId) setGroupMembers([])
     } finally {
@@ -114,15 +129,17 @@ export function MessengerPage() {
     }
   }
 
+  const isGroupChat = id ? (chats.find(c => c.id === id)?.group ?? false) : false
+
   useEffect(() => {
     let cancelled = false
     queueMicrotask(() => {
       if (cancelled) return
-      if (groupModalOpen && id) loadGroupMembers(id)
+      if (id && isGroupChat) loadGroupMembers(id)
       else { requestedGroupChatIdRef.current = null; setGroupMembers([]) }
     })
     return () => { cancelled = true }
-  }, [groupModalOpen, id])
+  }, [id, isGroupChat])
 
   // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
   const {
@@ -157,7 +174,7 @@ export function MessengerPage() {
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
     onChatUpdated: (event) => {
       loadChats()
-      if (event.chatId === id && groupModalOpen) loadGroupMembers(id)
+      if (event.chatId === id && isGroupChat) loadGroupMembers(id)
     },
   })
 
@@ -167,6 +184,12 @@ export function MessengerPage() {
   }, [startTyping, stopTyping])
 
   // ── Подгрузка истории вверх по скроллу ──────────────────────────────────────
+  // Ref нужен, чтобы IntersectionObserver всегда вызывал актуальную версию
+  // loadMoreHistory. Без него колбэк захватывает устаревший экземпляр функции,
+  // где loadingHistory === true, и повторные скроллы вверх молча игнорируются.
+  const loadMoreHistoryRef = useRef(loadMoreHistory)
+  loadMoreHistoryRef.current = loadMoreHistory
+
   useEffect(() => {
     const el       = scroll.messagesRef.current
     const sentinel = scroll.topSentinelRef.current
@@ -174,14 +197,13 @@ export function MessengerPage() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          loadMoreHistory(scroll.prepareRestoreBeforePrepend, scroll.triggerRestore)
+          loadMoreHistoryRef.current(scroll.prepareRestoreBeforePrepend, scroll.triggerRestore)
         }
       },
       { root: el, threshold: 0 }
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, messages.length, historyLoaded])
 
   useEffect(() => {
@@ -208,7 +230,7 @@ export function MessengerPage() {
         const newChatId = await createDirectChat(newUserId)
         await sendMessageRest(newChatId, text)
         await loadChats()
-        navigate(`/chats/${newChatId}`, { replace: true })
+        navigate(`/chats/${newChatId}`, { replace: true, state: { focusInput: true } })
       } catch {
         window.alert(t('messenger.sendFailed'))
       }
@@ -287,8 +309,9 @@ export function MessengerPage() {
   }
 
   // ошибку намеренно не глотаем здесь — модалки сами показывают inline-сообщение об ошибке
-  async function handleCreateGroup(name: string, memberIds: string[]) {
+  async function handleCreateGroup(name: string, memberIds: string[], avatarFile?: File) {
     const newChatId = await createGroupChat(name, memberIds)
+    if (avatarFile) await uploadChatAvatar(newChatId, avatarFile).catch(() => {})
     await loadChats()
     setNewGroupModalOpen(false)
     navigate(`/chats/${newChatId}`)
@@ -319,6 +342,16 @@ export function MessengerPage() {
       await loadGroupMembers(id)
     } catch {
       window.alert(t('messenger.removeMemberFailed'))
+    }
+  }
+
+  async function handleSetMemberRole(userId: string, role: 'admin' | 'member') {
+    if (!id) return
+    try {
+      await setMemberRole(id, userId, role)
+      setGroupMembers(prev => prev.map(m => m.userId === userId ? { ...m, role } : m))
+    } catch {
+      window.alert(t('messenger.setMemberRoleFailed'))
     }
   }
 
@@ -361,6 +394,10 @@ export function MessengerPage() {
         }
       : null
   const chatId = id ?? newUserId
+  const myGroupRole = isGroupChat && profile
+    ? (groupMembers.find(m => m.userId === profile.userId)?.role ?? null)
+    : null
+  const canDeleteMessages = isGroupChat ? (myGroupRole === 'owner' || myGroupRole === 'admin') : true
 
   function openUserModal(userId: string, name: string, online: boolean) {
     setModalUser({ userId, name, initials: getInitials(name), color: colorFromId(userId), online })
@@ -449,6 +486,9 @@ export function MessengerPage() {
                 if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }
               }}
               onAvatarClick={msg => { setModalUserIsChatPartner(false); openUserModal(msg.senderId, msg.senderName, onlineStatuses[msg.senderId] ?? false) }}
+              onForwardedUserClick={(userId, name) => { setModalUserIsChatPartner(false); openUserModal(userId, name, onlineStatuses[userId] ?? false) }}
+              shouldAutoFocus={focusInput}
+              canDeleteMessages={canDeleteMessages}
             />
           ) : (
             <div className={s.placeholder}>
@@ -519,6 +559,7 @@ export function MessengerPage() {
           onAddMember={() => setAddMemberModalOpen(true)}
           onEditGroup={() => setEditGroupModalOpen(true)}
           onRemoveMember={handleRemoveMember}
+          onSetMemberRole={handleSetMemberRole}
         />
       )}
 

@@ -170,7 +170,8 @@
     "deleteChatTitle": "Delete chat?",
     "deleteChatText": "The entire conversation with {{name}} will be permanently deleted.",
     "deleteChatFailed": "Could not delete chat.",
-    "leaveGroupFailed": "Could not leave group."
+    "leaveGroupFailed": "Could not leave group.",
+    "setMemberRoleFailed": "Could not change member role."
   },
   "group": {
     "members_one": "Member ({{count}})",
@@ -192,7 +193,11 @@
       "owner": "Owner",
       "admin": "Admin",
       "member": "Member"
-    }
+    },
+    "promoteToAdmin": "Make admin",
+    "demoteFromAdmin": "Remove admin",
+    "removeMemberTitle": "Remove member?",
+    "leaveGroupTitle": "Leave group?"
   },
   "connection": {
     "connected": "✓ Connected",

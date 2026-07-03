@@ -42,6 +42,10 @@ function formatTime(iso: string): string {
   return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
 }
 
+function formatMessageTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' })
+}
+
 function formatDate(iso: string): string {
   const d   = new Date(iso)
   const now = new Date()
@@ -107,7 +111,7 @@ export async function fetchMessages(
       senderInitials: initials(dto.senderName),
       senderColor:     dto.senderAvatarColor,
       senderAvatarUrl: dto.senderAvatarUrl,
-      time:           formatTime(dto.sentAt),
+      time:           formatMessageTime(dto.sentAt),
       sentAt:         dto.sentAt,
       date:           formatDate(dto.sentAt),
       forwardedFromUserId:   dto.forwardedFromUserId ?? undefined,
@@ -180,6 +184,11 @@ export async function deleteChat(chatId: string): Promise<void> {
 /** Выйти из группового чата (или удалить участника, если передан другой userId). */
 export async function leaveGroupChat(chatId: string, userId: string): Promise<void> {
   await apiClient.delete(`/chats/${chatId}/members/${userId}`)
+}
+
+/** Изменить роль участника группового чата — только Owner может назначать/снимать Admin. */
+export async function setMemberRole(chatId: string, userId: string, role: 'admin' | 'member'): Promise<void> {
+  await apiClient.patch(`/chats/${chatId}/members/${userId}/role`, { role })
 }
 
 /** Отправка сообщения через REST (а не SignalR) — нужна, чтобы отправить самое первое

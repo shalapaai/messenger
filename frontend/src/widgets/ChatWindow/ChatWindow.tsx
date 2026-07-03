@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useState,
   useRef,
   type RefObject,
@@ -22,7 +23,7 @@ type RenderedItem =
   | { type: 'sep'; label: string }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
 
-interface ContextMenuState { x: number; y: number; msg: Message }
+interface ContextMenuState { x: number; y: number; msg: Message; selection?: boolean }
 
 function ReplyIcon() {
   return (
@@ -105,6 +106,9 @@ interface ChatWindowProps {
   onTyping: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
+  onForwardedUserClick?: (userId: string, name: string) => void
+  shouldAutoFocus?: boolean
+  canDeleteMessages?: boolean
 }
 
 export function ChatWindow({
@@ -112,6 +116,7 @@ export function ChatWindow({
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
   onSend, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onHeaderClick, onAvatarClick,
+  onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -120,6 +125,46 @@ export function ChatWindow({
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [isAtBottom, setIsAtBottom] = useState(true)
+  const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null)
+  const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null)
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+
+  const hasMessages = messages.length > 0
+
+  useEffect(() => {
+    if (shouldAutoFocus) textareaRef.current?.focus()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const el = messagesRef.current
+    if (!el) return
+    const onScroll = () => {
+      setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80)
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [messagesRef, hasMessages])
+
+  useLayoutEffect(() => {
+    if (loadingInitial) return
+    const el = messagesRef.current
+    if (!el) return
+    setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80)
+  }, [loadingInitial, messagesRef, hasMessages])
+
+  function scrollToBottom() {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function scrollToMessage(msgId: string) {
+    const el = messagesRef.current?.querySelector(`[data-message-id="${msgId}"]`) as HTMLElement | null
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setHighlightedMsgId(msgId)
+    setTimeout(() => setHighlightedMsgId(null), 1200)
+  }
 
   // ── Мобильная раскладка ввода: эмодзи-пикер и виртуальная клавиатура ────────
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
@@ -402,11 +447,13 @@ export function ChatWindow({
   }, [discardInputHistoryLayer])
 
   function openContextMenu(e: MouseEvent, msg: Message) {
-    // в режиме выделения правый клик не нужен — клик по сообщению уже переключает чекбокс
-    if (selectMode) return
-    // действия доступны только для сообщений, уже подтверждённых сервером
     if (!msg.messageId) return
     e.preventDefault()
+    if (selectMode) {
+      if (!selectedIds.has(msg.id)) toggleSelect(msg)
+      setContextMenu({ x: e.clientX, y: e.clientY, msg, selection: true })
+      return
+    }
     setContextMenu({ x: e.clientX, y: e.clientY, msg })
   }
 
@@ -439,7 +486,7 @@ export function ChatWindow({
 
   function requestDelete(msg: Message) {
     setContextMenu(null)
-    if (window.confirm(t('messenger.confirmDeleteMessage'))) onDelete(msg)
+    setConfirmDeleteMsg(msg)
   }
 
   function enterSelectMode(msg: Message) {
@@ -466,11 +513,8 @@ export function ChatWindow({
   }
 
   function requestBulkDelete() {
-    const selected = messages.filter(m => selectedIds.has(m.id))
-    if (selected.length === 0) return
-    if (!window.confirm(t('messenger.confirmBulkDelete', { count: selected.length }))) return
-    onBulkDelete(selected)
-    exitSelectMode()
+    if (selectedIds.size === 0) return
+    setConfirmBulkDelete(true)
   }
 
   function requestBulkForward() {
@@ -637,15 +681,17 @@ export function ChatWindow({
             >
               <ForwardIcon />
             </button>
-            <button
-              type="button"
-              className={`${s.selectionBarBtn} ${s.selectionBarBtnDanger}`}
-              disabled={selectedIds.size === 0}
-              title={t('messenger.deleteMessage')}
-              onClick={requestBulkDelete}
-            >
-              <TrashIcon />
-            </button>
+            {canDeleteMessages && (
+              <button
+                type="button"
+                className={`${s.selectionBarBtn} ${s.selectionBarBtnDanger}`}
+                disabled={selectedIds.size === 0}
+                title={t('messenger.deleteMessage')}
+                onClick={requestBulkDelete}
+              >
+                <TrashIcon />
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -691,6 +737,7 @@ export function ChatWindow({
           <p className={s.emptyChatSub}>{t('messenger.firstMessage', { name: meta.name.split(' ')[0] })}</p>
         </div>
       ) : (
+        <div className={s.messagesOuter}>
         <div className={s.messages} ref={messagesRef}>
           <div ref={topSentinelRef} />
 
@@ -712,12 +759,22 @@ export function ChatWindow({
                 ? { ...item.msg, senderColor: meSender.senderColor, senderAvatarUrl: meSender.senderAvatarUrl, senderInitials: meSender.senderInitials, senderName: meSender.senderName }
                 : item.msg
               return (
-              <div key={item.msg.id}>
+              <div
+                key={item.msg.id}
+                data-message-id={item.msg.messageId ?? ''}
+                className={[
+                  item.msg.messageId && highlightedMsgId === item.msg.messageId ? s.msgHighlighted : '',
+                  selectMode && item.msg.messageId ? s.msgRowSelectable : '',
+                  selectMode && selectedIds.has(item.msg.id) ? s.msgRowSelected : '',
+                ].join(' ')}
+                onClick={() => selectMode && toggleSelect(item.msg)}
+                onContextMenu={(e) => openContextMenu(e, item.msg)}
+              >
                 {item.showName && (
                   <div
                     className={`${s.senderName} ${s.senderNameClickable}`}
                     style={{ color: displaySender.senderColor }}
-                    onClick={() => selectMode ? toggleSelect(item.msg) : onAvatarClick(item.msg)}
+                    onClick={(e) => { if (selectMode) return; e.stopPropagation(); onAvatarClick(item.msg) }}
                   >
                     {displaySender.senderName}
                   </div>
@@ -726,10 +783,7 @@ export function ChatWindow({
                   className={[
                     s.msgRow,
                     item.senderSwitch && !item.showName ? s.senderSwitch : '',
-                    selectMode && item.msg.messageId ? s.msgRowSelectable : '',
-                    selectMode && selectedIds.has(item.msg.id) ? s.msgRowSelected : '',
                   ].join(' ')}
-                  onClick={() => selectMode && toggleSelect(item.msg)}
                 >
                   {selectMode && (
                     <div className={`${s.msgCheckbox} ${selectedIds.has(item.msg.id) ? s.msgCheckboxChecked : ''} ${!item.msg.messageId ? s.msgCheckboxDisabled : ''}`}>
@@ -754,13 +808,22 @@ export function ChatWindow({
                       item.msg.status === 'pending' ? s.bubblePending : '',
                       item.msg.status === 'failed'  ? s.bubbleFailed  : '',
                     ].join(' ')}
-                    onContextMenu={(e) => openContextMenu(e, item.msg)}
                   >
                     {item.msg.forwardedFromUserName && (
-                      <div className={s.forwardedLabel}>{t('messenger.forwardedFrom', { name: item.msg.forwardedFromUserName })}</div>
+                      <div
+                        className={`${s.forwardedLabel} ${item.msg.forwardedFromUserId && onForwardedUserClick ? s.forwardedLabelClickable : ''}`}
+                        onClick={item.msg.forwardedFromUserId && onForwardedUserClick
+                          ? (e) => { e.stopPropagation(); onForwardedUserClick(item.msg.forwardedFromUserId!, item.msg.forwardedFromUserName!) }
+                          : undefined}
+                      >
+                        {t('messenger.forwardedFrom', { name: item.msg.forwardedFromUserName })}
+                      </div>
                     )}
                     {item.msg.replyToMessageId && (
-                      <div className={s.replyQuote}>
+                      <div
+                        className={`${s.replyQuote} ${s.replyQuoteClickable}`}
+                        onClick={(e) => { e.stopPropagation(); scrollToMessage(item.msg.replyToMessageId!) }}
+                      >
                         <div className={s.replyQuoteSender}>{item.msg.replyToSenderName}</div>
                         <div className={s.replyQuoteText}>
                           {item.msg.replyToContent ?? t('messenger.originalMessageDeleted')}
@@ -791,6 +854,14 @@ export function ChatWindow({
           )}
 
           <div ref={bottomRef} />
+        </div>
+        {!isAtBottom && (
+          <button className={s.scrollToBottomBtn} onClick={scrollToBottom} title="Вниз">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        )}
         </div>
       )}
 
@@ -906,26 +977,80 @@ export function ChatWindow({
           className={s.contextMenu}
           style={{
             left: Math.min(contextMenu.x, window.innerWidth - 190),
-            top:  Math.min(contextMenu.y, window.innerHeight - (contextMenu.msg.own ? 192 : 156)),
+            top:  Math.min(contextMenu.y, window.innerHeight - (contextMenu.selection ? 88 : contextMenu.msg.own ? 192 : 156)),
           }}
         >
-          <button type="button" className={s.contextMenuItem} onClick={() => startReply(contextMenu.msg)}>
-            <ReplyIcon />{t('messenger.replyMessage')}
-          </button>
-          {contextMenu.msg.own && (
-            <button type="button" className={s.contextMenuItem} onClick={() => startEdit(contextMenu.msg)}>
-              <EditIcon />{t('messenger.editMessage')}
-            </button>
+          {contextMenu.selection ? (
+            <>
+              <button type="button" className={s.contextMenuItem} onClick={() => { requestBulkForward(); setContextMenu(null) }}>
+                <ForwardIcon />{t('messenger.forwardMessage')}
+              </button>
+              {canDeleteMessages && (
+                <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => { requestBulkDelete(); setContextMenu(null) }}>
+                  <TrashIcon />{t('messenger.deleteMessage')}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button type="button" className={s.contextMenuItem} onClick={() => startReply(contextMenu.msg)}>
+                <ReplyIcon />{t('messenger.replyMessage')}
+              </button>
+              {contextMenu.msg.own && (
+                <button type="button" className={s.contextMenuItem} onClick={() => startEdit(contextMenu.msg)}>
+                  <EditIcon />{t('messenger.editMessage')}
+                </button>
+              )}
+              <button type="button" className={s.contextMenuItem} onClick={() => { onForward([contextMenu.msg]); setContextMenu(null) }}>
+                <ForwardIcon />{t('messenger.forwardMessage')}
+              </button>
+              <button type="button" className={s.contextMenuItem} onClick={() => enterSelectMode(contextMenu.msg)}>
+                <SelectIcon />{t('messenger.selectMessage')}
+              </button>
+              {canDeleteMessages && (
+                <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => requestDelete(contextMenu.msg)}>
+                  <TrashIcon />{t('messenger.deleteMessage')}
+                </button>
+              )}
+            </>
           )}
-          <button type="button" className={s.contextMenuItem} onClick={() => { onForward([contextMenu.msg]); setContextMenu(null) }}>
-            <ForwardIcon />{t('messenger.forwardMessage')}
-          </button>
-          <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => requestDelete(contextMenu.msg)}>
-            <TrashIcon />{t('messenger.deleteMessage')}
-          </button>
-          <button type="button" className={s.contextMenuItem} onClick={() => enterSelectMode(contextMenu.msg)}>
-            <SelectIcon />{t('messenger.selectMessage')}
-          </button>
+        </div>
+      )}
+
+      {confirmDeleteMsg && (
+        <div className={s.confirmOverlay} onClick={() => setConfirmDeleteMsg(null)}>
+          <div className={s.confirmPanel} onClick={e => e.stopPropagation()}>
+            <div className={s.confirmTitle}>{t('messenger.confirmDeleteMessage')}</div>
+            <div className={s.confirmActions}>
+              <button type="button" className={s.confirmCancel} onClick={() => setConfirmDeleteMsg(null)}>
+                {t('common.cancel')}
+              </button>
+              <button type="button" className={s.confirmDeleteBtn} onClick={() => { onDelete(confirmDeleteMsg); setConfirmDeleteMsg(null) }}>
+                {t('messenger.deleteMessage')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmBulkDelete && (
+        <div className={s.confirmOverlay} onClick={() => setConfirmBulkDelete(false)}>
+          <div className={s.confirmPanel} onClick={e => e.stopPropagation()}>
+            <div className={s.confirmTitle}>{t('messenger.confirmBulkDelete', { count: selectedIds.size })}</div>
+            <div className={s.confirmActions}>
+              <button type="button" className={s.confirmCancel} onClick={() => setConfirmBulkDelete(false)}>
+                {t('common.cancel')}
+              </button>
+              <button type="button" className={s.confirmDeleteBtn} onClick={() => {
+                const selected = messages.filter(m => selectedIds.has(m.id))
+                onBulkDelete(selected)
+                exitSelectMode()
+                setConfirmBulkDelete(false)
+              }}>
+                {t('messenger.deleteMessage')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

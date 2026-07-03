@@ -108,6 +108,41 @@
 .typingText { color: var(--color-success); font-weight: 600; font-size: 13px; }
 
 /* ── Messages ─────────────────────────────────────────────────────────────── */
+.messagesOuter {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scrollToBottomBtn {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+.scrollToBottomBtn:hover { background: var(--color-surface-muted); }
+
+@keyframes msgHighlightPulse {
+  0%, 100% { background: transparent; }
+  25% { background: rgba(44, 91, 240, 0.18); }
+}
+.msgHighlighted { animation: msgHighlightPulse 1.2s ease; border-radius: 8px; }
+
 .messages {
   flex: 1;
   min-height: 0;
@@ -135,9 +170,10 @@
 .msgRow + .msgRow { margin-top: 2px; }
 .senderSwitch { margin-top: 12px; }
 
-.msgRowSelectable { cursor: pointer; }
+.msgRowSelectable { cursor: pointer; border-radius: 8px; }
 .msgRowSelectable:hover { background: var(--color-surface-muted); }
-.msgRowSelected { background: var(--color-surface-muted); }
+.msgRowSelected { background: rgba(44, 91, 240, 0.12); border-radius: 8px; }
+.msgRowSelected:hover { background: rgba(44, 91, 240, 0.18); }
 
 .msgCheckbox {
   width: 20px;
@@ -189,7 +225,8 @@
 .bubbleOwn { background: var(--color-primary); color: var(--color-on-primary); }
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
-.forwardedLabel { display: block; font-size: 12px; font-weight: 700; opacity: 0.75; margin-bottom: 2px; }
+.forwardedLabel         { display: block; font-size: 12px; font-weight: 700; opacity: 0.75; margin-bottom: 2px; }
+.forwardedLabelClickable { cursor: pointer; color: #00BCD4; opacity: 1; }
 
 .msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 46px; }
 .msgEdited { margin-right: 4px; font-style: italic; }
@@ -596,7 +633,11 @@
   padding: 2px 0 4px 8px;
   margin-bottom: 4px;
 }
-.replyQuoteSender { font-size: 12px; font-weight: 700; }
+.replyQuoteSender    { font-size: 12px; font-weight: 700; }
+.bubbleOther .replyQuote { border-left-color: #00BCD4; }
+.bubbleOther .replyQuoteSender { color: #00BCD4; }
+.replyQuoteClickable { cursor: pointer; }
+.replyQuoteClickable:hover { opacity: 1; }
 .replyQuoteText {
   font-size: 12px;
   font-weight: 500;
@@ -605,3 +646,72 @@
   text-overflow: ellipsis;
   max-width: 260px;
 }
+
+/* ── Модалка подтверждения удаления ───────────────────────────────────────── */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 700;
+  padding: 20px;
+}
+
+.confirmPanel {
+  background: var(--color-surface-raised);
+  border-radius: 20px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.confirmTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.confirmCancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirmCancel:hover { background: var(--color-border); }
+
+.confirmDeleteBtn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  border: none;
+  background: var(--color-danger, #e03b3b);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.confirmDeleteBtn:hover { opacity: 0.88; }

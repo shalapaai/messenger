@@ -38,6 +38,7 @@ public sealed class ChatMember
     public DateTime? LastReadAt { get; private set; }
 
     internal void MarkAsRead() => LastReadAt = DateTime.UtcNow;
+    internal void SetRole(ChatMemberRole role) => Role = role;
 }
 
 public sealed class Chat : AggregateRoot<ChatId>
@@ -123,6 +124,15 @@ public sealed class Chat : AggregateRoot<ChatId>
 
         if (requesterId == userId)
         {
+            if (requester.Role == ChatMemberRole.Owner)
+            {
+                // Transfer ownership: prefer an existing admin, otherwise pick any member
+                var newOwner = _members
+                    .Where(m => m.UserId != userId)
+                    .OrderByDescending(m => (int)m.Role)
+                    .FirstOrDefault();
+                newOwner?.SetRole(ChatMemberRole.Owner);
+            }
             _members.Remove(target);
             NotifyMemberRemoved(userId);
             return Result.Success();
@@ -133,6 +143,9 @@ public sealed class Chat : AggregateRoot<ChatId>
 
         if (target.Role == ChatMemberRole.Owner)
             return Result.Failure(Error.Forbidden("Cannot remove the chat owner"));
+
+        if (requester.Role == ChatMemberRole.Admin && target.Role == ChatMemberRole.Admin)
+            return Result.Failure(Error.Forbidden("Admins cannot remove other admins"));
 
         _members.Remove(target);
         NotifyMemberRemoved(userId);
@@ -150,6 +163,30 @@ public sealed class Chat : AggregateRoot<ChatId>
         if (member is null) return Result.Failure(Error.Forbidden("You are not a member of this chat"));
         member.MarkAsRead();
         RaiseDomainEvent(new ChatReadDomainEvent(Id.Value, userId, member.LastReadAt!.Value));
+        return Result.Success();
+    }
+
+    public Result SetMemberRole(Guid requesterId, Guid userId, ChatMemberRole newRole)
+    {
+        var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
+        if (requester is null)
+            return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        if (requester.Role != ChatMemberRole.Owner)
+            return Result.Failure(Error.Forbidden("Only the owner can change member roles"));
+
+        if (requesterId == userId)
+            return Result.Failure(Error.Validation("UserId", "Cannot change your own role"));
+
+        var target = _members.FirstOrDefault(m => m.UserId == userId);
+        if (target is null)
+            return Result.Failure(Error.NotFound("Member"));
+
+        if (target.Role == ChatMemberRole.Owner)
+            return Result.Failure(Error.Forbidden("Cannot change the owner's role"));
+
+        target.SetRole(newRole);
+        NotifyMembershipChanged();
         return Result.Success();
     }
 
