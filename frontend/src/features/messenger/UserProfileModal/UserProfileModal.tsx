@@ -3,6 +3,8 @@ import { Trans, useTranslation } from 'react-i18next'
 import { profileApi, type PublicUserProfile } from '../../../shared/api/profileApi'
 import { initials as getInitials, colorFromId } from '../../../shared/api/chatsApi'
 import type { ModalUser } from '../../../shared/types/messenger'
+import { AvatarImage } from '../../../shared/ui/AvatarImage'
+import { UserProfileSkeleton } from './UserProfileSkeleton'
 import s from './UserProfileModal.module.css'
 
 interface UserProfileModalProps {
@@ -65,7 +67,7 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
         <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
 
         {avatarUrl
-          ? <img src={avatarUrl} alt={name} className={s.umAvatarImg} />
+          ? <AvatarImage src={avatarUrl} alt={name} className={s.umAvatarImg} />
           : <div className={s.umAvatar} style={{ background: color }}>{initials}</div>
         }
 
@@ -77,7 +79,7 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
           }
         </div>
 
-        {loading && <div className={s.umLoading}>{t('common.loading')}...</div>}
+        {loading && <UserProfileSkeleton />}
 
         {!loading && hasContact && (
           <>

@@ -1,0 +1,40 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 44px 1fr 42px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.content {
+  min-width: 0;
+}
+
+.title {
+  width: 60%;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  width: 88%;
+  height: 12px;
+}
+
+.time {
+  width: 34px;
+  height: 10px;
+}

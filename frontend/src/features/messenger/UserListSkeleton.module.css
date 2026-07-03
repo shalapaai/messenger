@@ -1,0 +1,43 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-radius: 12px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.info {
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  width: 60%;
+  height: 14px;
+  margin-bottom: 7px;
+}
+
+.sub {
+  width: 84%;
+  height: 11px;
+}
+
+.meta {
+  width: 54px;
+  height: 20px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}

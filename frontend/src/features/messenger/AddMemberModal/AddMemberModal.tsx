@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import type { UserSearchResult } from '../../../shared/api/usersApi'
 import { colorFromId, initials } from '../../../shared/api/chatsApi'
 import { useUserSearch } from '../../../shared/hooks/useUserSearch'
+import { AvatarImage } from '../../../shared/ui/AvatarImage'
+import { UserListSkeleton } from '../UserListSkeleton'
 import s from './AddMemberModal.module.css'
 
 interface AddMemberModalProps {
@@ -34,7 +36,7 @@ export function AddMemberModal({ isOpen, excludeUserIds, onClose, onSelect }: Ad
         />
         <div className={s.results}>
           {loading ? (
-            <div className={s.hint}>{t('messenger.searching')}</div>
+            <UserListSkeleton count={4} />
           ) : error ? (
             <div className={s.hint}>{t('messenger.searchFailed')}</div>
           ) : !query.trim() ? (
@@ -47,7 +49,7 @@ export function AddMemberModal({ isOpen, excludeUserIds, onClose, onSelect }: Ad
               return (
                 <div key={user.userId} className={`${s.row} ${s.rowClickable}`} onClick={() => onSelect(user)}>
                   {user.avatarUrl
-                    ? <img src={user.avatarUrl} alt={init} className={s.avatarImg} />
+                    ? <AvatarImage src={user.avatarUrl} alt={init} className={s.avatarImg} />
                     : <div className={s.avatar} style={{ background: colorFromId(user.userId) }}>{init}</div>
                   }
                   <div className={s.info}>

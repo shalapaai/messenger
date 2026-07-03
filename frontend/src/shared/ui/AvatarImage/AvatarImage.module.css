@@ -1,0 +1,45 @@
+.root {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-muted),
+    var(--color-border),
+    var(--color-surface-muted)
+  );
+  background-size: 200% 100%;
+}
+
+.loading {
+  animation: avatarShimmer 1.2s ease-in-out infinite;
+}
+
+.loaded {
+  background: transparent;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.loaded .image {
+  opacity: 1;
+}
+
+@keyframes avatarShimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
