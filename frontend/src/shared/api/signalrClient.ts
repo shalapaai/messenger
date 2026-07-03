@@ -17,6 +17,10 @@ export interface IncomingMessage {
   senderAvatarColor: string
   content: string
   sentAt: string
+  fileUrl?: string | null
+  fileName?: string | null
+  fileContentType?: string | null
+  fileSizeBytes?: number | null
   forwardedFromUserId?: string | null
   forwardedFromUserName?: string | null
   replyToMessageId?: string | null

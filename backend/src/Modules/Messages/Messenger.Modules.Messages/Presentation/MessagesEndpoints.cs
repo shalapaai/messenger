@@ -11,6 +11,7 @@ using Messenger.Modules.Messages.Application.Features.UploadAndSendMessage;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 public static class MessagesEndpoints
@@ -35,9 +36,9 @@ public static class MessagesEndpoints
         group.MapPost("/upload", UploadAndSendMessage)
             .WithName("UploadAndSendMessage")
             .WithSummary("Отправить файл/фото")
-            .WithDescription("Загружает файл и отправляет его как сообщение. Поддерживает любые типы файлов до 20 МБ. Необязательное поле caption — подпись к файлу.")
+            .WithDescription("Загружает файл и отправляет его как сообщение. Изображения/документы/архивы/аудио/видео до 25 МБ. Необязательное поле caption — подпись к файлу.")
             .Accepts<IFormFile>("multipart/form-data")
-            .Produces<Guid>(StatusCodes.Status201Created)
+            .Produces<UploadAndSendMessageResult>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .DisableAntiforgery();
 
@@ -108,7 +109,7 @@ public static class MessagesEndpoints
         HttpContext        httpContext,
         ISender           sender,
         CancellationToken ct,
-        string?           caption = null)
+        [FromQuery] string? caption = null)
     {
         if (file is null || file.Length == 0)
             return Results.BadRequest(new { error = "File is empty" });
@@ -121,7 +122,7 @@ public static class MessagesEndpoints
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess
-            ? Results.Created($"/api/chats/{chatId}/messages/{result.Value}", result.Value)
+            ? Results.Created($"/api/chats/{chatId}/messages/{result.Value!.MessageId}", result.Value)
             : result.Error.ToHttpResult();
     }
 

@@ -18,3 +18,38 @@ export async function editMessage(chatId: string, messageId: string, newContent:
 export async function forwardMessages(targetChatId: string, sourceChatId: string, messageIds: string[]): Promise<void> {
   await apiClient.post(`/chats/${targetChatId}/messages/forward`, { sourceChatId, messageIds })
 }
+
+export interface UploadedMessageResult {
+  messageId: string
+  content: string
+  fileUrl: string
+  fileName: string
+  contentType: string
+  fileSizeBytes: number
+  sentAt: string
+}
+
+/** Загружает файл и отправляет его как сообщение — сервер не эхо-шлёт отправителю его же
+ *  сообщение по SignalR, поэтому клиент строит bubble сам из этого ответа (см. useChatMessages). */
+export async function uploadChatMessageFile(
+  chatId: string,
+  file: File,
+  caption?: string,
+  onUploadProgress?: (percent: number) => void,
+): Promise<UploadedMessageResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await apiClient.post<UploadedMessageResult>(
+    `/chats/${chatId}/messages/upload`,
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: caption ? { caption } : undefined,
+      onUploadProgress: onUploadProgress && ((event) => {
+        if (!event.total) return
+        onUploadProgress(Math.round((event.loaded / event.total) * 100))
+      }),
+    }
+  )
+  return res.data
+}

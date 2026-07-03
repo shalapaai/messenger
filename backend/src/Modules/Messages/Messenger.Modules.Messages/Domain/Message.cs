@@ -23,6 +23,9 @@ public sealed class Message : AggregateRoot<MessageId>
     public Guid SenderId { get; private set; }
     public string Content { get; private set; } = string.Empty;
     public string? FileUrl { get; private set; }
+    public string? FileName { get; private set; }
+    public string? FileContentType { get; private set; }
+    public long? FileSizeBytes { get; private set; }
     public MessageStatus Status { get; private set; }
     public DateTime SentAt { get; private set; }
     public DateTime? EditedAt { get; private set; }
@@ -45,24 +48,35 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    public static Result<Message> CreateFile(Guid chatId, Guid senderId, string fileUrl, string? caption = null)
+    public static Result<Message> CreateFile(
+        Guid chatId, Guid senderId, string fileUrl, string fileName, string contentType, long fileSizeBytes, string? caption = null)
     {
         if (string.IsNullOrWhiteSpace(fileUrl))
             return Result.Failure<Message>(Error.Validation("FileUrl", "File URL cannot be empty"));
 
-        var message = new Message(MessageId.New(), chatId, senderId, caption?.Trim() ?? string.Empty, null);
-        message.FileUrl = fileUrl;
-        message.RaiseDomainEvent(new MessageSentDomainEvent(message.Id.Value, chatId, senderId, caption ?? string.Empty));
+        var message = new Message(MessageId.New(), chatId, senderId, caption?.Trim() ?? string.Empty, null)
+        {
+            FileUrl         = fileUrl,
+            FileName        = fileName,
+            FileContentType = contentType,
+            FileSizeBytes   = fileSizeBytes,
+        };
+        message.RaiseDomainEvent(new MessageSentDomainEvent(
+            message.Id.Value, chatId, senderId, message.Content,
+            fileUrl: fileUrl, fileName: fileName, fileContentType: contentType, fileSizeBytes: fileSizeBytes));
         return Result.Success(message);
     }
 
     // Пересланное сообщение — новая независимая копия в целевом чате, автор которой (SenderId) —
     // тот, кто переслал, а не оригинальный отправитель. ForwardedFrom* только для подписи "Переслано от"
     // на клиенте: редактирование/удаление копии подчиняется тем же правилам, что у обычного сообщения.
-    // fileUrl копируется из оригинала — иначе пересылка файла/фото без подписи теряла бы вложение
-    // (пустой Content без fileUrl не проходил бы валидацию и копия молча дропалась).
+    // Файловые поля копируются из оригинала целиком (не только URL) — иначе пересылка файла/фото
+    // без подписи теряла бы вложение (пустой Content без fileUrl не проходил бы валидацию и копия
+    // молча дропалась), а без имени/типа/размера получатель не смог бы красиво отрендерить карточку файла.
     public static Result<Message> CreateForwarded(
-        Guid targetChatId, Guid forwarderId, string content, string? fileUrl, Guid originalMessageId, Guid originalSenderId)
+        Guid targetChatId, Guid forwarderId, string content,
+        string? fileUrl, string? fileName, string? fileContentType, long? fileSizeBytes,
+        Guid originalMessageId, Guid originalSenderId)
     {
         if (string.IsNullOrWhiteSpace(content) && string.IsNullOrWhiteSpace(fileUrl))
             return Result.Failure<Message>(Error.Validation("Content", "Message content cannot be empty"));
@@ -70,11 +84,15 @@ public sealed class Message : AggregateRoot<MessageId>
         var message = new Message(MessageId.New(), targetChatId, forwarderId, content.Trim(), null)
         {
             FileUrl                = fileUrl,
+            FileName               = fileName,
+            FileContentType        = fileContentType,
+            FileSizeBytes          = fileSizeBytes,
             ForwardedFromMessageId = originalMessageId,
             ForwardedFromUserId    = originalSenderId,
         };
         message.RaiseDomainEvent(new MessageSentDomainEvent(
-            message.Id.Value, targetChatId, forwarderId, message.Content, originalMessageId, originalSenderId));
+            message.Id.Value, targetChatId, forwarderId, message.Content, originalMessageId, originalSenderId,
+            fileUrl: fileUrl, fileName: fileName, fileContentType: fileContentType, fileSizeBytes: fileSizeBytes));
         return Result.Success(message);
     }
 

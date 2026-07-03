@@ -11,27 +11,32 @@ public sealed class UploadAndSendMessageCommandHandler(
     IMessageRepository     messageRepository,
     IChatMembershipChecker membershipChecker,
     IUnitOfWork            unitOfWork)
-    : ICommandHandler<UploadAndSendMessageCommand, Guid>
+    : ICommandHandler<UploadAndSendMessageCommand, UploadAndSendMessageResult>
 {
-    public async Task<Result<Guid>> Handle(UploadAndSendMessageCommand command, CancellationToken ct)
+    public async Task<Result<UploadAndSendMessageResult>> Handle(UploadAndSendMessageCommand command, CancellationToken ct)
     {
         if (!await membershipChecker.IsMemberAsync(command.ChatId, command.SenderId, ct))
-            return Result.Failure<Guid>(Error.Forbidden("You are not a member of this chat"));
+            return Result.Failure<UploadAndSendMessageResult>(Error.Forbidden("You are not a member of this chat"));
 
         var uploadResult = await filesModule.UploadChatAttachmentAsync(
             command.FileContent, command.FileName, command.ContentType,
             command.FileSizeBytes, command.SenderId, command.ChatId, ct);
 
         if (uploadResult.IsFailure)
-            return Result.Failure<Guid>(uploadResult.Error);
+            return Result.Failure<UploadAndSendMessageResult>(uploadResult.Error);
 
-        var messageResult = Message.CreateFile(command.ChatId, command.SenderId, uploadResult.Value!, command.Caption);
+        var messageResult = Message.CreateFile(
+            command.ChatId, command.SenderId, uploadResult.Value!,
+            command.FileName, command.ContentType, command.FileSizeBytes, command.Caption);
         if (messageResult.IsFailure)
-            return Result.Failure<Guid>(messageResult.Error);
+            return Result.Failure<UploadAndSendMessageResult>(messageResult.Error);
 
-        messageRepository.Add(messageResult.Value!);
+        var message = messageResult.Value!;
+        messageRepository.Add(message);
         await unitOfWork.SaveChangesAsync(ct);
 
-        return Result.Success(messageResult.Value!.Id.Value);
+        return Result.Success(new UploadAndSendMessageResult(
+            message.Id.Value, message.Content, uploadResult.Value!,
+            command.FileName, command.ContentType, command.FileSizeBytes, message.SentAt));
     }
 }

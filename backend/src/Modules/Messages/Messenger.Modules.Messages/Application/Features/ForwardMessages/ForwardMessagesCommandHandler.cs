@@ -41,7 +41,9 @@ public sealed class ForwardMessagesCommandHandler(
         foreach (var original in ordered)
         {
             var result = Message.CreateForwarded(
-                command.TargetChatId, command.RequesterId, original.Content, original.FileUrl, original.Id.Value, original.SenderId);
+                command.TargetChatId, command.RequesterId, original.Content,
+                original.FileUrl, original.FileName, original.FileContentType, original.FileSizeBytes,
+                original.Id.Value, original.SenderId);
 
             // пустой контент без вложения — пропускаем эту копию, не роняем всю пачку
             if (result.IsSuccess)

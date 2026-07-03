@@ -1,26 +1,43 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useState,
   useRef,
   type RefObject,
   type KeyboardEvent,
   type ChangeEvent,
   type MouseEvent,
+  type DragEvent,
   type CSSProperties,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import axios from 'axios'
 import { EmojiPicker } from '../../shared/ui/EmojiPicker'
+import { FileTypeIcon } from '../../shared/ui/FileTypeIcon'
+import { MessageAttachment } from './MessageAttachment'
+import { useErrorModalStore } from '../../shared/api/errorModalStore'
+import { isAllowedAttachment, MAX_ATTACHMENT_SIZE_BYTES } from '../../shared/lib/fileType'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
 const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 340
+// Оценка высоты .inputArea в её обычном состоянии (просто строка ввода) — используется
+// как запасное значение, пока ResizeObserver ещё не сделал первый замер
+const DEFAULT_MOBILE_INPUT_AREA_HEIGHT = 96
 
 type RenderedItem =
   | { type: 'sep'; label: string }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
 
 interface ContextMenuState { x: number; y: number; msg: Message }
+
+interface QueuedFile {
+  /** стабильный локальный ключ — очередь "тает" по мере отправки, индексы съезжают, ключ нет */
+  key: number
+  file: File
+  previewUrl: string | null
+}
 
 function ReplyIcon() {
   return (
@@ -95,6 +112,7 @@ interface ChatWindowProps {
   topSentinelRef: RefObject<HTMLDivElement | null>
   bottomRef: RefObject<HTMLDivElement | null>
   onSend: (text: string, replyTo?: Message) => void
+  onSendFile: (file: File, caption: string | undefined, onUploadProgress?: (percent: number) => void) => Promise<void>
   onRetry: (msg: Message) => void
   onDelete: (msg: Message) => void
   onEdit: (msg: Message, newText: string) => void
@@ -109,9 +127,10 @@ export function ChatWindow({
   chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onHeaderClick, onAvatarClick,
+  onSend, onSendFile, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onHeaderClick, onAvatarClick,
 }: ChatWindowProps) {
   const { t } = useTranslation()
+  const showError = useErrorModalStore(st => st.showError)
   const [text, setText] = useState('')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [editingMsg, setEditingMsg] = useState<Message | null>(null)
@@ -119,12 +138,29 @@ export function ChatWindow({
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
+  // ── Прикреплённые файлы, ожидающие отправки (можно выбрать/перетащить несколько,
+  // отправляются разом — параллельно, поэтому прогресс отслеживаем по ключу файла,
+  // а не одним общим числом) ────────────────────────────────────────────────────
+  const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([])
+  const [fileUploading, setFileUploading] = useState(false)
+  const [uploadProgressByKey, setUploadProgressByKey] = useState<Record<number, number>>({})
+  const [sentCount, setSentCount] = useState(0)
+  const [totalToSend, setTotalToSend] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const nextFileKeyRef = useRef(0)
+
   // ── Мобильная раскладка ввода: эмодзи-пикер и виртуальная клавиатура ────────
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
   const [isEmojiSpaceReserved, setIsEmojiSpaceReserved] = useState(false)
   const [isInputLayerActive, setIsInputLayerActive] = useState(false)
   const [mobileInputLayerHeight, setMobileInputLayerHeight] = useState(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
   const [mobileKeyboardOffset, setMobileKeyboardOffset] = useState(0)
+  // Реальная высота .inputArea (строка ввода + превью файла/ответа/редактирования, если открыты).
+  // .inputArea в мобильной раскладке position:fixed и не выталкивает контент — .messages резервирует
+  // место под неё через padding-bottom. Без живого замера этот отступ был жёстко зашит под высоту
+  // "просто строки ввода" и не учитывал выросшую от плашки превью файла высоту — сообщения оказывались
+  // под ней внахлёст.
+  const [mobileInputAreaHeight, setMobileInputAreaHeight] = useState(DEFAULT_MOBILE_INPUT_AREA_HEIGHT)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiAreaRef = useRef<HTMLDivElement>(null)
@@ -220,6 +256,14 @@ export function ChatWindow({
   const isReadByOther = (msg: Message) =>
     !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
 
+  // ChatWindow размонтируется целиком при смене чата (key={chatId}) — если пользователь выбрал
+  // файлы, но не отправил и ушёл в другой чат, blob-URL превью иначе никогда не освободятся
+  const queuedFilesRef = useRef(queuedFiles)
+  useLayoutEffect(() => { queuedFilesRef.current = queuedFiles })
+  useEffect(() => () => {
+    queuedFilesRef.current.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl) })
+  }, [])
+
   // per-chat состояние (выделение/редактирование/ответ/мобильная раскладка ввода) не нужно сбрасывать
   // вручную при смене чата — MessengerPage.tsx монтирует ChatWindow с key={chatId}, так что React сам
   // полностью пересоздаёт компонент и весь его state при переключении на другой чат
@@ -230,6 +274,18 @@ export function ChatWindow({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [selectMode])
+
+  // Следим за реальной высотой .inputArea, чтобы .messages резервировал ровно столько места,
+  // сколько нужно — включая случаи, когда сверху выросла плашка превью файла/ответа/редактирования
+  useEffect(() => {
+    const el = emojiAreaRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setMobileInputAreaHeight(Math.round(entry.contentRect.height))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!contextMenu) return
@@ -423,8 +479,137 @@ export function ChatWindow({
     })
   }
 
-  function send() {
+  const MAX_ATTACHMENT_COUNT = 10
+
+  // Всё-или-ничего: если хоть один файл в новой пачке не проходит проверку, не добавляем
+  // в очередь НИ ОДНОГО из них — иначе легко случайно отправить часть альбома, даже не
+  // заметив, что один файл молча отсеялся
+  function selectFiles(files: File[]) {
+    if (queuedFiles.length + files.length > MAX_ATTACHMENT_COUNT) {
+      showError(t('messenger.attachmentTooMany', { count: MAX_ATTACHMENT_COUNT }))
+      return
+    }
+
+    const invalidFile = files.find(file => !isAllowedAttachment(file))
+    if (invalidFile) {
+      showError(t('messenger.attachmentTypeNotSupportedNamed', { name: invalidFile.name }))
+      return
+    }
+
+    const tooLargeFile = files.find(file => file.size > MAX_ATTACHMENT_SIZE_BYTES)
+    if (tooLargeFile) {
+      showError(t('messenger.attachmentTooLargeNamed', { name: tooLargeFile.name }))
+      return
+    }
+
+    const newItems: QueuedFile[] = files.map(file => ({
+      key: nextFileKeyRef.current++,
+      file,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+    }))
+    setQueuedFiles(prev => [...prev, ...newItems])
+  }
+
+  function handleFileSelect(e: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (files.length > 0) selectFiles(files)
+  }
+
+  // ── Drag-and-drop файлов из проводника поверх окна чата ─────────────────────
+  // dragenter/dragleave всплывают с дочерних элементов — считаем "глубину" входов,
+  // а не полагаемся на единичный dragleave, иначе оверлей будет мигать при
+  // перемещении курсора над дочерними узлами внутри окна чата
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+  const dragCounterRef = useRef(0)
+
+  function hasFilesInDrag(e: { dataTransfer: DataTransfer }) {
+    return Array.from(e.dataTransfer.types).includes('Files')
+  }
+
+  function handleDragEnter(e: DragEvent<HTMLDivElement>) {
+    if (!hasFilesInDrag(e)) return
+    e.preventDefault()
+    dragCounterRef.current += 1
+    setIsDraggingFile(true)
+  }
+
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
+    if (!hasFilesInDrag(e)) return
+    e.preventDefault()
+  }
+
+  function handleDragLeave(e: DragEvent<HTMLDivElement>) {
+    if (!hasFilesInDrag(e)) return
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+    if (dragCounterRef.current === 0) setIsDraggingFile(false)
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    dragCounterRef.current = 0
+    setIsDraggingFile(false)
+    const files = Array.from(e.dataTransfer.files ?? [])
+    if (files.length > 0) selectFiles(files)
+  }
+
+  function removeQueuedFile(key: number) {
+    setQueuedFiles(prev => {
+      const target = prev.find(f => f.key === key)
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
+      return prev.filter(f => f.key !== key)
+    })
+  }
+
+  function clearQueuedFiles() {
+    queuedFiles.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl) })
+    setQueuedFiles([])
+  }
+
+  async function send() {
     const trimmed = text.trim()
+
+    if (queuedFiles.length > 0) {
+      if (fileUploading) return
+      const filesToSend = [...queuedFiles]
+      setFileUploading(true)
+      setTotalToSend(filesToSend.length)
+      setSentCount(0)
+      setUploadProgressByKey(Object.fromEntries(filesToSend.map(f => [f.key, 0])))
+      try {
+        // отправляем разом — параллельно, а не по одной; подпись достаётся только первому
+        // файлу пачки (у параллельной отправки нет чёткого понятия "последний")
+        const results = await Promise.allSettled(filesToSend.map(async (item, i) => {
+          const isFirst = i === 0
+          await onSendFile(item.file, isFirst ? (trimmed || undefined) : undefined, pct => {
+            setUploadProgressByKey(prev => ({ ...prev, [item.key]: pct }))
+          })
+          removeQueuedFile(item.key)
+          setSentCount(c => c + 1)
+        }))
+
+        const firstFailure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+        if (firstFailure) {
+          const code = axios.isAxiosError(firstFailure.reason)
+            ? (firstFailure.reason.response?.data as { code?: string } | undefined)?.code
+            : undefined
+          if (code === 'Validation.ContentType') showError(t('messenger.attachmentTypeNotSupported'))
+          else if (code === 'Validation.FileSize') showError(t('messenger.attachmentTooLarge'))
+          else showError(t('messenger.attachmentSendFailed'))
+        } else {
+          setText('')
+        }
+      } finally {
+        setFileUploading(false)
+        setUploadProgressByKey({})
+      }
+      clearKeyboardCloseWait()
+      setIsEmojiPickerOpen(false)
+      setIsEmojiSpaceReserved(false)
+      textareaRef.current?.focus()
+      return
+    }
+
     if (!trimmed) return
 
     if (editingMsg) {
@@ -547,10 +732,25 @@ export function ChatWindow({
   const inputLayerStyle = {
     '--mobile-input-layer-height': `${mobileInputLayerHeight}px`,
     '--mobile-keyboard-offset': `${mobileKeyboardOffset}px`,
+    '--mobile-input-area-height': `${mobileInputAreaHeight}px`,
   } as CSSProperties
 
   return (
-    <>
+    <div
+      className={s.chatWindowRoot}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDraggingFile && (
+        <div className={s.dropOverlay}>
+          <div className={s.dropOverlayIcon}>📎</div>
+          <div className={s.dropOverlayTitle}>{t('messenger.dropFilesTitle')}</div>
+          <div className={s.dropOverlaySubtitle}>{t('messenger.dropFilesSubtitle')}</div>
+        </div>
+      )}
+
       {selectMode ? (
         <div className={s.selectionBar}>
           <button type="button" className={s.selectionBarCancel} onClick={exitSelectMode}>✕</button>
@@ -699,6 +899,14 @@ export function ChatWindow({
                         </div>
                       </div>
                     )}
+                    {item.msg.fileUrl && (
+                      <MessageAttachment
+                        fileUrl={item.msg.fileUrl}
+                        fileName={item.msg.fileName}
+                        contentType={item.msg.fileContentType}
+                        fileSizeBytes={item.msg.fileSizeBytes}
+                      />
+                    )}
                     {item.msg.text}
                   </div>
                 </div>
@@ -748,7 +956,94 @@ export function ChatWindow({
           </div>
         )}
 
+        {queuedFiles.length === 1 && (() => {
+          const only = queuedFiles[0]
+          return (
+            <div className={s.filePreviewBar}>
+              {only.previewUrl
+                ? <img src={only.previewUrl} alt={only.file.name} className={s.filePreviewThumb} />
+                : <FileTypeIcon fileName={only.file.name} contentType={only.file.type} size={36} />
+              }
+              <div className={s.filePreviewInfo}>
+                <span className={s.filePreviewName}>{only.file.name}</span>
+                {fileUploading ? (
+                  <div className={s.filePreviewProgressRow}>
+                    <div className={s.filePreviewProgressTrack}>
+                      <div className={s.filePreviewProgressFill} style={{ width: `${uploadProgressByKey[only.key] ?? 0}%` }} />
+                    </div>
+                    <span className={s.filePreviewProgressPct}>{uploadProgressByKey[only.key] ?? 0}%</span>
+                  </div>
+                ) : (
+                  <span className={s.filePreviewSize}>{`${(only.file.size / 1024).toFixed(0)} KB`}</span>
+                )}
+              </div>
+              {!fileUploading && (
+                <button type="button" className={`${s.editingBarCancel} ${s.filePreviewRemove}`} onClick={() => removeQueuedFile(only.key)}>✕</button>
+              )}
+            </div>
+          )
+        })()}
+
+        {queuedFiles.length > 1 && (
+          <div className={`${s.filePreviewBar} ${s.filePreviewBarMulti}`}>
+            <div className={s.filePreviewList}>
+              {queuedFiles.map(item => (
+                <div key={item.key} className={s.filePreviewListRow}>
+                  {item.previewUrl
+                    ? <img src={item.previewUrl} alt={item.file.name} className={s.filePreviewThumb} />
+                    : <FileTypeIcon fileName={item.file.name} contentType={item.file.type} size={36} />
+                  }
+                  <div className={s.filePreviewInfo}>
+                    <span className={s.filePreviewName}>{item.file.name}</span>
+                    {item.key in uploadProgressByKey ? (
+                      <div className={s.filePreviewProgressRow}>
+                        <div className={s.filePreviewProgressTrack}>
+                          <div className={s.filePreviewProgressFill} style={{ width: `${uploadProgressByKey[item.key]}%` }} />
+                        </div>
+                        <span className={s.filePreviewProgressPct}>{uploadProgressByKey[item.key]}%</span>
+                      </div>
+                    ) : (
+                      <span className={s.filePreviewSize}>{`${(item.file.size / 1024).toFixed(0)} KB`}</span>
+                    )}
+                  </div>
+                  {!fileUploading && (
+                    <button type="button" className={`${s.editingBarCancel} ${s.filePreviewRemove}`} onClick={() => removeQueuedFile(item.key)}>✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className={s.filePreviewSummary}>
+              <span className={s.filePreviewSize}>
+                {fileUploading
+                  ? t('messenger.attachmentUploadingCount', { current: sentCount + 1, total: totalToSend })
+                  : t('messenger.attachmentQueuedCount', { count: queuedFiles.length })
+                }
+              </span>
+              {!fileUploading && (
+                <button type="button" className={s.editingBarCancel} onClick={clearQueuedFiles}>✕</button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className={s.inputBar}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className={s.hiddenFileInput}
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,audio/*,video/*"
+            onChange={handleFileSelect}
+          />
+          <button
+            type="button"
+            className={`${s.emojiBtn} ${s.attachBtn}`}
+            onClick={() => fileInputRef.current?.click()}
+            aria-label={t('messenger.attachFile')}
+            title={t('messenger.attachFile')}
+          >
+            📎
+          </button>
           <div className={s.messageInputShell}>
             <button
               type="button"
@@ -798,7 +1093,7 @@ export function ChatWindow({
             </div>
           </div>
 
-          <button className={s.sendBtn} disabled={!text.trim()} onClick={send}>
+          <button className={s.sendBtn} disabled={(!text.trim() && queuedFiles.length === 0) || fileUploading} onClick={send}>
             <svg className={s.sendIcon} viewBox="0 0 24 24">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -841,7 +1136,7 @@ export function ChatWindow({
           </button>
         </div>
       )}
-    </>
+    </div>
   )
 }
 

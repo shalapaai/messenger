@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
-import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi } from '../../../shared/api/messagesApi'
+import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, uploadChatMessageFile } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
@@ -37,7 +37,20 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLoaded,  setHistoryLoaded]  = useState<Record<string, boolean>>({})
 
-  const messages = id ? (chatMessages[id] ?? []) : []
+  const rawMessages = id ? chatMessages[id] : undefined
+  // Финальный предохранитель от дублей на рендере — независимо от того, ИЗ-ЗА ЧЕГО в массиве
+  // оказались две записи с одним messageId (гонка между оптимистичной вставкой и подгрузкой
+  // истории, повторная realtime-доставка и т.п.), на экране всегда будет только первая из них
+  const messages = useMemo(() => {
+    if (!rawMessages) return []
+    const seenMessageIds = new Set<string>()
+    return rawMessages.filter(m => {
+      if (!m.messageId) return true
+      if (seenMessageIds.has(m.messageId)) return false
+      seenMessageIds.add(m.messageId)
+      return true
+    })
+  }, [rawMessages])
 
   const loadInitial = useCallback((chatId: string) => {
     setLoadingInitial(prev => ({ ...prev, [chatId]: true }))
@@ -104,6 +117,10 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           // свои сообщения сюда попадают только пересланными (см. guard выше) — сервер уже
           // подтвердил отправку, значит статус сразу 'sent', иначе галочка никогда бы не появилась
           status:          own ? 'sent' as const : undefined,
+          fileUrl:         msg.fileUrl,
+          fileName:        msg.fileName,
+          fileContentType: msg.fileContentType,
+          fileSizeBytes:   msg.fileSizeBytes,
           forwardedFromUserId:   msg.forwardedFromUserId ?? undefined,
           forwardedFromUserName: msg.forwardedFromUserName ?? undefined,
           replyToMessageId:   msg.replyToMessageId ?? undefined,
@@ -257,6 +274,45 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doSend])
 
+  // Файл шлём через REST (не хаб — SignalR не годится для передачи бинарных данных), поэтому,
+  // в отличие от send(), тут нет двухфазного pending→sent: bubble добавляется сразу с готовым
+  // результатом после того, как сервер подтвердил загрузку. Эхо этого же сообщения по SignalR
+  // (та же рассылка в chat-группу, что доставляет всем остальным) дедуплицируется по messageId
+  // в handleIncomingMessage — двойного бабла не будет.
+  const sendFile = useCallback(async (
+    chatId: string, file: File, caption: string | undefined, meSender: Sender,
+    onUploadProgress?: (percent: number) => void,
+  ) => {
+    const result = await uploadChatMessageFile(chatId, file, caption, onUploadProgress)
+    const sentDate = new Date(result.sentAt)
+    const newMsg: Message = {
+      ...meSender,
+      id:              nextMessageId(),
+      messageId:       result.messageId,
+      text:            result.content,
+      time:            sentDate.toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+      sentAt:          result.sentAt,
+      date:            i18n.t('common.today'),
+      status:          'sent',
+      fileUrl:         result.fileUrl,
+      fileName:        result.fileName,
+      fileContentType: result.contentType,
+      fileSizeBytes:   result.fileSizeBytes,
+    }
+    setChatMessages(prev => {
+      const chatMsgs = prev[chatId] ?? []
+      // Черновик-чат: sendFile() отправляется ДО navigate() на реальный /chats/{id}, а после
+      // навигации useEffect по [id] в этом хуке может успеть сам подгрузить историю (в которой
+      // это сообщение уже есть — оно ведь уже сохранено на сервере) раньше, чем сюда придёт этот
+      // then-колбэк. Порядок между двумя async-цепочками не гарантирован, поэтому дедуплицируем
+      // по messageId так же, как и для входящих realtime-сообщений в handleIncomingMessage.
+      if (chatMsgs.some(m => m.messageId === newMsg.messageId)) return prev
+      return { ...prev, [chatId]: [...chatMsgs, newMsg] }
+    })
+    opts.onAppend?.(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const retry = useCallback((chatId: string, msg: Message, signalRSend: SendFn) => {
     setChatMessages(prev => ({
       ...prev,
@@ -279,6 +335,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
     send,
+    sendFile,
     retry,
     deleteMessage,
     deleteMessages,

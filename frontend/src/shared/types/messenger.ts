@@ -53,6 +53,10 @@ export interface Message {
   date: string
   status?: 'pending' | 'sent' | 'failed'
   edited?: boolean
+  fileUrl?: string | null
+  fileName?: string | null
+  fileContentType?: string | null
+  fileSizeBytes?: number | null
   forwardedFromUserId?: string
   forwardedFromUserName?: string
   replyToMessageId?: string
