@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import type { UserSearchResult } from '../../../shared/api/usersApi'
 import { colorFromId, initials } from '../../../shared/api/chatsApi'
 import { useUserSearch } from '../../../shared/hooks/useUserSearch'
+import { AvatarImage } from '../../../shared/ui/AvatarImage'
+import { UserListSkeleton } from '../UserListSkeleton'
 import s from './NewGroupModal.module.css'
 
 interface NewGroupModalProps {
@@ -91,7 +93,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
 
         <div className={s.results}>
           {loading ? (
-            <div className={s.hint}>{t('messenger.searching')}</div>
+            <UserListSkeleton count={4} showMeta />
           ) : error ? (
             <div className={s.hint}>{t('messenger.searchFailed')}</div>
           ) : !query.trim() ? (
@@ -109,7 +111,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
                   onClick={() => toggleUser(user)}
                 >
                   {user.avatarUrl
-                    ? <img src={user.avatarUrl} alt={init} className={s.avatarImg} />
+                    ? <AvatarImage src={user.avatarUrl} alt={init} className={s.avatarImg} />
                     : <div className={s.avatar} style={{ background: colorFromId(user.userId) }}>{init}</div>
                   }
                   <div className={s.info}>

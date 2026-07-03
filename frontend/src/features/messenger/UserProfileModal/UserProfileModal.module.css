@@ -43,7 +43,6 @@
 
 .umAvatar { width: 80px; height: 80px; border-radius: 50%; color: var(--color-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
 .umAvatarImg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; display: block; }
-.umLoading { font-size: 13px; color: var(--color-text-faint); text-align: center; margin-bottom: 16px; }
 .umName { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
 .umStatus { font-size: 14px; color: var(--color-text-subtle); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 28px; }
 .umStatusDot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); flex-shrink: 0; display: inline-block; }

@@ -4,6 +4,8 @@ import type { Chat, Filter } from '../../shared/types/messenger'
 import { useOnlineStore } from '../../shared/api/onlineStore'
 import { searchUsers, type UserSearchResult } from '../../shared/api/usersApi'
 import { initials, colorFromId } from '../../shared/api/chatsApi'
+import { AvatarImage } from '../../shared/ui/AvatarImage'
+import { ChatListSkeleton } from './ChatListSkeleton'
 import s from './ChatListPanel.module.css'
 
 interface ChatListPanelProps {
@@ -24,24 +26,47 @@ interface ChatListPanelProps {
 
 const TABS: Filter[] = ['all', 'direct', 'group']
 
-export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter, query, onFilterChange, onQueryChange, onSelect, onNewChat, onUserClick, onUserSelect }: ChatListPanelProps) {
+export function ChatListPanel({
+  chats,
+  loading,
+  error,
+  onRetry,
+  activeId,
+  filter,
+  query,
+  onFilterChange,
+  onQueryChange,
+  onSelect,
+  onNewChat,
+  onUserClick,
+  onUserSelect,
+}: ChatListPanelProps) {
   const { t } = useTranslation()
   const onlineStatuses = useOnlineStore((s) => s.statuses)
-  const [userResults, setUserResults]         = useState<UserSearchResult[]>([])
+  const [userResults, setUserResults] = useState<UserSearchResult[]>([])
   const [userSearchLoading, setUserSearchLoading] = useState(false)
 
   const counts = {
-    all:    chats.length,
-    direct: chats.filter(c => !c.group).length,
-    group:  chats.filter(c =>  c.group).length,
+    all: chats.length,
+    direct: chats.filter((c) => !c.group).length,
+    group: chats.filter((c) => c.group).length,
   }
   const q = query.trim().toLowerCase()
   const visible = chats
-    .filter(c => filter === 'all' ? true : filter === 'group' ? c.group : !c.group)
-    .filter(c => !q || c.name.toLowerCase().includes(q) || c.preview.toLowerCase().includes(q))
+    .filter((c) =>
+      filter === 'all' ? true : filter === 'group' ? c.group : !c.group,
+    )
+    .filter(
+      (c) =>
+        !q ||
+        c.name.toLowerCase().includes(q) ||
+        c.preview.toLowerCase().includes(q),
+    )
 
   useEffect(() => {
-    const existingIds = new Set(chats.flatMap(c => c.otherUserId ? [c.otherUserId] : []))
+    const existingIds = new Set(
+      chats.flatMap((c) => (c.otherUserId ? [c.otherUserId] : [])),
+    )
     const timer = setTimeout(() => {
       if (!q) {
         setUserResults([])
@@ -51,7 +76,9 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
 
       setUserSearchLoading(true)
       searchUsers(q)
-        .then(res => setUserResults(res.filter(u => !existingIds.has(u.userId))))
+        .then((res) =>
+          setUserResults(res.filter((u) => !existingIds.has(u.userId))),
+        )
         .catch(() => setUserResults([]))
         .finally(() => setUserSearchLoading(false))
     }, 300)
@@ -59,11 +86,15 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
   }, [q, chats])
 
   const showSkeleton = loading && chats.length === 0 && !error
-  const showError    = error && chats.length === 0
-  const showEmpty    = visible.length === 0 && (!q || (!userSearchLoading && userResults.length === 0))
+  const showError = error && chats.length === 0
+  const showEmpty =
+    visible.length === 0 &&
+    (!q || (!userSearchLoading && userResults.length === 0))
 
   return (
-    <aside className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}>
+    <aside
+      className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}
+    >
       <div className={s.clHeader}>
         {/* <h2 className={s.clTitle}>{t('messenger.messages')}</h2> */}
       </div>
@@ -74,27 +105,44 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
           className={s.clSearchInput}
           placeholder={t('messenger.searchOrNewChat')}
           value={query}
-          onChange={e => onQueryChange(e.target.value)}
+          onChange={(e) => onQueryChange(e.target.value)}
         />
-        <button className={s.clNewBtn} onClick={onNewChat} title={t('messenger.createGroup')}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <button
+          className={s.clNewBtn}
+          onClick={onNewChat}
+          title={t('messenger.createGroup')}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         </button>
       </div>
 
       <div className={s.clTabs}>
-        {TABS.map(tab => (
+        {TABS.map((tab) => (
           <button
             key={tab}
             className={`${s.clTab} ${filter === tab ? s.clTabActive : ''}`}
             onClick={() => onFilterChange(tab)}
           >
             {t(`messenger.tabs.${tab}`)}
-            <span className={`${s.clTabCount} ${filter === tab ? s.clTabCountActive : ''}`}>{counts[tab]}</span>
+            <span
+              className={`${s.clTabCount} ${filter === tab ? s.clTabCountActive : ''}`}
+            >
+              {counts[tab]}
+            </span>
           </button>
         ))}
       </div>
@@ -103,22 +151,18 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
         {showError ? (
           <div className={s.clError}>
             <p>{t('messenger.loadChatsFailed')}</p>
-            <button className={s.clRetryBtn} onClick={onRetry}>{t('common.retry')}</button>
+            <button className={s.clRetryBtn} onClick={onRetry}>
+              {t('common.retry')}
+            </button>
           </div>
         ) : showSkeleton ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className={s.clSkeletonRow}>
-              <div className={s.clSkeletonAvatar} />
-              <div className={s.clSkeletonLines}>
-                <div className={s.clSkeletonLine} style={{ width: '55%' }} />
-                <div className={s.clSkeletonLine} style={{ width: '80%' }} />
-              </div>
-            </div>
-          ))
+          <ChatListSkeleton />
         ) : (
           <>
-            {visible.map(chat => {
-              const online = chat.otherUserId ? (onlineStatuses[chat.otherUserId] ?? false) : chat.online
+            {visible.map((chat) => {
+              const online = chat.otherUserId
+                ? (onlineStatuses[chat.otherUserId] ?? false)
+                : chat.online
               return (
                 <div
                   key={chat.id}
@@ -128,32 +172,49 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
                   <button
                     type="button"
                     className={`${s.clAvatar} ${chat.group ? s.clAvatarGroup : ''}`}
-                    style={chat.avatarUrl ? undefined : { background: chat.color }}
-                    onClick={e => {
+                    style={
+                      chat.avatarUrl ? undefined : { background: chat.color }
+                    }
+                    onClick={(e) => {
                       if (!chat.group && chat.otherUserId && onUserClick) {
                         e.stopPropagation()
                         onUserClick(chat.otherUserId)
                       }
                     }}
                   >
-                    {chat.avatarUrl
-                      ? <img src={chat.avatarUrl} alt={chat.name} className={s.clAvatarImg} />
-                      : chat.initials
-                    }
+                    {chat.avatarUrl ? (
+                      <AvatarImage
+                        src={chat.avatarUrl}
+                        alt={chat.name}
+                        className={s.clAvatarImg}
+                      />
+                    ) : (
+                      chat.initials
+                    )}
                     {online && <span className={s.clOnlineDot} />}
                   </button>
                   <div className={s.clInfo}>
                     <div className={s.clNameRow}>
                       <span className={s.clName}>{chat.name}</span>
-                      {chat.group && <span className={s.clGroupBadge}>{t('messenger.groupBadge')}</span>}
+                      {chat.group && (
+                        <span className={s.clGroupBadge}>
+                          {t('messenger.groupBadge')}
+                        </span>
+                      )}
                     </div>
                     <div className={s.clPreview}>
-                      {chat.preview || <span className={s.clPreviewEmpty}>{t('messenger.noMessages')}</span>}
+                      {chat.preview || (
+                        <span className={s.clPreviewEmpty}>
+                          {t('messenger.noMessages')}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={s.clMeta}>
                     <span className={s.clTime}>{chat.time}</span>
-                    {chat.unread > 0 && <span className={s.clUnread}>{chat.unread}</span>}
+                    {chat.unread > 0 && (
+                      <span className={s.clUnread}>{chat.unread}</span>
+                    )}
                   </div>
                 </div>
               )
@@ -163,9 +224,9 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
               <>
                 <div className={s.clUserDivider}>{t('messenger.newUsers')}</div>
                 {userSearchLoading ? (
-                  <div className={s.clUserSearching}>{t('messenger.searching')}</div>
+                  <ChatListSkeleton count={3} />
                 ) : (
-                  userResults.map(user => {
+                  userResults.map((user) => {
                     const init = initials(user.displayName)
                     const online = onlineStatuses[user.userId] ?? false
                     return (
@@ -176,19 +237,34 @@ export function ChatListPanel({ chats, loading, error, onRetry, activeId, filter
                       >
                         <div
                           className={s.clAvatar}
-                          style={user.avatarUrl ? undefined : { background: user.avatarColor ?? colorFromId(user.userId) }}
-                        >
-                          {user.avatarUrl
-                            ? <img src={user.avatarUrl} alt={init} className={s.clAvatarImg} />
-                            : init
+                          style={
+                            user.avatarUrl
+                              ? undefined
+                              : {
+                                  background:
+                                    user.avatarColor ??
+                                    colorFromId(user.userId),
+                                }
                           }
+                        >
+                          {user.avatarUrl ? (
+                            <AvatarImage
+                              src={user.avatarUrl}
+                              alt={init}
+                              className={s.clAvatarImg}
+                            />
+                          ) : (
+                            init
+                          )}
                           {online && <span className={s.clOnlineDot} />}
                         </div>
                         <div className={s.clInfo}>
                           <div className={s.clNameRow}>
                             <span className={s.clName}>{user.displayName}</span>
                           </div>
-                          <div className={s.clPreview}>{user.login ?? user.email}</div>
+                          <div className={s.clPreview}>
+                            {user.login ?? user.email}
+                          </div>
                         </div>
                       </div>
                     )

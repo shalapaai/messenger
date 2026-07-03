@@ -1,0 +1,111 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  background: var(--color-surface-muted);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.logo {
+  width: 36px;
+  height: 14px;
+  margin: 4px 0;
+}
+
+.search {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab {
+  width: 78px;
+  height: 30px;
+  border-radius: 20px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowTitle {
+  width: 58%;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.rowSubtitle {
+  width: 86%;
+  height: 12px;
+}
+
+.main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.emptyTitle {
+  width: 180px;
+  height: 22px;
+}
+
+.emptySubtitle {
+  width: 280px;
+  height: 14px;
+}
+
+@media (max-width: 819px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .main {
+    display: none;
+  }
+}

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useChatsStore } from '../../../shared/api/chatsStore'
 import type { Message } from '../../../shared/types/messenger'
+import { AvatarImage } from '../../../shared/ui/AvatarImage'
 import s from './ForwardModal.module.css'
 
 interface ForwardModalProps {
@@ -31,7 +32,7 @@ export function ForwardModal({ messages, onClose, onConfirm }: ForwardModalProps
                 onClick={() => onConfirm(chat.id)}
               >
                 {chat.avatarUrl
-                  ? <img src={chat.avatarUrl} alt={chat.initials} className={s.avatarImg} />
+                  ? <AvatarImage src={chat.avatarUrl} alt={chat.initials} className={s.avatarImg} />
                   : <div className={s.avatar} style={{ background: chat.color }}>{chat.initials}</div>
                 }
                 <div className={s.info}>

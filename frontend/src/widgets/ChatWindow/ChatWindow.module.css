@@ -287,18 +287,6 @@
 .emptyChatSub { font-size: 14px; font-weight: 500; color: var(--color-text-faint); margin: 0; max-width: 240px; line-height: 1.6; }
 
 /* ── History loader / end ─────────────────────────────────────────────────── */
-.historyLoader { display: flex; justify-content: center; padding: 14px 0 6px; }
-
-.historySpinner {
-  width: 22px;
-  height: 22px;
-  border: 2.5px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .historyEnd {
   text-align: center;

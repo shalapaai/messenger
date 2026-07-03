@@ -7,6 +7,7 @@ import { useTheme } from '../../shared/context/useTheme'
 import { accentColors, type AccentColor } from '../../shared/context/themeContextValue'
 import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
 import { LanguageSwitcher } from '../../shared/ui/LanguageSwitcher'
+import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { getCurrentLocale } from '../../shared/i18n'
 import type { UserProfile } from '../../shared/types/user'
 import s from './ProfilePanel.module.css'
@@ -62,7 +63,7 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
           <div className={s.ppCover} />
           <div className={s.ppBody}>
             {profile.avatarUrl ? (
-              <img className={s.ppAvatar} src={profile.avatarUrl} alt={profile.displayName} />
+              <AvatarImage className={s.ppAvatar} src={profile.avatarUrl} alt={profile.displayName} />
             ) : (
               <div className={s.ppAvatar} style={{ background: profile.avatarColor, color: '#fff' }}>{initials}</div>
             )}

@@ -5,6 +5,7 @@ import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
+import { AvatarImage } from '../../shared/ui/AvatarImage'
 import s from './IconNav.module.css'
 
 interface IconNavProps {
@@ -48,7 +49,7 @@ export function IconNav({ onProfileOpen, userInitials, userAvatarUrl, userAvatar
             onClick={() => setMenuOpen(v => !v)}
           >
             {userAvatarUrl
-              ? <img src={userAvatarUrl} alt={userInitials} className={s.userAvatarImg} />
+              ? <AvatarImage src={userAvatarUrl} alt={userInitials} className={s.userAvatarImg} />
               : userInitials
             }
           </button>
