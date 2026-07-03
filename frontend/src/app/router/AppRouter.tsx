@@ -16,6 +16,7 @@ import { useConnectionStore } from '../../shared/api/connectionStore'
 import { signalR } from '../../shared/api/signalrClient'
 import { ConnectionBanner } from '../../shared/ui/ConnectionBanner/ConnectionBanner'
 import type { IncomingMessage, UserOnlineEvent } from '../../shared/api/signalrClient'
+import { AppLoadingSkeleton } from './AppLoadingSkeleton'
 
 function ForgotPasswordRoute() {
   const { passwordResetEnabled } = useFeatures()
@@ -69,7 +70,7 @@ function GuardedLayout() {
   const { profile, isLoading } = useUserProfile()
   const { pathname } = useLocation()
 
-  if (isLoading) return null
+  if (isLoading) return <AppLoadingSkeleton />
 
   const hasTokens = hasAuthTokens()
 

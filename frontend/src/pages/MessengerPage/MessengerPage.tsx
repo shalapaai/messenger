@@ -24,6 +24,7 @@ import { EditGroupModal }   from '../../features/messenger/EditGroupModal'
 import { AddMemberModal }   from '../../features/messenger/AddMemberModal'
 import { ForwardModal }     from '../../features/messenger/ForwardModal'
 import { ThemeModeToggle }  from '../../shared/ui/ThemeModeToggle'
+import { AvatarImage }      from '../../shared/ui/AvatarImage'
 import s from './MessengerPage.module.css'
 
 interface DraftUserState {
@@ -419,7 +420,7 @@ export function MessengerPage() {
             onClick={() => setProfileOpen(true)}
           >
             {profile?.avatarUrl
-              ? <img src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
+              ? <AvatarImage src={profile.avatarUrl} alt={profileInitials} className={s.topBarUserImg} />
               : profileInitials
             }
           </button>
@@ -512,7 +513,7 @@ export function MessengerPage() {
             style={profile?.avatarUrl ? undefined : { background: profile?.avatarColor }}
           >
             {profile?.avatarUrl
-              ? <img src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
+              ? <AvatarImage src={profile.avatarUrl} alt={profileInitials} className={s.bnAvatarMiniImg} />
               : profileInitials
             }
           </span>

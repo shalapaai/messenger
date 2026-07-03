@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChatMeta, GroupMember, ModalUser } from '../../../shared/types/messenger'
+import { AvatarImage } from '../../../shared/ui/AvatarImage'
+import { UserListSkeleton } from '../UserListSkeleton'
 import s from './GroupModal.module.css'
 
 interface GroupModalProps {
@@ -36,7 +38,7 @@ export function GroupModal({ isOpen, chatId, meta, members, membersLoading, curr
         <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
           <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
           <div className={s.umAvatar} style={meta.avatarUrl ? undefined : { background: meta.color }}>
-            {meta.avatarUrl ? <img src={meta.avatarUrl} alt={meta.name} className={s.umAvatarImg} /> : meta.initials}
+            {meta.avatarUrl ? <AvatarImage src={meta.avatarUrl} alt={meta.name} className={s.umAvatarImg} /> : meta.initials}
           </div>
           <div className={s.umName}>{meta.name}</div>
           <div className={s.umStatus}>{t('group.memberCount', { count: members.length })}</div>
@@ -49,7 +51,7 @@ export function GroupModal({ isOpen, chatId, meta, members, membersLoading, curr
           </div>
           <div className={s.umMemberList}>
             {membersLoading && members.length === 0 ? (
-              <div className={s.umStatus}>{t('common.loading')}</div>
+              <UserListSkeleton count={4} showMeta />
             ) : (
               members.map(member => (
                 <div
@@ -59,7 +61,7 @@ export function GroupModal({ isOpen, chatId, meta, members, membersLoading, curr
                 >
                   <div className={s.umMemberAvatarWrap}>
                     {member.avatarUrl
-                      ? <img src={member.avatarUrl} alt={member.name} className={s.umMemberAvatarImg} />
+                      ? <AvatarImage src={member.avatarUrl} alt={member.name} className={s.umMemberAvatarImg} />
                       : <div className={s.umMemberAvatar} style={{ background: member.color }}>{member.initials}</div>
                     }
                     {member.online && <span className={s.umMemberOnlineDot} />}

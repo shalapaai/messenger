@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AvatarImage } from '../AvatarImage'
 import styles from './Avatar.module.css'
 
 type AvatarProps = {
@@ -36,7 +37,7 @@ function Avatar({ src, name, size = 'medium', color }: AvatarProps) {
   const fallbackBackground = useMemo(() => color ?? getRandomAvatarBackground(), [color])
 
   if (src) {
-    return <img src={src} alt={name} className={avatarClassName} />
+    return <AvatarImage src={src} alt={name} className={avatarClassName} />
   }
 
   return (

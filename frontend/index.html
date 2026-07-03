@@ -8,9 +8,311 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script>
+      (() => {
+        try {
+          const theme = localStorage.getItem('messenger_theme_mode')
+          const accent = localStorage.getItem('messenger_accent_color')
+
+          if (theme === 'light' || theme === 'dark') {
+            document.documentElement.dataset.theme = theme
+          }
+
+          if (['blue', 'red', 'green', 'violet', 'orange'].includes(accent)) {
+            document.documentElement.dataset.accent = accent
+          }
+        } catch {
+          // localStorage can be unavailable in private or restricted browser modes.
+        }
+      })()
+    </script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background: #f4f6fb;
+        font-family: Archivo, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .app-preload {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 64px 320px 1fr;
+        background: #f4f6fb;
+        color: #141b2e;
+      }
+
+      .app-preload__rail,
+      .app-preload__sidebar,
+      .app-preload__main {
+        box-sizing: border-box;
+      }
+
+      .app-preload__rail {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        padding: 18px 12px;
+        background: #ffffff;
+        border-right: 1px solid #e4e8f1;
+      }
+
+      .app-preload__logo {
+        width: 24px;
+        height: 12px;
+        border-radius: 6px;
+      }
+
+      .app-preload__rail-bottom {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .app-preload__sidebar {
+        padding: 16px 14px;
+        background: #ffffff;
+        border-right: 1px solid #e4e8f1;
+      }
+
+      .app-preload__search {
+        height: 44px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+      }
+
+      .app-preload__tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+
+      .app-preload__tab {
+        width: 76px;
+        height: 30px;
+        border-radius: 20px;
+      }
+
+      .app-preload__list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .app-preload__row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .app-preload__avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+      }
+
+      .app-preload__text {
+        flex: 1;
+      }
+
+      .app-preload__line {
+        height: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+
+      .app-preload__line--title {
+        width: 58%;
+        height: 14px;
+      }
+
+      .app-preload__line--sub {
+        width: 84%;
+        margin-bottom: 0;
+      }
+
+      .app-preload__main {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 32px;
+      }
+
+      .app-preload__bubble {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+      }
+
+      .app-preload__title {
+        width: 180px;
+        height: 22px;
+        border-radius: 10px;
+      }
+
+      .app-preload__subtitle {
+        width: 280px;
+        height: 14px;
+        border-radius: 8px;
+      }
+
+      .app-preload__shimmer {
+        background: linear-gradient(90deg, #eef1f7, #dfe5ef, #eef1f7);
+        background-size: 200% 100%;
+        animation: app-preload-shimmer 1.2s ease-in-out infinite;
+      }
+
+      @keyframes app-preload-shimmer {
+        from {
+          background-position: 200% 0;
+        }
+
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body,
+        .app-preload {
+          background: #1f2b3d;
+          color: #f5f7fb;
+        }
+
+        .app-preload__rail,
+        .app-preload__sidebar {
+          background: #101827;
+          border-color: #263246;
+        }
+
+        .app-preload__shimmer {
+          background: linear-gradient(90deg, #1f2b3d, #324059, #1f2b3d);
+          background-size: 200% 100%;
+        }
+      }
+
+      :root[data-theme='light'] body,
+      :root[data-theme='light'] .app-preload {
+        background: #f4f6fb;
+        color: #141b2e;
+      }
+
+      :root[data-theme='light'] .app-preload__rail,
+      :root[data-theme='light'] .app-preload__sidebar {
+        background: #ffffff;
+        border-color: #e4e8f1;
+      }
+
+      :root[data-theme='light'] .app-preload__shimmer {
+        background: linear-gradient(90deg, #eef1f7, #dfe5ef, #eef1f7);
+        background-size: 200% 100%;
+      }
+
+      :root[data-theme='dark'] body,
+      :root[data-theme='dark'] .app-preload {
+        background: #1f2b3d;
+        color: #f5f7fb;
+      }
+
+      :root[data-theme='dark'] .app-preload__rail,
+      :root[data-theme='dark'] .app-preload__sidebar {
+        background: #101827;
+        border-color: #263246;
+      }
+
+      :root[data-theme='dark'] .app-preload__shimmer {
+        background: linear-gradient(90deg, #1f2b3d, #324059, #1f2b3d);
+        background-size: 200% 100%;
+      }
+
+      @media (max-width: 819px) {
+        .app-preload {
+          grid-template-columns: 1fr;
+        }
+
+        .app-preload__rail,
+        .app-preload__main {
+          display: none;
+        }
+
+        .app-preload__sidebar {
+          border-right: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-preload" aria-hidden="true">
+        <aside class="app-preload__rail">
+          <div class="app-preload__logo app-preload__shimmer"></div>
+          <div class="app-preload__rail-bottom">
+            <div class="app-preload__avatar app-preload__shimmer"></div>
+            <div class="app-preload__avatar app-preload__shimmer"></div>
+          </div>
+        </aside>
+
+        <aside class="app-preload__sidebar">
+          <div class="app-preload__search app-preload__shimmer"></div>
+          <div class="app-preload__tabs">
+            <div class="app-preload__tab app-preload__shimmer"></div>
+            <div class="app-preload__tab app-preload__shimmer"></div>
+            <div class="app-preload__tab app-preload__shimmer"></div>
+          </div>
+          <div class="app-preload__list">
+            <div class="app-preload__row">
+              <div class="app-preload__avatar app-preload__shimmer"></div>
+              <div class="app-preload__text">
+                <div class="app-preload__line app-preload__line--title app-preload__shimmer"></div>
+                <div class="app-preload__line app-preload__line--sub app-preload__shimmer"></div>
+              </div>
+            </div>
+            <div class="app-preload__row">
+              <div class="app-preload__avatar app-preload__shimmer"></div>
+              <div class="app-preload__text">
+                <div class="app-preload__line app-preload__line--title app-preload__shimmer"></div>
+                <div class="app-preload__line app-preload__line--sub app-preload__shimmer"></div>
+              </div>
+            </div>
+            <div class="app-preload__row">
+              <div class="app-preload__avatar app-preload__shimmer"></div>
+              <div class="app-preload__text">
+                <div class="app-preload__line app-preload__line--title app-preload__shimmer"></div>
+                <div class="app-preload__line app-preload__line--sub app-preload__shimmer"></div>
+              </div>
+            </div>
+            <div class="app-preload__row">
+              <div class="app-preload__avatar app-preload__shimmer"></div>
+              <div class="app-preload__text">
+                <div class="app-preload__line app-preload__line--title app-preload__shimmer"></div>
+                <div class="app-preload__line app-preload__line--sub app-preload__shimmer"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="app-preload__main">
+          <div class="app-preload__bubble app-preload__shimmer"></div>
+          <div class="app-preload__title app-preload__shimmer"></div>
+          <div class="app-preload__subtitle app-preload__shimmer"></div>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

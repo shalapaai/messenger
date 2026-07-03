@@ -12,7 +12,9 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmojiPicker } from '../../shared/ui/EmojiPicker'
+import { AvatarImage } from '../../shared/ui/AvatarImage'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
+import { MessagesSkeleton } from './MessagesSkeleton'
 import s from './ChatWindow.module.css'
 
 const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 300
@@ -699,7 +701,7 @@ export function ChatWindow({
           <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
             <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
               {meta.avatarUrl
-                ? <img src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
+                ? <AvatarImage src={meta.avatarUrl} alt={meta.name} className={s.chatHeaderAvatarImg} />
                 : meta.initials
               }
             </div>
@@ -721,9 +723,7 @@ export function ChatWindow({
       )}
 
       {loadingInitial ? (
-        <div className={s.emptyChat}>
-          <div className={s.historySpinner} />
-        </div>
+        <MessagesSkeleton />
       ) : loadError ? (
         <div className={s.emptyChat}>
           <div className={s.emptyChatIcon}>⚠️</div>
@@ -742,7 +742,7 @@ export function ChatWindow({
           <div ref={topSentinelRef} />
 
           {loadingHistory && (
-            <div className={s.historyLoader}><div className={s.historySpinner} /></div>
+            <MessagesSkeleton compact />
           )}
 
           {!loadingHistory && historyLoaded && (
@@ -796,7 +796,7 @@ export function ChatWindow({
                     onClick={(e) => { if (selectMode) return; e.stopPropagation(); if (item.showAvatar) onAvatarClick(item.msg) }}
                   >
                     {displaySender.senderAvatarUrl
-                      ? <img src={displaySender.senderAvatarUrl} alt={displaySender.senderInitials} className={s.msgAvatarImg} />
+                      ? <AvatarImage src={displaySender.senderAvatarUrl} alt={displaySender.senderInitials} className={s.msgAvatarImg} />
                       : displaySender.senderInitials
                     }
                   </div>
