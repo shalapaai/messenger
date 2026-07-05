@@ -104,7 +104,7 @@ export function ChatWindow({
   }
 
   function scrollToMessage(msgId: string) {
-    const el = messagesRef.current?.querySelector(`[data-message-id="${msgId}"]`) as HTMLElement | null
+    const el = messagesRef.current?.querySelector(`[data-message-id="${CSS.escape(msgId)}"]`) as HTMLElement | null
     if (!el) return
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setHighlightedMsgId(msgId)

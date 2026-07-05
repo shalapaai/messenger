@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Chat, Filter } from '../../shared/types/messenger'
 import { useOnlineStore } from '../../shared/api/onlineStore'
@@ -45,6 +45,7 @@ export function ChatListPanel({
   const onlineStatuses = useOnlineStore((s) => s.statuses)
   const [userResults, setUserResults] = useState<UserSearchResult[]>([])
   const [userSearchLoading, setUserSearchLoading] = useState(false)
+  const searchRequestIdRef = useRef(0)
 
   const counts = {
     all: chats.length,
@@ -74,13 +75,18 @@ export function ChatListPanel({
         return
       }
 
+      // Защита от гонки ответов: если более старый запрос (например "al") отвечает позже более
+      // нового ("alex"), его результат не должен затереть уже показанный актуальный список —
+      // тот же паттерн, что в shared/hooks/useUserSearch.ts, которым пользуются модалки.
+      const requestId = ++searchRequestIdRef.current
       setUserSearchLoading(true)
       searchUsers(q)
-        .then((res) =>
-          setUserResults(res.filter((u) => !existingIds.has(u.userId))),
-        )
-        .catch(() => setUserResults([]))
-        .finally(() => setUserSearchLoading(false))
+        .then((res) => {
+          if (requestId !== searchRequestIdRef.current) return
+          setUserResults(res.filter((u) => !existingIds.has(u.userId)))
+        })
+        .catch(() => { if (requestId === searchRequestIdRef.current) setUserResults([]) })
+        .finally(() => { if (requestId === searchRequestIdRef.current) setUserSearchLoading(false) })
     }, 300)
     return () => clearTimeout(timer)
   }, [q, chats])

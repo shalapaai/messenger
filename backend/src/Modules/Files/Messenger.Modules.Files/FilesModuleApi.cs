@@ -17,8 +17,9 @@ internal sealed class FilesModuleApi(
     // Исполняемые/скриптовые типы (exe, sh, bat, js и т.п.) намеренно не в списке.
     private static readonly HashSet<string> AllowedAttachmentMimeTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        // изображения
-        "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+        // изображения — SVG намеренно не в списке: может нести <script>, а вложения отдаются
+        // напрямую по URL из storage origin, так что встроенный JS выполнился бы там
+        "image/jpeg", "image/png", "image/webp", "image/gif",
         // документы
         "application/pdf",
         "application/msword",

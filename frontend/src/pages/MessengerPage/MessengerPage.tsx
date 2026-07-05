@@ -370,7 +370,7 @@ export function MessengerPage() {
       await setMemberRole(id, userId, role)
       setGroupMembers(prev => prev.map(m => m.userId === userId ? { ...m, role } : m))
     } catch {
-      window.alert(t('messenger.setMemberRoleFailed'))
+      showError(t('messenger.setMemberRoleFailed'))
     }
   }
 

@@ -74,18 +74,19 @@ public sealed class MessageSentEventHandler(
             replyToContent     = replyTo is null ? null : (replyTo.IsDeleted ? null : MessagePreview.Truncate(replyTo.Content))
         };
 
-        // Рассылаем в группу чата всем подписанным участникам
-        await hubContext.Clients
-            .Group(MessengerHub.ChatGroup(notification.ChatId))
-            .SendAsync("ReceiveMessage", payload, ct);
-
-        // Дополнительно рассылаем в личные группы участников-не-отправителей —
-        // нужно для случая, когда чат только что создан и получатель ещё не в группе
+        // Личная группа пользователя (user:{id}) содержит ВСЕ его подключения всегда, а группа
+        // чата (chat:{id}) — только те, что сейчас смотрят именно этот чат (JoinChat). Раньше
+        // рассылали в обе — участник, у которого чат открыт, состоит сразу в обеих группах и
+        // получал ReceiveMessage дважды. Личной группы одной достаточно: она покрывает и тех, кто
+        // сейчас смотрит чат, и тех, кто нет (например, чат только что создан и получатель ещё
+        // не успел его открыть). Обычным отправителям своё сообщение не шлём — они уже видят его
+        // через optimistic UI; исключение — пересылка, для неё optimistic-вставки нет, поэтому
+        // отправителю тоже нужна собственная копия по этому событию.
         var membersResult = await membersTask;
         if (membersResult.IsSuccess)
         {
             var tasks = membersResult.Value!
-                .Where(uid => uid != notification.SenderId)
+                .Where(uid => uid != notification.SenderId || notification.ForwardedFromUserId is not null)
                 .Select(uid => hubContext.Clients
                     .Group(MessengerHub.UserGroup(uid.ToString()))
                     .SendAsync("ReceiveMessage", payload, ct));

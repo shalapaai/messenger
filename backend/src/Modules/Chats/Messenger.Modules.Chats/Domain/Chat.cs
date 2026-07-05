@@ -58,11 +58,25 @@ public sealed class Chat : AggregateRoot<ChatId>
     public string? Name { get; private set; }
     public string? AvatarUrl { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    /// <summary>Order-independent key of the two members, non-null only for Direct chats — backed by a
+    /// unique DB index so two concurrent "start conversation" requests for the same pair can't both
+    /// win (see CreateDirectChatCommandHandler's DbUpdateException handling).</summary>
+    public string? DirectKey { get; private set; }
 
     public IReadOnlyList<ChatMember> Members => _members.AsReadOnly();
 
-    public static Chat CreateDirect() =>
-        new(ChatId.New(), ChatType.Direct, null);
+    public static Chat CreateDirect(Guid userId1, Guid userId2)
+    {
+        var chat = new Chat(ChatId.New(), ChatType.Direct, null) { DirectKey = BuildDirectKey(userId1, userId2) };
+        chat.AddMember(userId1);
+        chat.AddMember(userId2);
+        return chat;
+    }
+
+    private static string BuildDirectKey(Guid userId1, Guid userId2) =>
+        string.CompareOrdinal(userId1.ToString(), userId2.ToString()) <= 0
+            ? $"{userId1}_{userId2}"
+            : $"{userId2}_{userId1}";
 
     public static Result<Chat> CreateGroup(string name)
     {

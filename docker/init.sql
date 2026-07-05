@@ -91,10 +91,16 @@ CREATE TABLE IF NOT EXISTS chats.chats (
     name       VARCHAR(100) DEFAULT NULL,
     avatar_url VARCHAR(512) DEFAULT NULL,
     created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    -- Order-independent key of the two members, non-null only for Direct chats — unique index
+    -- below stops two concurrent "start conversation" requests for the same pair from both
+    -- succeeding (see CreateDirectChatCommandHandler).
+    direct_key VARCHAR(73)  DEFAULT NULL,
 
     CONSTRAINT ck_chats_type       CHECK (type IN ('direct', 'group')),
     CONSTRAINT ck_chats_group_name CHECK (type = 'direct' OR name IS NOT NULL)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_chats_direct_key ON chats.chats (direct_key) WHERE direct_key IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS chats.members (
     chat_id      UUID        NOT NULL,

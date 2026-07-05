@@ -30,6 +30,13 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMe
             b.Property(c => c.Name).HasColumnName("name").HasMaxLength(100);
             b.Property(c => c.AvatarUrl).HasColumnName("avatar_url");
             b.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
+            b.Property(c => c.DirectKey).HasColumnName("direct_key").HasMaxLength(73);
+            // Partial unique index (NULL for group chats) — prevents two concurrent
+            // CreateDirectChat requests for the same pair from creating duplicate chats.
+            b.HasIndex(c => c.DirectKey)
+                .IsUnique()
+                .HasFilter("direct_key IS NOT NULL")
+                .HasDatabaseName("ux_chats_direct_key");
             b.HasMany(c => c.Members).WithOne().HasForeignKey(m => m.ChatId).OnDelete(DeleteBehavior.Cascade);
             b.ToTable("chats");
         });

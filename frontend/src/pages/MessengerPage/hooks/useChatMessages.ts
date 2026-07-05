@@ -325,7 +325,11 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
 
   return {
     messages,
-    loadingInitial: id ? !!loadingInitial[id] : false,
+    // Пока для чата ещё ни разу не завершилась загрузка (chatMessages[id] не задан) и не было
+    // ошибки — считаем это состоянием загрузки, а не "сообщений нет". Иначе на первом рендере
+    // после смены id (до срабатывания эффекта ниже) messages=[] и loadingInitial[id]=false
+    // совпадают, и ChatWindow на миг показывает пустую заглушку вместо скелетона.
+    loadingInitial: id ? (chatMessages[id] === undefined ? !loadError[id] : !!loadingInitial[id]) : false,
     loadError:      id ? !!loadError[id] : false,
     retryLoadInitial: () => id && loadInitial(id),
     handleIncomingMessage,

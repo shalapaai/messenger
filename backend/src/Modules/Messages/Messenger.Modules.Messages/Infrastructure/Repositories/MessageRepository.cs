@@ -40,17 +40,23 @@ public sealed class MessageRepository(MessagesDbContext dbContext) : IMessageRep
 
         if (before is not null)
         {
-            var cursorSentAt = await dbContext.Messages
+            var cursor = await dbContext.Messages
                 .Where(m => m.Id == MessageId.From(before.Value))
-                .Select(m => (DateTime?)m.SentAt)
+                .Select(m => new { m.SentAt, Id = m.Id.Value })
                 .FirstOrDefaultAsync(ct);
 
-            if (cursorSentAt is not null)
-                query = query.Where(m => m.SentAt < cursorSentAt);
+            // Тай-брейк по Id: сравнение только по SentAt при одинаковой метке времени у нескольких
+            // сообщений (обычное дело при массовой вставке — пересылка, история и т.п.) на границе
+            // страницы либо теряет, либо задваивает сообщения с точно таким же SentAt, что у курсора.
+            if (cursor is not null)
+                query = query.Where(m =>
+                    m.SentAt < cursor.SentAt ||
+                    (m.SentAt == cursor.SentAt && m.Id.Value < cursor.Id));
         }
 
         return await query
             .OrderByDescending(m => m.SentAt)
+            .ThenByDescending(m => m.Id.Value)
             .Take(limit)
             .ToListAsync(ct);
     }
