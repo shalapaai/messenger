@@ -42,21 +42,25 @@ public sealed class MessageRepository(MessagesDbContext dbContext) : IMessageRep
         {
             var cursor = await dbContext.Messages
                 .Where(m => m.Id == MessageId.From(before.Value))
-                .Select(m => new { m.SentAt, Id = m.Id.Value })
+                .Select(m => new { m.SentAt, m.Id })
                 .FirstOrDefaultAsync(ct);
 
             // Тай-брейк по Id: сравнение только по SentAt при одинаковой метке времени у нескольких
             // сообщений (обычное дело при массовой вставке — пересылка, история и т.п.) на границе
             // страницы либо теряет, либо задваивает сообщения с точно таким же SentAt, что у курсора.
+            // Сравнивать нужно целиком m.Id (через IComparable-операторы на MessageId), а не m.Id.Value —
+            // EF Core не может транслировать декомпозицию конвертированного свойства через .Value
+            // внутри Where/OrderBy (падает с "could not be translated"), хотя то же самое работает
+            // в терминальном Select.
             if (cursor is not null)
                 query = query.Where(m =>
                     m.SentAt < cursor.SentAt ||
-                    (m.SentAt == cursor.SentAt && m.Id.Value < cursor.Id));
+                    (m.SentAt == cursor.SentAt && m.Id < cursor.Id));
         }
 
         return await query
             .OrderByDescending(m => m.SentAt)
-            .ThenByDescending(m => m.Id.Value)
+            .ThenByDescending(m => m.Id)
             .Take(limit)
             .ToListAsync(ct);
     }
