@@ -37,6 +37,17 @@ export function onAuthTokensCleared(callback: () => void): () => void {
   return () => window.removeEventListener('storage', handleStorage)
 }
 
+/** То же самое, но для входа: логин в одной вкладке (или выбор другого аккаунта на /login,
+ *  пока в другой вкладке уже открыт мессенджер) должен обновить и остальные вкладки — иначе
+ *  они продолжат жить со старым токеном/профилем в памяти, пока сами не наткнутся на 401. */
+export function onAuthTokensSaved(callback: () => void): () => void {
+  function handleStorage(e: StorageEvent) {
+    if (e.key === ACCESS_TOKEN_KEY && e.newValue !== null) callback()
+  }
+  window.addEventListener('storage', handleStorage)
+  return () => window.removeEventListener('storage', handleStorage)
+}
+
 export function getMyUserId(): string | null {
   const token = getAccessToken()
   if (!token) return null

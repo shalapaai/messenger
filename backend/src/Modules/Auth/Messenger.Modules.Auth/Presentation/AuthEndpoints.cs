@@ -167,7 +167,15 @@ public static class AuthEndpoints
         var result  = await sender.Send(command, ct);
 
         if (result.IsFailure)
+        {
+            // Токен из cookie стал невалиден (истёк, отозван, либо — типичное дело в dev —
+            // база пересоздана и такой строки в refresh_token больше нет). Сама эта cookie
+            // httpOnly, клиент не может стереть её через JS, поэтому без явного Delete здесь
+            // она осталась бы в браузере навсегда и каждый следующий /refresh падал бы с той
+            // же ошибкой, пока пользователь не почистит cookies вручную.
+            DeleteRefreshTokenCookie(httpContext.Response, environment);
             return result.Error.ToHttpResult();
+        }
 
         var tokens = result.Value!;
         AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
