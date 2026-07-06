@@ -79,14 +79,18 @@ public sealed class MessageSentEventHandler(
         // рассылали в обе — участник, у которого чат открыт, состоит сразу в обеих группах и
         // получал ReceiveMessage дважды. Личной группы одной достаточно: она покрывает и тех, кто
         // сейчас смотрит чат, и тех, кто нет (например, чат только что создан и получатель ещё
-        // не успел его открыть). Обычным отправителям своё сообщение не шлём — они уже видят его
-        // через optimistic UI; исключение — пересылка, для неё optimistic-вставки нет, поэтому
-        // отправителю тоже нужна собственная копия по этому событию.
+        // не успел его открыть).
+        //
+        // Шлём ВСЕМ участникам, включая отправителя: список чатов (chatsStore.handleNewMessage)
+        // обновляет preview/lastMessageId только по этому событию, отдельного optimistic-пути для
+        // него нет — без доставки самому отправителю его же чат в списке чатов оставался бы со
+        // старым превью до перезагрузки страницы. Дублирующегося бабла в открытом окне чата это не
+        // создаёт: useChatMessages.handleIncomingMessage сам игнорирует свои же неопересланные
+        // сообщения (там уже показан optimistic UI), а обработку пересылки не трогает.
         var membersResult = await membersTask;
         if (membersResult.IsSuccess)
         {
             var tasks = membersResult.Value!
-                .Where(uid => uid != notification.SenderId || notification.ForwardedFromUserId is not null)
                 .Select(uid => hubContext.Clients
                     .Group(MessengerHub.UserGroup(uid.ToString()))
                     .SendAsync("ReceiveMessage", payload, ct));
