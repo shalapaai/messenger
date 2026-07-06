@@ -24,6 +24,19 @@ export function hasAuthTokens() {
   return Boolean(getAccessToken())
 }
 
+/** Кросс-вкладочный логаут: 'storage' — событие DOM, которое браузер шлёт во ВСЕ ДРУГИЕ
+ *  вкладки того же origin при изменении localStorage (в той вкладке, где вызван
+ *  clearAuthTokens(), событие не всплывает — она обновляет свой стейт напрямую).
+ *  Так логаут в одной вкладке (кнопкой или по неудачному refresh в apiClient) сразу
+ *  разлогинивает и остальные открытые вкладки, а не оставляет их с мёртвым токеном. */
+export function onAuthTokensCleared(callback: () => void): () => void {
+  function handleStorage(e: StorageEvent) {
+    if (e.key === ACCESS_TOKEN_KEY && e.newValue === null) callback()
+  }
+  window.addEventListener('storage', handleStorage)
+  return () => window.removeEventListener('storage', handleStorage)
+}
+
 export function getMyUserId(): string | null {
   const token = getAccessToken()
   if (!token) return null
