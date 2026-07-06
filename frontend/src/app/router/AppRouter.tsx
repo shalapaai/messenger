@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
-import { useCallback, useEffect, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
 import { ForgotPasswordPage } from '../../pages/ForgotPasswordPage'
@@ -14,8 +14,14 @@ import { useChatsStore } from '../../shared/api/chatsStore'
 import { useOnlineStore } from '../../shared/api/onlineStore'
 import { useConnectionStore } from '../../shared/api/connectionStore'
 import { signalR } from '../../shared/api/signalrClient'
+import {
+  getActiveChatIdFromPathname,
+  getDraftDirectUserIdFromPathname,
+  isSameNotificationId,
+  syncActiveNotificationRoute,
+  syncPushSubscription,
+} from '../../shared/lib/notifications'
 import { ConnectionBanner } from '../../shared/ui/ConnectionBanner/ConnectionBanner'
-import { ErrorModal } from '../../shared/ui/ErrorModal'
 import type { IncomingMessage, UserOnlineEvent } from '../../shared/api/signalrClient'
 import { AppLoadingSkeleton } from './AppLoadingSkeleton'
 
@@ -38,20 +44,52 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   const chatsLoaded      = useChatsStore((s) => s.chatsLoaded)
   const status           = useConnectionStore((s) => s.status)
   const chatIdsKey       = chats.map((c) => c.id).join(',')
+  const joinedChatIdsRef = useRef<Set<string>>(new Set())
+  const activeChatId = getActiveChatIdFromPathname(pathname)
+  const activeDirectUserId = chats.find(chat => isSameNotificationId(chat.id, activeChatId))?.otherUserId
+    ?? getDraftDirectUserIdFromPathname(pathname)
 
   // Вступаем во все чаты пользователя при подключении / изменении НАБОРА чатов.
   // chatsLoaded ждём, чтобы не слать joinChat с моковыми (не-Guid) ID до загрузки API.
   useEffect(() => {
-    if (status !== 'connected' || !chatsLoaded) return
-    chats.forEach(chat => signalR.joinChat(chat.id).catch(() => {}))
+    if (status !== 'connected') {
+      joinedChatIdsRef.current.clear()
+      return
+    }
+
+    if (!chatsLoaded) return
+
+    const actualChatIds = new Set(chats.map(chat => chat.id))
+    const joinedChatIds = joinedChatIdsRef.current
+
+    joinedChatIds.forEach(chatId => {
+      if (actualChatIds.has(chatId)) return
+      signalR.leaveChat(chatId).catch(() => {})
+      joinedChatIds.delete(chatId)
+    })
+
+    actualChatIds.forEach(chatId => {
+      if (joinedChatIds.has(chatId)) return
+      signalR.joinChat(chatId)
+        .then(() => joinedChatIds.add(chatId))
+        .catch(() => {})
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, chatsLoaded, chatIdsKey])
 
+  useEffect(() => {
+    if (status !== 'connected') return
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    syncPushSubscription().catch(() => {})
+  }, [status])
+
+  useEffect(() => {
+    syncActiveNotificationRoute(pathname, activeDirectUserId)
+  }, [pathname, activeDirectUserId])
+
   const onMessage = useCallback((msg: IncomingMessage) => {
-    // строго GUID — чтобы не зацепить /chats/new/:userId (черновик ещё не существующего чата)
-    const activeChatId = pathname.match(/^\/chats\/([0-9a-f-]{36})$/i)?.[1] ?? null
     handleNewMessage(msg, activeChatId)
-  }, [pathname, handleNewMessage])
+  }, [activeChatId, handleNewMessage])
 
   const onUserOnline = useCallback((event: UserOnlineEvent) => {
     setOnline(event.userId, event.isOnline)
@@ -63,7 +101,6 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
     <>
       {children}
       <ConnectionBanner />
-      <ErrorModal />
     </>
   )
 }

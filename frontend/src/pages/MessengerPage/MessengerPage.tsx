@@ -8,7 +8,7 @@ import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
 import { useIsOnline, useOnlineStore } from '../../shared/api/onlineStore'
-import { useErrorModalStore } from '../../shared/api/errorModalStore'
+import { useToastStore } from '../../shared/api/toastStore'
 import type { UserSearchResult } from '../../shared/api/usersApi'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
@@ -41,7 +41,8 @@ export function MessengerPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { profile, setProfile } = useUserProfile()
-  const showError = useErrorModalStore(st => st.showError)
+  const showError = useToastStore(st => st.showError)
+  const showSuccess = useToastStore(st => st.showSuccess)
 
   const [filter, setFilter] = useState<Filter>('all')
   const [query,  setQuery]  = useState('')
@@ -286,6 +287,7 @@ export function MessengerPage() {
     if (!id) return
     try {
       await deleteMessage(id, msg)
+      showSuccess(t('toast.messageDeleted'))
     } catch {
       showError(t('messenger.deleteMessageFailed'))
     }
@@ -295,6 +297,7 @@ export function MessengerPage() {
     if (!id) return
     try {
       await editMessage(id, msg, newText)
+      showSuccess(t('toast.messageEdited'))
     } catch {
       showError(t('messenger.editMessageFailed'))
     }
@@ -304,6 +307,7 @@ export function MessengerPage() {
     if (!id) return
     try {
       await deleteMessages(id, msgs)
+      showSuccess(t(msgs.length === 1 ? 'toast.messageDeleted' : 'toast.messagesDeleted'))
     } catch {
       showError(t('messenger.deleteMessageFailed'))
     }
@@ -316,6 +320,7 @@ export function MessengerPage() {
     setForwardState(null)
     try {
       await forwardMessagesApi(targetChatId, sourceChatId, messageIds)
+      showSuccess(t('toast.messagesForwarded'))
     } catch {
       showError(t('messenger.forwardMessageFailed'))
     }
@@ -327,6 +332,7 @@ export function MessengerPage() {
       await deleteChat(id)
       removeChat(id)
       navigate('/chats')
+      showSuccess(t('toast.chatDeleted'))
     } catch {
       showError(t('messenger.deleteChatFailed'))
     }
@@ -339,6 +345,7 @@ export function MessengerPage() {
       removeChat(id)
       setGroupModalOpen(false)
       navigate('/chats')
+      showSuccess(t('toast.groupLeft'))
     } catch {
       showError(t('messenger.leaveGroupFailed'))
     }
@@ -351,6 +358,7 @@ export function MessengerPage() {
     await loadChats()
     setNewGroupModalOpen(false)
     navigate(`/chats/${newChatId}`)
+    showSuccess(t('toast.groupCreated'))
   }
 
   async function handleAddMemberSelect(user: UserSearchResult) {
@@ -359,6 +367,7 @@ export function MessengerPage() {
       await addChatMember(id, user.userId)
       setAddMemberModalOpen(false)
       await loadGroupMembers(id)
+      showSuccess(t('toast.memberAdded'))
     } catch {
       showError(t('messenger.addMemberFailed'))
     }
@@ -376,6 +385,7 @@ export function MessengerPage() {
     try {
       await leaveGroupChat(id, userId)
       await loadGroupMembers(id)
+      showSuccess(t('toast.memberRemoved'))
     } catch {
       showError(t('messenger.removeMemberFailed'))
     }
@@ -386,8 +396,9 @@ export function MessengerPage() {
     try {
       await setMemberRole(id, userId, role)
       setGroupMembers(prev => prev.map(m => m.userId === userId ? { ...m, role } : m))
+      showSuccess(t('toast.roleUpdated'))
     } catch {
-      window.alert(t('messenger.setMemberRoleFailed'))
+      showError(t('messenger.setMemberRoleFailed'))
     }
   }
 

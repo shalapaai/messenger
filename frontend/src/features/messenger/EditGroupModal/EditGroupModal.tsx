@@ -4,6 +4,7 @@ import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { useAvatarCrop } from '../../../shared/hooks/useAvatarCrop'
 import { uploadChatAvatar } from '../../../shared/api/chatsApi'
+import { useToastStore } from '../../../shared/api/toastStore'
 import s from './EditGroupModal.module.css'
 
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
@@ -41,6 +42,8 @@ type SaveError = 'name' | 'size' | 'avatarSavedNameFailed' | null
 
 function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentColor, onClose, onSave, onAvatarUploaded }: EditGroupModalContentProps) {
   const { t } = useTranslation()
+  const showSuccess = useToastStore((state) => state.showSuccess)
+  const showError = useToastStore((state) => state.showError)
   const [name, setName] = useState(currentName)
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState<SaveError>(null)
@@ -67,9 +70,12 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
         onAvatarUploaded()
       }
       if (trimmed !== currentName) await onSave(trimmed)
+      showSuccess(t('toast.groupUpdated'))
       onClose()
     } catch {
-      setError(avatarAlreadySaved ? 'avatarSavedNameFailed' : 'name')
+      const nextError = avatarAlreadySaved ? 'avatarSavedNameFailed' : 'name'
+      setError(nextError)
+      showError(t(nextError === 'avatarSavedNameFailed' ? 'group.avatarSavedNameFailed' : 'messenger.updateGroupFailed'))
       setSaving(false)
     }
   }
