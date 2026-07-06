@@ -2,6 +2,7 @@ namespace Messenger.Modules.Notifications.EventHandlers;
 
 using MediatR;
 using Messenger.Modules.Chats.Application.Contracts;
+using Messenger.Modules.Messages.Domain;
 using Messenger.Modules.Messages.Domain.Events;
 using Messenger.Modules.Notifications.Application;
 using Messenger.Modules.Notifications.Infrastructure;
@@ -16,6 +17,10 @@ public sealed class MessageSentPushNotificationHandler(
 {
     public async Task Handle(MessageSentDomainEvent notification, CancellationToken ct)
     {
+        // Системные сообщения (добавили/вышел/удалили) не переведены на сервере (Content —
+        // технический маркер, см. Message.CreateSystem) и не должны всплывать как push
+        if (notification.Kind == MessageKind.System) return;
+
         var membersResult = await chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
         if (membersResult.IsFailure) return;
 

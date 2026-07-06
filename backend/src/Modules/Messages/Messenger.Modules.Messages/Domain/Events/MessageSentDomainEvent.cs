@@ -12,13 +12,19 @@ public sealed record MessageSentDomainEvent(
     Guid? ForwardedFromMessageId,
     Guid? ForwardedFromUserId,
     Guid? ReplyToMessageId,
-    IReadOnlyList<MessageAttachment> Attachments) : IDomainEvent
+    IReadOnlyList<MessageAttachment> Attachments,
+    MessageKind Kind,
+    SystemEventType? SystemEventType,
+    Guid? TargetUserId) : IDomainEvent
 {
     public MessageSentDomainEvent(
         Guid messageId, Guid chatId, Guid senderId, string content,
         Guid? forwardedFromMessageId = null, Guid? forwardedFromUserId = null, Guid? replyToMessageId = null,
-        IReadOnlyList<MessageAttachment>? attachments = null)
+        IReadOnlyList<MessageAttachment>? attachments = null,
+        MessageKind kind = MessageKind.Text,
+        SystemEventType? systemEventType = null,
+        Guid? targetUserId = null)
         : this(Guid.NewGuid(), DateTime.UtcNow, messageId, chatId, senderId, content,
                forwardedFromMessageId, forwardedFromUserId, replyToMessageId,
-               attachments ?? []) { }
+               attachments ?? [], kind, systemEventType, targetUserId) { }
 }

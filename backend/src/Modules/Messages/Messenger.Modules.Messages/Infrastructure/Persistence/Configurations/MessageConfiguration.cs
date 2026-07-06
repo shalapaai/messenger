@@ -50,6 +50,19 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(m => m.ForwardedFromMessageId).HasColumnName("forwarded_from_message_id");
         builder.Property(m => m.ForwardedFromUserId).HasColumnName("forwarded_from_user_id");
 
+        builder.Property(m => m.Kind)
+            .HasColumnName("message_type")
+            .HasConversion<string>()
+            .HasMaxLength(10)
+            .IsRequired();
+
+        builder.Property(m => m.SystemEventType)
+            .HasColumnName("system_event_type")
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
+        builder.Property(m => m.TargetUserId).HasColumnName("target_user_id");
+
         builder.Navigation(m => m.Attachments).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.OwnsMany(m => m.Attachments, a =>
         {

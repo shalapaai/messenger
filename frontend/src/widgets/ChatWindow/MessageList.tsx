@@ -1,5 +1,6 @@
 import { type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { MessageAttachments } from './MessageAttachment'
 import { CheckIcon } from './icons'
@@ -9,19 +10,43 @@ import s from './ChatWindow.module.css'
 
 type RenderedItem =
   | { type: 'sep'; label: string }
+  | { type: 'system'; label: string }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
 
-function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[] {
+function systemMessageLabel(msg: Message, t: TFunction): string {
+  const name = msg.targetUserName ?? ''
+  switch (msg.systemEventType) {
+    case 'MemberAdded':   return t('messenger.systemMemberAdded', { name })
+    case 'MemberLeft':    return t('messenger.systemMemberLeft', { name })
+    case 'MemberRemoved': return t('messenger.systemMemberRemoved', { name })
+    default: return ''
+  }
+}
+
+function buildRenderedItems(messages: Message[], meta: ChatMeta, t: TFunction): RenderedItem[] {
   const rendered: RenderedItem[] = []
   let lastDateKey = ''
   for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i], prev = messages[i - 1], next = messages[i + 1]
+    const msg = messages[i]
     // Группируем по стабильному, не зависящему от языка ключу календарного дня (а не по
     // готовой переведённой метке) — иначе сообщения, загруженные до и после смены языка
     // интерфейса, оказались бы в разных группах на один и тот же день (ровно тот баг:
     // "Сегодня" и "Today" одновременно). Саму метку считаем заново при каждом рендере.
     const key = dateKey(msg.sentAt)
     if (key !== lastDateKey) { rendered.push({ type: 'sep', label: formatDateLabel(msg.sentAt) }); lastDateKey = key }
+
+    if (msg.kind === 'System') {
+      rendered.push({ type: 'system', label: systemMessageLabel(msg, t) })
+      continue
+    }
+
+    // Системные сообщения не должны считаться "соседями" для группировки аватарок/имени —
+    // ищем ближайшее НЕ системное сообщение по обе стороны, а не просто messages[i ± 1]
+    let prev: Message | undefined
+    for (let j = i - 1; j >= 0; j--) { if (messages[j].kind !== 'System') { prev = messages[j]; break } }
+    let next: Message | undefined
+    for (let j = i + 1; j < messages.length; j++) { if (messages[j].kind !== 'System') { next = messages[j]; break } }
+
     rendered.push({
       type: 'msg', msg,
       showAvatar: !next || next.senderId !== msg.senderId,
@@ -55,7 +80,7 @@ export function MessageList({
   onToggleSelect, onAvatarClick, onContextMenu, onRetry, onScrollToMessage, onForwardedUserClick,
 }: MessageListProps) {
   const { t } = useTranslation()
-  const rendered = buildRenderedItems(messages, meta)
+  const rendered = buildRenderedItems(messages, meta, t)
 
   const isReadByOther = (msg: Message) =>
     !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
@@ -65,6 +90,10 @@ export function MessageList({
       {rendered.map((item, i) =>
         item.type === 'sep' ? (
           <div key={`sep-${i}`} className={s.dateSep}>
+            <span className={s.dateSepLabel}>{item.label}</span>
+          </div>
+        ) : item.type === 'system' ? (
+          <div key={`system-${i}`} className={s.dateSep}>
             <span className={s.dateSepLabel}>{item.label}</span>
           </div>
         ) : (() => {

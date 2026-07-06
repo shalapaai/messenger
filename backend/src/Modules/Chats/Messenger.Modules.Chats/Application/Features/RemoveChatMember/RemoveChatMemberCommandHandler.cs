@@ -2,11 +2,14 @@ namespace Messenger.Modules.Chats.Application.Features.RemoveChatMember;
 
 using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
+using Messenger.Modules.Messages.Application.Contracts;
+using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
 
 public sealed class RemoveChatMemberCommandHandler(
     IChatRepository chatRepository,
+    IMessagesModule messagesModule,
     IUnitOfWork     unitOfWork)
     : ICommandHandler<RemoveChatMemberCommand>
 {
@@ -27,10 +30,22 @@ public sealed class RemoveChatMemberCommandHandler(
         // Если это был последний участник (например, единственный Owner покинул группу) —
         // удаляем сам чат, иначе он навсегда остаётся в БД пустым и недоступным
         // (добавить участника нельзя — им нужно уже состоять в чате, удалить как Direct тоже нельзя).
-        if (chat.IsEmpty)
+        var chatDeleted = chat.IsEmpty;
+        if (chatDeleted)
             chatRepository.Delete(chat);
 
         await unitOfWork.SaveChangesAsync(ct);
+
+        // Чат целиком удалён — сообщения каскадно исчезнут вместе с ним, показывать
+        // системное сообщение больше некому
+        if (!chatDeleted)
+        {
+            var eventType = command.RequesterId == command.UserId
+                ? SystemEventType.MemberLeft
+                : SystemEventType.MemberRemoved;
+            await messagesModule.CreateSystemMessageAsync(
+                command.ChatId, command.RequesterId, command.UserId, eventType, ct);
+        }
 
         return Result.Success();
     }

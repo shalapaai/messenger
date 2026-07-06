@@ -34,4 +34,8 @@ public sealed record MessageDto(
     string?   ReplyToSenderName,
     string?   ReplyToContent,
     Guid?     ForwardedFromUserId,
-    string?   ForwardedFromUserName);
+    string?   ForwardedFromUserName,
+    string    Kind,
+    string?   SystemEventType,
+    Guid?     TargetUserId,
+    string?   TargetUserName);

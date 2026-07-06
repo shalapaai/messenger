@@ -33,18 +33,21 @@ public sealed class MessageSentEventHandler(
         var userIds = new List<Guid> { notification.SenderId };
         if (notification.ForwardedFromUserId is { } fwId) userIds.Add(fwId);
         if (replyTo is { } rt) userIds.Add(rt.SenderId);
+        if (notification.TargetUserId is { } targetId) userIds.Add(targetId);
 
         var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(userIds.Distinct().ToList(), ct);
 
         UserSummaryDto? sender = null;
         UserSummaryDto? forwardedFromUser = null;
         UserSummaryDto? replyToSender = null;
+        UserSummaryDto? targetUser = null;
         if (summariesResult.IsSuccess)
         {
             var summaries = summariesResult.Value!;
             summaries.TryGetValue(notification.SenderId, out sender);
             if (notification.ForwardedFromUserId is { } id) summaries.TryGetValue(id, out forwardedFromUser);
             if (replyTo is { } rt2) summaries.TryGetValue(rt2.SenderId, out replyToSender);
+            if (notification.TargetUserId is { } tid) summaries.TryGetValue(tid, out targetUser);
         }
 
         var payload = new
@@ -71,7 +74,11 @@ public sealed class MessageSentEventHandler(
             forwardedFromUserName = forwardedFromUser?.DisplayName,
             replyToMessageId   = notification.ReplyToMessageId,
             replyToSenderName  = replyToSender?.DisplayName,
-            replyToContent     = replyTo is null ? null : (replyTo.IsDeleted ? null : MessagePreview.Truncate(replyTo.Content))
+            replyToContent     = replyTo is null ? null : (replyTo.IsDeleted ? null : MessagePreview.Truncate(replyTo.Content)),
+            kind               = notification.Kind.ToString(),
+            systemEventType    = notification.SystemEventType?.ToString(),
+            targetUserId       = notification.TargetUserId,
+            targetUserName     = targetUser?.DisplayName,
         };
 
         // Рассылаем в группу чата всем подписанным участникам

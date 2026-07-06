@@ -46,7 +46,7 @@ internal sealed class MessagesModuleApi(
                 return new LastMessageDto(
                     m.Id.Value, m.SenderId, m.Content, m.SentAt,
                     m.Attachments.Count > 0, firstAttachment?.FileUrl, firstAttachment?.ContentType,
-                    firstAttachment?.FileName);
+                    firstAttachment?.FileName, m.Kind.ToString());
             });
 
         return Result.Success(dict);
@@ -106,5 +106,14 @@ internal sealed class MessagesModuleApi(
         var result = chatIds.ToDictionary(id => id, id => countsByChat.GetValueOrDefault(id));
 
         return Result.Success(result);
+    }
+
+    public async Task<Result<Guid>> CreateSystemMessageAsync(
+        Guid chatId, Guid actorUserId, Guid targetUserId, SystemEventType eventType, CancellationToken ct = default)
+    {
+        var message = Message.CreateSystem(chatId, actorUserId, targetUserId, eventType);
+        messageRepository.Add(message);
+        await dbContext.SaveChangesAsync(ct);
+        return Result.Success(message.Id.Value);
     }
 }

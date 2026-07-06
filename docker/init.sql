@@ -147,6 +147,13 @@ CREATE TABLE IF NOT EXISTS messages.message (
     reply_to_message_id       UUID          DEFAULT NULL,
     forwarded_from_message_id UUID          DEFAULT NULL,
     forwarded_from_user_id    UUID          DEFAULT NULL,
+    -- 'Text' | 'System' — системные сообщения о смене состава группы (добавили/вышел/удалили).
+    message_type              VARCHAR(10)   NOT NULL DEFAULT 'Text',
+    -- Заполнено только для message_type = 'System': 'MemberAdded' | 'MemberLeft' | 'MemberRemoved'.
+    system_event_type         VARCHAR(20)   DEFAULT NULL,
+    -- Заполнено только для message_type = 'System' — кого добавили/удалили/кто вышел
+    -- (sender_id при этом — кто выполнил действие: сам ушедший для MemberLeft, админ для остальных).
+    target_user_id            UUID          DEFAULT NULL,
 
     CONSTRAINT uq_message_sequence UNIQUE (sequence),
 
@@ -165,7 +172,10 @@ CREATE TABLE IF NOT EXISTS messages.message (
         FOREIGN KEY (forwarded_from_message_id) REFERENCES messages.message (id) ON DELETE SET NULL,
 
     CONSTRAINT fk_message_forwarded_from_user_id
-        FOREIGN KEY (forwarded_from_user_id) REFERENCES auth.user (id) ON DELETE SET NULL
+        FOREIGN KEY (forwarded_from_user_id) REFERENCES auth.user (id) ON DELETE SET NULL,
+
+    CONSTRAINT fk_message_target_user_id
+        FOREIGN KEY (target_user_id) REFERENCES auth.user (id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS ix_message_chat_id_sent_at

@@ -84,9 +84,10 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
 
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
     // обычную отправку своего сообщения уже показал optimistic-UI в send() — этот echo игнорируем.
-    // Пересылка — исключение: у неё нет локального оптимистичного добавления, поэтому свою же
-    // пересланную копию нужно показать по этому же realtime-событию
-    if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId) return
+    // Пересылка и системные сообщения — исключение: у них нет локального оптимистичного
+    // добавления (в т.ч. когда именно я — тот, кто добавил/удалил участника), поэтому их
+    // нужно показать по этому же realtime-событию, даже если senderId === я
+    if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId && msg.kind !== 'System') return
 
     setChatMessages(prev => {
       // если чат ещё не открывали — его историю подтянет fetchMessages при открытии
@@ -120,6 +121,10 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           replyToMessageId:   msg.replyToMessageId ?? undefined,
           replyToSenderName:  msg.replyToSenderName ?? undefined,
           replyToContent:     msg.replyToContent,
+          kind:            msg.kind,
+          systemEventType: msg.systemEventType ?? undefined,
+          targetUserId:    msg.targetUserId ?? undefined,
+          targetUserName:  msg.targetUserName ?? undefined,
         }],
       }
     })

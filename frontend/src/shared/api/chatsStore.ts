@@ -5,6 +5,7 @@ import { fetchChats } from './chatsApi'
 import { useOnlineStore } from './onlineStore'
 import { getMyUserId } from '../lib/auth/authTokens'
 import { formatChatListTime } from '../lib/formatDateTime'
+import i18n from '../i18n'
 
 export type { Chat }
 
@@ -92,11 +93,12 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     set((state) => {
       const time = formatChatListTime(msg.sentAt)
       const firstAttachment = msg.attachments?.[0]
+      const preview = msg.kind === 'System' ? i18n.t('messenger.systemPreviewGeneric') : msg.content
       const chats = state.chats.map(chat =>
         chat.id === msg.chatId
           ? {
               ...chat,
-              preview: msg.content,
+              preview,
               previewAttachmentUrl: firstAttachment?.fileUrl,
               previewAttachmentContentType: firstAttachment?.fileContentType,
               previewAttachmentFileName: firstAttachment?.fileName,

@@ -35,6 +35,7 @@ public sealed class GetMessagesQueryHandler(
         var userIds = items
             .SelectMany(m => m.ForwardedFromUserId is { } fwId ? new[] { m.SenderId, fwId } : [m.SenderId])
             .Concat(replySources.Select(m => m.SenderId))
+            .Concat(items.Where(m => m.TargetUserId.HasValue).Select(m => m.TargetUserId!.Value))
             .Distinct()
             .ToList();
         var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(userIds, ct);
@@ -59,6 +60,10 @@ public sealed class GetMessagesQueryHandler(
                     replyToContent    = replySrc.Status == MessageStatus.Deleted ? null : MessagePreview.Truncate(replySrc.Content);
                 }
 
+                string? targetUserName = null;
+                if (m.TargetUserId is { } targetId && summaries.TryGetValue(targetId, out var targetSummary))
+                    targetUserName = targetSummary.DisplayName;
+
                 return new MessageDto(
                     m.Id.Value,
                     m.ChatId,
@@ -78,7 +83,11 @@ public sealed class GetMessagesQueryHandler(
                     replyToSenderName,
                     replyToContent,
                     m.ForwardedFromUserId,
-                    forwardedFromUser?.DisplayName);
+                    forwardedFromUser?.DisplayName,
+                    m.Kind.ToString(),
+                    m.SystemEventType?.ToString(),
+                    m.TargetUserId,
+                    targetUserName);
             })
             .ToList();
 

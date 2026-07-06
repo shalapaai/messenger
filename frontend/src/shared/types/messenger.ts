@@ -75,6 +75,13 @@ export interface Message {
   replyToSenderName?: string
   /** null, если оригинал удалён/недоступен — тогда показываем плейсхолдер вместо цитаты */
   replyToContent?: string | null
+  /** 'System' — сообщение о смене состава группы (добавили/вышел/удалили), рендерится
+   *  центрированной "таблеткой" вместо обычного бабла (см. MessageList.buildRenderedItems) */
+  kind?: 'Text' | 'System'
+  systemEventType?: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved'
+  /** только для kind: 'System' — кого добавили/удалили/кто вышел */
+  targetUserId?: string
+  targetUserName?: string
 }
 
 export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'sentAt'>
