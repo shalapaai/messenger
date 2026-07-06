@@ -32,14 +32,17 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
             ? dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
                             p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))
-            // "%{q}%@%" — совпадение засчитывается только если q встречается ДО "@", то есть
-            // в локальной части адреса (vlad@gmail.com → "vlad"). Без этого "%{q}%" матчил бы
-            // и по домену (gmail.com/mail.ru и т.п.), и короткий запрос вроде одной буквы
-            // совпадал бы почти со всеми пользователями конкретного почтового провайдера,
-            // никак не отражая реальное намерение найти конкретного человека.
+            // Если сам запрос уже содержит "@" (пользователь ввёл полный или частичный
+            // email вида "name@domain") — сравниваем как обычную подстроку по всему email,
+            // здесь ограничивать поиск локальной частью бессмысленно и даже вредно: паттерн
+            // "%q%@%" требовал бы ВТОРОГО "@" после найденного текста, которого в адресе
+            // с одним "@" просто не бывает — full email вообще переставал находиться.
+            // Если "@" в запросе нет — матчим только внутри локальной части (vlad@gmail.com →
+            // "vlad"), иначе даже одна буква совпадала бы почти со всеми у одного провайдера
+            // (gmail.com/mail.ru и т.п.), никак не отражая намерение найти конкретного человека.
             : dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
-                            (EF.Functions.ILike(p.Email, $"%{q}%@%") ||
+                            (EF.Functions.ILike(p.Email, q.Contains('@') ? $"%{q}%" : $"%{q}%@%") ||
                              EF.Functions.ILike(p.DisplayName, $"%{q}%") ||
                              (p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))));
 
