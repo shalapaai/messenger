@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { Message } from '../../../shared/types/messenger'
 
 /**
@@ -30,9 +30,19 @@ export function useScrollRestore(messages: Message[]) {
 
   const triggerRestore = useCallback(() => setRestoreSignal(s => s + 1), [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (bottomSignal === 0) return
-    bottomRef.current?.scrollIntoView({ behavior: bottomSmooth.current ? 'smooth' : 'instant' })
+    const el = messagesRef.current
+
+    if (!el) {
+      bottomRef.current?.scrollIntoView({ behavior: bottomSmooth.current ? 'smooth' : 'auto' })
+      return
+    }
+
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: bottomSmooth.current ? 'smooth' : 'auto',
+    })
   }, [messages, bottomSignal])
 
   useLayoutEffect(() => {
