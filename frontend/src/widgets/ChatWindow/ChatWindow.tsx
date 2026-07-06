@@ -24,6 +24,10 @@ import s from './ChatWindow.module.css'
 // должно совпадать с лимитом на бэкенде (Message.Create / Message.Edit) — проверяем длину
 // на клиенте до отправки, чтобы слишком длинное сообщение не превращалось молча в "не отправлено"
 const MESSAGE_MAX_LENGTH = 4096
+// чисто клиентское ограничение (бэкенд строки не считает) — без него вставка текста из
+// сотен коротких строк даёт вполне укладывающееся в лимит по символам, но нечитаемо длинное
+// сообщение на весь экран
+const MESSAGE_MAX_LINES = 30
 
 interface ChatWindowProps {
   chatId: string
@@ -83,7 +87,20 @@ export function ChatWindow({
   const mobileInput = useMobileInputLayer()
 
   const hasMessages = messages.length > 0
-  const isOverLimit = text.length > MESSAGE_MAX_LENGTH
+  const lineCount = text.split('\n').length
+  const isOverLength = text.length > MESSAGE_MAX_LENGTH
+  const isOverLines  = lineCount > MESSAGE_MAX_LINES
+  const isOverLimit  = isOverLength || isOverLines
+
+  // Растягиваем textarea под содержимое (многострочный ввод, Shift+Enter — перенос строки)
+  // до max-height из CSS, дальше — обычный внутренний скролл. useLayoutEffect, а не useEffect,
+  // чтобы пересчитать высоту синхронно до отрисовки кадра и не мигать старым размером.
+  useLayoutEffect(() => {
+    const el = mobileInput.textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [text, mobileInput.textareaRef])
 
   useEffect(() => {
     if (shouldAutoFocus) mobileInput.textareaRef.current?.focus()
@@ -230,11 +247,16 @@ export function ChatWindow({
   async function send() {
     const trimmed = text.trim()
 
-    // Проверяем лимит ДО отправки — иначе сообщение уходит на сервер, откуда возвращается
-    // отказом, и превращается в "не отправлено" вместо понятного предупреждения. Кнопка отправки
-    // уже задизейблена в этом случае, так что сюда попасть можно только напрямую через Enter.
+    // Проверяем лимиты ДО отправки — иначе сообщение уходит на сервер, откуда возвращается
+    // отказом (или в случае строк — просто отправляется, раз бэкенд их не считает), вместо
+    // понятного предупреждения. Кнопка отправки уже задизейблена в этом случае, так что сюда
+    // попасть можно только напрямую через Enter.
     if (trimmed.length > MESSAGE_MAX_LENGTH) {
       showError(t('messenger.messageTooLong', { max: MESSAGE_MAX_LENGTH }))
+      return
+    }
+    if (trimmed.split('\n').length > MESSAGE_MAX_LINES) {
+      showError(t('messenger.messageTooManyLines', { max: MESSAGE_MAX_LINES }))
       return
     }
 
@@ -455,7 +477,9 @@ export function ChatWindow({
 
         {isOverLimit && (
           <div className={s.lengthWarningBar}>
-            {t('messenger.messageTooLongInline', { length: text.length, max: MESSAGE_MAX_LENGTH })}
+            {isOverLength
+              ? t('messenger.messageTooLongInline', { length: text.length, max: MESSAGE_MAX_LENGTH })
+              : t('messenger.messageTooManyLinesInline', { length: lineCount, max: MESSAGE_MAX_LINES })}
           </div>
         )}
 

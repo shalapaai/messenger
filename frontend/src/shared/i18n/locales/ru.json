@@ -172,6 +172,8 @@
     "sendFailed": "Не удалось отправить сообщение. Попробуйте ещё раз.",
     "messageTooLong": "Сообщение слишком длинное. Максимум {{max}} символов.",
     "messageTooLongInline": "Сообщение слишком длинное: {{length}} / {{max}}",
+    "messageTooManyLines": "Слишком много строк. Максимум {{max}}.",
+    "messageTooManyLinesInline": "Слишком много строк: {{length}} / {{max}}",
     "attachFile": "Прикрепить файл",
     "downloadFile": "Скачать файл",
     "dropFilesTitle": "Перетащите файлы сюда",

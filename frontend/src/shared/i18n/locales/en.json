@@ -168,6 +168,8 @@
     "sendFailed": "Could not send the message. Please try again.",
     "messageTooLong": "Message is too long. Maximum {{max}} characters.",
     "messageTooLongInline": "Message is too long: {{length}} / {{max}}",
+    "messageTooManyLines": "Too many lines. Maximum {{max}}.",
+    "messageTooManyLinesInline": "Too many lines: {{length}} / {{max}}",
     "attachFile": "Attach file",
     "downloadFile": "Download file",
     "dropFilesTitle": "Drop files here",
