@@ -14,7 +14,7 @@ import { MessagesSkeleton } from './MessagesSkeleton'
 import { MessageList } from './MessageList'
 import { FilePreviewBar } from './FilePreviewBar'
 import { ContextMenu, type ContextMenuState } from './ContextMenu'
-import { ForwardIcon, TrashIcon } from './icons'
+import { AttachIcon, ForwardIcon, TrashIcon } from './icons'
 import { useAttachmentQueue } from './hooks/useAttachmentQueue'
 import { useMobileInputLayer } from './hooks/useMobileInputLayer'
 import { useToastStore } from '../../shared/api/toastStore'
@@ -507,7 +507,7 @@ export function ChatWindow({
             aria-label={t('messenger.attachFile')}
             title={t('messenger.attachFile')}
           >
-            📎
+            <AttachIcon />
           </button>
           <div className={s.messageInputShell}>
             <button

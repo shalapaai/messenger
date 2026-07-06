@@ -343,7 +343,7 @@
 .lightboxDownload:disabled { opacity: 0.5; cursor: default; }
 
 .msgTime { display: block; font-size: 11px; font-weight: 600; color: var(--color-text-faint); margin-top: 3px; padding-left: 46px; }
-.msgEdited { margin-right: 4px; font-style: italic; }
+.msgEdited { margin-left: 4px; font-style: italic; }
 
 /* ── Input bar ────────────────────────────────────────────────────────────── */
 .inputArea {
@@ -498,7 +498,7 @@
 .bubblePending { opacity: 0.6; }
 .bubbleFailed  { background: #fee2e2 !important; color: #141b2e !important; border: 1px solid #fca5a5 !important; }
 
-.msgStatusIcon { margin-right: 3px; font-size: 10px; }
+.msgStatusIcon { margin-left: 3px; font-size: 10px; }
 .msgStatusPending { color: #a6aebf; animation: statusPulse 1.2s ease-in-out infinite; }
 .msgStatusSent    { color: #22b07d; }
 .msgStatusRead    { color: #4fa9f7; letter-spacing: -2px; }
