@@ -16,7 +16,6 @@ public sealed class MessengerHub(
     IChatsModule            chatsModule,
     IChatMembershipChecker  membershipChecker,
     IPresenceTracker        presence,
-    IConnectionTracker      connectionTracker,
     ILogger<MessengerHub>   logger) : Hub
 {
     // ── Подписка на чат ───────────────────────────────────────────────────────
@@ -79,9 +78,8 @@ public sealed class MessengerHub(
     {
         var userId = Context.UserIdentifier!;
         await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
-        await connectionTracker.AddConnectionAsync(Guid.Parse(userId), Context.ConnectionId);
 
-        var connectionCount = await presence.ConnectAsync(Guid.Parse(userId));
+        var connectionCount = await presence.ConnectAsync(Guid.Parse(userId), Context.ConnectionId);
 
         logger.LogInformation("User {UserId} connected", userId);
         await base.OnConnectedAsync();
@@ -95,18 +93,16 @@ public sealed class MessengerHub(
         var userId = Context.UserIdentifier!;
         long connectionCount;
 
-        // presence.DisconnectAsync и connectionTracker.RemoveConnectionAsync должны выполниться,
-        // даже если удаление из группы упадёт (например, кратковременный сбой связи с
-        // Redis-backplane) — иначе счётчик онлайн-соединений и набор connectionId этого
-        // пользователя навсегда останутся в неверном состоянии.
+        // presence.DisconnectAsync должен выполниться, даже если удаление из группы упадёт
+        // (например, кратковременный сбой связи с Redis-backplane) — иначе счётчик
+        // онлайн-соединений этого пользователя навсегда останется в неверном состоянии.
         try
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
         }
         finally
         {
-            await connectionTracker.RemoveConnectionAsync(Guid.Parse(userId), Context.ConnectionId);
-            connectionCount = await presence.DisconnectAsync(Guid.Parse(userId));
+            connectionCount = await presence.DisconnectAsync(Guid.Parse(userId), Context.ConnectionId);
         }
 
         if (exception is not null)

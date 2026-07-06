@@ -81,15 +81,7 @@ public sealed class MessageSentEventHandler(
 
         // Дополнительно рассылаем в личные группы участников-не-отправителей —
         // нужно для случая, когда чат только что создан и получатель ещё не в группе
-        var membersResult = await membersTask;
-        if (membersResult.IsSuccess)
-        {
-            var tasks = membersResult.Value!
-                .Where(uid => uid != notification.SenderId)
-                .Select(uid => hubContext.Clients
-                    .Group(MessengerHub.UserGroup(uid.ToString()))
-                    .SendAsync("ReceiveMessage", payload, ct));
-            await Task.WhenAll(tasks);
-        }
+        await ChatFallback.BroadcastToMembersAsync(
+            hubContext, membersTask, "ReceiveMessage", payload, ct, notification.SenderId);
     }
 }

@@ -5,7 +5,6 @@ using Messenger.Modules.Files.Application.Abstractions;
 using Messenger.Modules.Files.Application.Contracts;
 using Messenger.Modules.Files.Domain;
 using Messenger.Shared.Kernel.Results;
-using Microsoft.EntityFrameworkCore;
 
 internal sealed class FilesModuleApi(
     IFileStorage    fileStorage,
@@ -39,11 +38,6 @@ internal sealed class FilesModuleApi(
         // видео
         "video/mp4", "video/webm", "video/quicktime",
     };
-
-    private static readonly HashSet<string> AllowedAvatarMimeTypes =
-        new(StringComparer.OrdinalIgnoreCase) { "image/jpeg", "image/png", "image/webp", "image/gif" };
-
-    private const long MaxAvatarSizeBytes = 5 * 1024 * 1024; // 5 MB
 
     public async Task<Result<UploadedAttachmentInfo>> UploadChatAttachmentAsync(
         Stream content, string fileName, string contentType,
@@ -87,11 +81,11 @@ internal sealed class FilesModuleApi(
         Stream content, string fileName, string contentType,
         long fileSizeBytes, Guid uploadedBy, Guid chatId, CancellationToken ct = default)
     {
-        if (!AllowedAvatarMimeTypes.Contains(contentType))
+        if (!AvatarReplace.AllowedMimeTypes.Contains(contentType))
             return Result.Failure<string>(
                 Error.Validation("ContentType", "Avatar must be JPEG, PNG, WebP or GIF"));
 
-        if (fileSizeBytes > MaxAvatarSizeBytes)
+        if (fileSizeBytes > AvatarReplace.MaxSizeBytes)
             return Result.Failure<string>(
                 Error.Validation("FileSize", "Avatar cannot exceed 5 MB"));
 
@@ -110,31 +104,8 @@ internal sealed class FilesModuleApi(
             uploadedBy, uploadResult.FileKey, fileName,
             contentType, uploadResult.SizeBytes, FileCategory.GroupAvatar, chatId);
 
-        fileRepository.Add(record);
-
-        try
-        {
-            if (existing is not null)
-            {
-                // Физическое удаление старого файла — только после коммита в БД, иначе
-                // упавший SaveChangesAsync оставил бы в БД ссылку на уже стёртый файл.
-                fileRepository.Remove(existing);
-                await unitOfWork.SaveChangesAsync(ct);
-                await fileStorage.DeleteAsync(existing.FileKey, ct);
-            }
-            else
-            {
-                await unitOfWork.SaveChangesAsync(ct);
-            }
-        }
-        catch (DbUpdateException)
-        {
-            // TOCTOU: два одновременных аплоада аватарки одной группы — см. аналогичный
-            // комментарий в UploadAvatarCommandHandler (ux_file_upload_group_avatar_per_chat).
-            await fileStorage.DeleteAsync(uploadResult.FileKey, ct);
-            return Result.Failure<string>(Error.Conflict("GroupAvatar"));
-        }
-
-        return Result.Success(uploadResult.PublicUrl);
+        return await AvatarReplace.CommitAsync(
+            fileStorage, fileRepository, unitOfWork,
+            existing, record, uploadResult.FileKey, uploadResult.PublicUrl, "GroupAvatar", ct);
     }
 }

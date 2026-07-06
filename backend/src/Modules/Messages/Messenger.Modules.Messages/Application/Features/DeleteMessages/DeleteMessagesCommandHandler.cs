@@ -4,7 +4,6 @@ using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Membership;
 using Messenger.Shared.Kernel.Results;
-using Microsoft.EntityFrameworkCore;
 
 public sealed class DeleteMessagesCommandHandler(
     IMessageRepository      messageRepository,
@@ -36,16 +35,7 @@ public sealed class DeleteMessagesCommandHandler(
         if (deleted.Count == 0)
             return Result.Failure<List<Guid>>(Error.NotFound("Message"));
 
-        try
-        {
-            await unitOfWork.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            // Один из выбранных для удаления сообщений успели параллельно изменить/удалить.
-            return Result.Failure<List<Guid>>(Error.Conflict("Message"));
-        }
-
-        return Result.Success(deleted);
+        var saveResult = await ConcurrencySafe.SaveChangesAsync(unitOfWork, "Message", ct);
+        return saveResult.IsFailure ? Result.Failure<List<Guid>>(saveResult.Error) : Result.Success(deleted);
     }
 }

@@ -22,8 +22,11 @@ function PreviewThumbnail({ src, alt }: { src: string; alt: string }) {
 
 function ChatPreview({ chat }: { chat: Chat }) {
   const { t } = useTranslation()
+  // Пустой preview + есть URL/имя вложения → последнее сообщение это вложение без подписи
+  // (например, фото без подписи) — иначе выглядело бы как "нет сообщений".
+  const isAttachmentPreview = !chat.preview && !!(chat.previewAttachmentUrl || chat.previewAttachmentFileName)
 
-  if (chat.previewIsAttachment) {
+  if (isAttachmentPreview) {
     const isPhoto = isImageContentType(chat.previewAttachmentContentType)
     return (
       <>

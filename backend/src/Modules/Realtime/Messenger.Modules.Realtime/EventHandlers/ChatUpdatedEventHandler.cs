@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.SignalR;
 public sealed class ChatUpdatedEventHandler(
     IHubContext<MessengerHub> hubContext,
     IChatMembershipChecker    membershipChecker,
-    IConnectionTracker        connectionTracker)
+    IPresenceTracker          presence)
     : INotificationHandler<ChatUpdatedDomainEvent>
 {
     public async Task Handle(ChatUpdatedDomainEvent notification, CancellationToken ct)
@@ -46,7 +46,7 @@ public sealed class ChatUpdatedEventHandler(
             if (await membershipChecker.IsMemberAsync(chatId, userId, ct))
                 continue;
 
-            var connections = await connectionTracker.GetConnectionsAsync(userId, ct);
+            var connections = await presence.GetConnectionsAsync(userId, ct);
             foreach (var connectionId in connections)
                 await hubContext.Groups.RemoveFromGroupAsync(connectionId, group, ct);
         }

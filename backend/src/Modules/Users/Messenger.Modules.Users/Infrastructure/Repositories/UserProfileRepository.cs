@@ -28,10 +28,16 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
     {
         var isLoginSearch = query.StartsWith('@');
         var q = query.ToLowerInvariant().TrimStart('@');
-        var baseQuery = isLoginSearch
-            ? dbContext.UserProfiles
+
+        IQueryable<UserProfile> baseQuery;
+        if (isLoginSearch)
+        {
+            baseQuery = dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
-                            p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))
+                            p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"));
+        }
+        else
+        {
             // Если сам запрос уже содержит "@" (пользователь ввёл полный или частичный
             // email вида "name@domain") — сравниваем как обычную подстроку по всему email,
             // здесь ограничивать поиск локальной частью бессмысленно и даже вредно: паттерн
@@ -40,11 +46,13 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
             // Если "@" в запросе нет — матчим только внутри локальной части (vlad@gmail.com →
             // "vlad"), иначе даже одна буква совпадала бы почти со всеми у одного провайдера
             // (gmail.com/mail.ru и т.п.), никак не отражая намерение найти конкретного человека.
-            : dbContext.UserProfiles
+            var emailPattern = q.Contains('@') ? $"%{q}%" : $"%{q}%@%";
+            baseQuery = dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
-                            (EF.Functions.ILike(p.Email, q.Contains('@') ? $"%{q}%" : $"%{q}%@%") ||
+                            (EF.Functions.ILike(p.Email, emailPattern) ||
                              EF.Functions.ILike(p.DisplayName, $"%{q}%") ||
                              (p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))));
+        }
 
         var total = await baseQuery.CountAsync(ct);
         var items = await baseQuery

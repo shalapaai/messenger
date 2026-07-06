@@ -7,26 +7,25 @@ public sealed class RedisPresenceTracker(IConnectionMultiplexer redis) : IPresen
     private static string Key(Guid userId) => $"presence:{userId}";
 
     // Защитный TTL на случай падения/передеплоя инстанса, когда OnDisconnectedAsync для
-    // "зависших" соединений так и не выполнится, а декремент никогда не произойдёт —
-    // без TTL счётчик остался бы в Redis навсегда. Обновляется при каждом новом
-    // подключении, так что для активных пользователей практического значения не имеет.
+    // "зависших" соединений так и не выполнится — без TTL множество осталось бы в Redis
+    // навсегда. Обновляется при каждом новом подключении, для активных пользователей
+    // практического значения не имеет.
     private static readonly TimeSpan StaleConnectionTtl = TimeSpan.FromHours(24);
 
-    public async Task<long> ConnectAsync(Guid userId, CancellationToken ct = default)
+    public async Task<long> ConnectAsync(Guid userId, string connectionId, CancellationToken ct = default)
     {
         var db = redis.GetDatabase();
-        var count = await db.StringIncrementAsync(Key(userId));
+        await db.SetAddAsync(Key(userId), connectionId);
         await db.KeyExpireAsync(Key(userId), StaleConnectionTtl);
-        return count;
+        return await db.SetLengthAsync(Key(userId));
     }
 
-    public async Task<long> DisconnectAsync(Guid userId, CancellationToken ct = default)
+    public async Task<long> DisconnectAsync(Guid userId, string connectionId, CancellationToken ct = default)
     {
         var db = redis.GetDatabase();
-        var count = await db.StringDecrementAsync(Key(userId));
-        if (count <= 0)
-            await db.KeyDeleteAsync(Key(userId));
-        return count;
+        await db.SetRemoveAsync(Key(userId), connectionId);
+        // SREM пустого-в-итоге множества сам удаляет ключ в Redis — отдельный KeyDeleteAsync не нужен.
+        return await db.SetLengthAsync(Key(userId));
     }
 
     public async Task<HashSet<Guid>> GetOnlineAsync(IReadOnlyList<Guid> userIds, CancellationToken ct = default)
@@ -36,10 +35,17 @@ public sealed class RedisPresenceTracker(IConnectionMultiplexer redis) : IPresen
 
         var db = redis.GetDatabase();
         var batch = db.CreateBatch();
-        var tasks = userIds.ToDictionary(id => id, id => batch.KeyExistsAsync(Key(id)));
+        var tasks = userIds.ToDictionary(id => id, id => batch.SetLengthAsync(Key(id)));
         batch.Execute();
         await Task.WhenAll(tasks.Values);
 
-        return tasks.Where(kv => kv.Value.Result).Select(kv => kv.Key).ToHashSet();
+        return tasks.Where(kv => kv.Value.Result > 0).Select(kv => kv.Key).ToHashSet();
+    }
+
+    public async Task<IReadOnlyList<string>> GetConnectionsAsync(Guid userId, CancellationToken ct = default)
+    {
+        var db = redis.GetDatabase();
+        var members = await db.SetMembersAsync(Key(userId));
+        return members.Select(m => (string)m!).ToList();
     }
 }

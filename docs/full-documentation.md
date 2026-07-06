@@ -625,7 +625,7 @@ SignalR использует группы для адресной рассылк
 - `chat:{chatId}` — все подключённые участники конкретного чата, вступившие через `JoinChat`
 - `user:{userId}` — личная группа только своих подключений (вкладок/устройств) пользователя. В основном используется как счётчик подключений для presence (см. ниже), но `MessageSentEventHandler`, `MessageEditedEventHandler`, `MessageDeletedEventHandler` и `ChatReadEventHandler` **дополнительно** шлют туда же своё событие (`ReceiveMessage`/`MessageEdited`/`MessageDeleted`/`MessagesRead`) всем участникам чата — на случай если чат только что создан и получатель ещё не успел вступить в `chat:{chatId}` через `JoinChat` (общая логика вынесена в `ChatFallback.BroadcastToMembersAsync`)
 
-**Принудительный выход из группы при исключении.** Когда участника удаляют из группового чата (`RemoveChatMember`) или он выходит сам, `ChatUpdatedEventHandler` проверяет через `IChatMembershipChecker`, кто из затронутых пользователей больше не состоит в чате, и принудительно выводит их **живые** SignalR-соединения из группы `chat:{chatId}` (`Groups.RemoveFromGroupAsync`). Для этого `IConnectionTracker` (Shared.Kernel, Redis-реализация) хранит обратное отображение userId → набор connectionId, обновляемое в `OnConnectedAsync`/`OnDisconnectedAsync`. Без этого исключённый участник продолжал бы получать `ReceiveMessage`/`MessageEdited`/... для чата, из которого его только что удалили, пока сам не переподключится.
+**Принудительный выход из группы при исключении.** Когда участника удаляют из группового чата (`RemoveChatMember`) или он выходит сам, `ChatUpdatedEventHandler` проверяет через `IChatMembershipChecker`, кто из затронутых пользователей больше не состоит в чате, и принудительно выводит их **живые** SignalR-соединения из группы `chat:{chatId}` (`Groups.RemoveFromGroupAsync`). Для этого `IPresenceTracker.GetConnectionsAsync` (Shared.Kernel, Redis-реализация — набор connectionId пользователя, обновляемый в `OnConnectedAsync`/`OnDisconnectedAsync`) отдаёт все текущие connectionId пользователя. Без этого исключённый участник продолжал бы получать `ReceiveMessage`/`MessageEdited`/... для чата, из которого его только что удалили, пока сам не переподключится.
 
 > **Важно — двойная доставка.** `ConnectedLayout` на фронтенде вступает в SignalR-группы **всех** чатов пользователя сразу при подключении (см. ниже). Значит для уже существующих (не только что созданных) чатов получатель почти всегда состоит **и** в `chat:{chatId}`, **и** в своей `user:{userId}` — и получает одно и то же `ReceiveMessage` **дважды**: один раз через рассылку в группу чата, второй раз через персональную рассылку. Серверная логика это не фильтрует (не отслеживает, кто в какой SignalR-группе уже состоит — это недёшево сделать надёжно). Решение — дедупликация на клиенте по `messageId`: и `useChatMessages.ts → handleIncomingMessage`, и `chatsStore.ts → handleNewMessage` перед добавлением сообщения проверяют, не обработали ли уже такой `messageId` (в сторе чатов — сравнением с `chat.lastMessageId`), и тихо игнорируют повтор. Без этой проверки в каждом чате задваивались бы все входящие сообщения.
 
@@ -636,20 +636,20 @@ SignalR использует группы для адресной рассылк
 ```
 OnConnected:
   → пользователь добавляется в группу user:{userId} (только свои подключения)
-  → IPresenceTracker.ConnectAsync(userId) — инкремент счётчика в Redis
+  → IPresenceTracker.ConnectAsync(userId, connectionId) — добавляет connectionId в Redis SET
   → если счётчик стал 1 (было 0 подключений) — BroadcastOnlineStatus(true):
       запросить у IChatsModule все chatId пользователя →
       разослать UserOnline(isOnline: true) в группы chat:{id} каждого из них
 
 OnDisconnected:
   → пользователь удаляется из группы user:{userId}
-  → IPresenceTracker.DisconnectAsync(userId) — декремент счётчика
+  → IPresenceTracker.DisconnectAsync(userId, connectionId) — убирает connectionId из SET
   → если счётчик дошёл до 0 — BroadcastOnlineStatus(false) аналогично выше
 ```
 
 **Важно — это поведение исправлено в этой версии.** Раньше `UserOnline` рассылался в группу `user:{userId}`, в которую кроме самого пользователя никто не входит — событие физически не могло дойти до собеседников. Текущая версия рассылает в группы ЧАТОВ пользователя, куда его собеседники уже вступили через `JoinChat`.
 
-**Отказоустойчивость счётчика.** `RedisPresenceTracker` ставит защитный TTL (24 часа) на ключ счётчика при каждом подключении — если инстанс упадёт/передеплоится и `OnDisconnectedAsync` для зависших соединений так и не выполнится, счётчик не останется в Redis навсегда, а самоисцелится по истечении TTL. Дополнительно `OnDisconnectedAsync` оборачивает декремент счётчика и удаление connectionId из `IConnectionTracker` в `try/finally` вокруг удаления из SignalR-группы — чтобы кратковременный сбой связи с Redis-backplane не пропустил сам декремент и не завысил счётчик онлайна навсегда.
+**Отказоустойчивость счётчика.** `RedisPresenceTracker` ставит защитный TTL (24 часа) на ключ множества при каждом подключении — если инстанс упадёт/передеплоится и `OnDisconnectedAsync` для зависших соединений так и не выполнится, множество не останется в Redis навсегда, а самоисцелится по истечении TTL. Дополнительно `OnDisconnectedAsync` оборачивает удаление connectionId в `try/finally` вокруг удаления из SignalR-группы — чтобы кратковременный сбой связи с Redis-backplane не пропустил сам декремент и не завысил счётчик онлайна навсегда.
 
 Дополнительно: `GetChatsQueryHandler` (см. §6) читает текущее состояние `IPresenceTracker` напрямую при отдаче списка чатов — иначе клиент не узнал бы, что собеседник уже онлайн, до первого изменения его статуса после открытия приложения.
 
@@ -741,19 +741,16 @@ IChatMembershipChecker (Shared.Kernel, реализация — Chats):
                 Realtime (JoinChat/StartTyping/StopTyping — HubException если не участник),
                 Files (DownloadFile для ChatAttachment — 401/403)
 
-IPresenceTracker (Shared.Kernel, Redis-реализация):
-  - ConnectAsync()/DisconnectAsync()  — счётчик активных подключений пользователя
-  - GetOnlineAsync(userIds)           — текущий онлайн-статус списка пользователей
-  - Пишет: Realtime (MessengerHub.OnConnectedAsync/OnDisconnectedAsync)
-  - Читает: Chats (GetChatsQueryHandler — текущий статус собеседника при отдаче списка чатов)
-
-IConnectionTracker (Shared.Kernel, Redis-реализация):
-  - AddConnectionAsync()/RemoveConnectionAsync() — набор connectionId текущего пользователя
-  - GetConnectionsAsync(userId)       — обратное отображение userId → connectionId, нужно
+IPresenceTracker (Shared.Kernel, Redis-реализация — один Redis SET connectionId на пользователя):
+  - ConnectAsync(userId, connectionId)/DisconnectAsync(userId, connectionId) — добавляют/убирают
+    connectionId из множества, возвращают его размер (= счётчик активных подключений)
+  - GetOnlineAsync(userIds)           — текущий онлайн-статус списка пользователей (размер > 0)
+  - GetConnectionsAsync(userId)       — все текущие connectionId пользователя, нужно
                                          Groups.RemoveFromGroupAsync (принимает connectionId, не userId)
   - Пишет: Realtime (MessengerHub.OnConnectedAsync/OnDisconnectedAsync)
-  - Читает: Realtime (ChatUpdatedEventHandler — принудительный вывод исключённого участника
-             из SignalR-группы chat:{id}, см. §9)
+  - Читает: Chats (GetChatsQueryHandler — текущий статус собеседника при отдаче списка чатов),
+            Realtime (ChatUpdatedEventHandler — принудительный вывод исключённого участника
+            из SignalR-группы chat:{id}, см. §9)
 ```
 
 Без `IChatMembershipChecker` любой залогиненный пользователь, узнав GUID чужого чата, мог читать/писать в него; кикнутый из группы участник сохранял бы доступ по старому `chatId` — этот контракт закрывает именно эту дыру.

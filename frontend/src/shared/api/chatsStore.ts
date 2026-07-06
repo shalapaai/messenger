@@ -74,7 +74,6 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
           ? {
               ...chat,
               preview: msg.content,
-              previewIsAttachment: !msg.content && !!firstAttachment,
               previewAttachmentUrl: firstAttachment?.fileUrl,
               previewAttachmentContentType: firstAttachment?.fileContentType,
               previewAttachmentFileName: firstAttachment?.fileName,

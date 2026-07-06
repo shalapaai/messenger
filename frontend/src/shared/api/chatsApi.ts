@@ -90,7 +90,6 @@ export async function fetchChats(): Promise<Chat[]> {
     color:       dto.avatarColor ?? colorFromId(dto.id),
     avatarUrl:   dto.avatarUrl,
     preview:     dto.lastMessage?.content ?? '',
-    previewIsAttachment:          dto.lastMessage?.hasAttachments && !dto.lastMessage.content ? true : undefined,
     previewAttachmentUrl:         dto.lastMessage?.firstAttachmentUrl ?? undefined,
     previewAttachmentContentType: dto.lastMessage?.firstAttachmentContentType ?? undefined,
     previewAttachmentFileName:    dto.lastMessage?.firstAttachmentFileName ?? undefined,

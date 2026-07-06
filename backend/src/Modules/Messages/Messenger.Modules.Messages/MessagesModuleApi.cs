@@ -76,30 +76,34 @@ internal sealed class MessagesModuleApi(
 
         var chatIds = lastReadAtByChatId.Keys.ToList();
 
-        // Самая ранняя точка отсчёта среди всех чатов — всё, что отправлено раньше нeё,
-        // прочитано гарантированно везде, можно не тянуть из БД вовсе. Если хотя бы один
-        // чат ещё ни разу не читали (null) — нижнюю границу поставить нельзя, читаем всё.
-        DateTime? earliestSince = lastReadAtByChatId.Values.Any(v => v is null)
-            ? null
-            : lastReadAtByChatId.Values.Min();
+        // Чаты, которые ещё ни разу не читали (null), нуждаются в полной истории — для них
+        // нижнюю границу поставить нельзя. Но остальные чаты всё равно можно отсечь по
+        // самой ранней ИЗ ИЗВЕСТНЫХ точек отсчёта — не тянуть из БД заведомо прочитанное
+        // даже тогда, когда среди чатов есть один-два "непрочитанных ни разу".
+        var neverReadChatIds = lastReadAtByChatId
+            .Where(kv => kv.Value is null)
+            .Select(kv => kv.Key)
+            .ToHashSet();
+        var knownSinceValues = lastReadAtByChatId.Values.Where(v => v is not null).ToList();
+        DateTime? earliestKnownSince = knownSinceValues.Count > 0 ? knownSinceValues.Min() : null;
 
         var query = dbContext.Messages
             .Where(m => chatIds.Contains(m.ChatId) && m.SenderId != userId && m.Status != MessageStatus.Deleted);
 
-        if (earliestSince is not null)
-            query = query.Where(m => m.SentAt > earliestSince);
+        if (earliestKnownSince is not null)
+            query = query.Where(m => neverReadChatIds.Contains(m.ChatId) || m.SentAt > earliestKnownSince);
 
         var candidates = await query
             .Select(m => new { m.ChatId, m.SentAt })
             .ToListAsync(ct);
 
-        var result = chatIds.ToDictionary(
-            id => id,
-            id =>
-            {
-                var since = lastReadAtByChatId[id];
-                return candidates.Count(m => m.ChatId == id && (since is null || m.SentAt > since));
-            });
+        // Один линейный проход вместо пересчёта Count() по всему candidates для каждого чата.
+        var countsByChat = candidates
+            .Where(m => lastReadAtByChatId[m.ChatId] is not { } since || m.SentAt > since)
+            .GroupBy(m => m.ChatId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var result = chatIds.ToDictionary(id => id, id => countsByChat.GetValueOrDefault(id));
 
         return Result.Success(result);
     }
