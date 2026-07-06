@@ -93,12 +93,18 @@ export function MessageList({
         ) : item.type === 'system' ? (() => {
           const i18nKey = systemMessageKey(item.msg.systemEventType)
           if (!i18nKey) return null
+          // Если это сообщение обо мне самом — берём живое текущее имя (meSender), а не
+          // замороженное на момент доставки targetUserName: иначе переименование себя не
+          // отражалось бы в уже показанных "вышел/добавлен в группу" без перезахода в чат
+          const targetName = item.msg.targetUserId === meSender.senderId
+            ? meSender.senderName
+            : (item.msg.targetUserName ?? '')
           return (
             <div key={`system-${i}`} className={s.dateSep}>
               <span className={s.dateSepLabel}>
                 <Trans
                   i18nKey={i18nKey}
-                  values={{ name: item.msg.targetUserName ?? '' }}
+                  values={{ name: targetName }}
                   components={{
                     user: item.msg.targetUserId ? (
                       <span
@@ -106,7 +112,7 @@ export function MessageList({
                         onClick={() => onAvatarClick({
                           ...item.msg,
                           senderId:   item.msg.targetUserId!,
-                          senderName: item.msg.targetUserName ?? '',
+                          senderName: targetName,
                         })}
                       />
                     ) : <span />,
