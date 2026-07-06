@@ -1,11 +1,14 @@
+import { useTranslation } from 'react-i18next'
 import { ForgotPasswordForm } from '../../features/auth/ForgotPasswordForm'
 import { AuthLayout } from '../../widgets/AuthLayout'
 
 function ForgotPasswordPage() {
+  const { t } = useTranslation()
+
   return (
     <AuthLayout
-      title="Сброс пароля"
-      description="Введите email, и мы пришлём код для сброса пароля."
+      title={t('auth.forgotPasswordHeroTitle')}
+      description={t('auth.forgotPasswordHeroDescription')}
     >
       <ForgotPasswordForm />
     </AuthLayout>

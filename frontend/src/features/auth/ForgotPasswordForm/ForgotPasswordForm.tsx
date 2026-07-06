@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { forgotPassword, resetPassword } from '../api/authApi'
 import styles from '../LoginForm/LoginForm.module.css'
@@ -6,6 +7,7 @@ import styles from '../LoginForm/LoginForm.module.css'
 type Step = 'email' | 'code'
 
 function ForgotPasswordForm() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const [step, setStep]               = useState<Step>('email')
@@ -26,7 +28,7 @@ function ForgotPasswordForm() {
       await forgotPassword(email.trim())
       setStep('code')
     } catch {
-      setError('Не удалось отправить код. Попробуйте позже.')
+      setError(t('auth.errors.forgotPasswordFailed'))
     } finally {
       setLoading(false)
     }
@@ -43,7 +45,7 @@ function ForgotPasswordForm() {
       await resetPassword(email.trim(), code, newPassword)
       navigate('/login')
     } catch {
-      setError('Неверный или устаревший код. Попробуйте ещё раз.')
+      setError(t('auth.errors.invalidOrExpiredCode'))
     } finally {
       setLoading(false)
     }
@@ -53,14 +55,14 @@ function ForgotPasswordForm() {
     return (
       <form className={styles.form} onSubmit={handleResetSubmit} noValidate>
         <div className={styles.header}>
-          <h2 className={styles.title}>Новый пароль</h2>
+          <h2 className={styles.title}>{t('auth.resetPasswordTitle')}</h2>
           <p className={styles.subtitle}>
-            Код отправлен на <strong>{email}</strong>. Введите его и придумайте новый пароль.
+            <Trans i18nKey="auth.resetPasswordSubtitle" values={{ email }} components={{ strong: <strong /> }} />
           </p>
         </div>
 
         <label className={styles.field}>
-          <span className={styles.label}>Код из письма</span>
+          <span className={styles.label}>{t('auth.codeFromEmailLabel')}</span>
           <input
             className={styles.input}
             type="text"
@@ -75,13 +77,13 @@ function ForgotPasswordForm() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Новый пароль</span>
+          <span className={styles.label}>{t('common.password')}</span>
           <input
             className={styles.input}
             type="password"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
-            placeholder="Минимум 8 символов"
+            placeholder={t('auth.resetPasswordNewPlaceholder')}
             autoComplete="new-password"
           />
         </label>
@@ -93,7 +95,7 @@ function ForgotPasswordForm() {
           type="submit"
           disabled={loading || code.length !== 6 || newPassword.length < 8}
         >
-          {loading ? 'Сохраняем…' : 'Сохранить пароль'}
+          {loading ? t('common.saving') : t('auth.resetPasswordSave')}
         </button>
 
         <button
@@ -102,7 +104,7 @@ function ForgotPasswordForm() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           onClick={() => { setStep('email'); setCode(''); setError('') }}
         >
-          ← Вернуться
+          ← {t('common.back')}
         </button>
       </form>
     )
@@ -111,14 +113,12 @@ function ForgotPasswordForm() {
   return (
     <form className={styles.form} onSubmit={handleEmailSubmit} noValidate>
       <div className={styles.header}>
-        <h2 className={styles.title}>Забыли пароль?</h2>
-        <p className={styles.subtitle}>
-          Введите email — мы отправим код для сброса пароля.
-        </p>
+        <h2 className={styles.title}>{t('auth.forgotPassword')}</h2>
+        <p className={styles.subtitle}>{t('auth.forgotPasswordSubtitle')}</p>
       </div>
 
       <label className={styles.field}>
-        <span className={styles.label}>Email</span>
+        <span className={styles.label}>{t('common.email')}</span>
         <input
           className={styles.input}
           type="email"
@@ -133,11 +133,11 @@ function ForgotPasswordForm() {
       {error && <p className={styles.error}>{error}</p>}
 
       <button className={styles.button} type="submit" disabled={loading || !email.trim()}>
-        {loading ? 'Отправляем…' : 'Отправить код'}
+        {loading ? t('auth.forgotPasswordSending') : t('auth.forgotPasswordSubmit')}
       </button>
 
       <p className={styles.footerText}>
-        Вспомнили пароль? <a href="/login">Войти</a>
+        {t('auth.forgotPasswordFooter')} <a href="/login">{t('auth.loginFooterLink')}</a>
       </p>
     </form>
   )
