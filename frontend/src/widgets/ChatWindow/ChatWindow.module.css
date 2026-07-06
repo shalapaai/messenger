@@ -34,8 +34,8 @@
      кнопки до аватарки. У .chatHeaderTrigger padding-left и отрицательный margin-left
      компенсируют друг друга (это просто увеличенная hover-зона), так что на позицию
      аватарки они не влияют — gap тут действует "как есть". */
-  gap: 24px;
-  padding: 16px 24px;
+  gap: 16px;
+  padding: 16px 16px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;

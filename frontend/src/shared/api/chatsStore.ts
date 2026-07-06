@@ -4,6 +4,7 @@ import type { IncomingMessage } from './signalrClient'
 import { fetchChats } from './chatsApi'
 import { useOnlineStore } from './onlineStore'
 import { getMyUserId } from '../lib/auth/authTokens'
+import { formatChatListTime } from '../lib/formatDateTime'
 
 export type { Chat }
 
@@ -89,7 +90,7 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     if (target.lastMessageId === msg.messageId) return
 
     set((state) => {
-      const time = new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+      const time = formatChatListTime(msg.sentAt)
       const firstAttachment = msg.attachments?.[0]
       const chats = state.chats.map(chat =>
         chat.id === msg.chatId

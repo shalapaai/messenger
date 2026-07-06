@@ -61,9 +61,10 @@ export interface Message {
   senderColor: string
   senderAvatarUrl: string | null
   time: string
-  /** ISO-момент отправки — нужен, чтобы сверять с otherReadAt и решать, "прочитано" ли сообщение */
+  /** ISO-момент отправки — нужен, чтобы сверять с otherReadAt и решать, "прочитано" ли сообщение,
+   *  а также для метки-разделителя даты в MessageList (считается заново при каждом рендере,
+   *  чтобы обновляться при смене языка интерфейса без перезагрузки чата) */
   sentAt: string
-  date: string
   status?: 'pending' | 'sent' | 'failed'
   edited?: boolean
   /** несколько файлов, отправленных одним сообщением — пусто/undefined, если сообщение без вложений */
@@ -76,7 +77,7 @@ export interface Message {
   replyToContent?: string | null
 }
 
-export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'date' | 'sentAt'>
+export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'sentAt'>
 
 export interface ModalUser {
   userId?: string

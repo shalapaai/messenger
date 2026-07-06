@@ -4,7 +4,8 @@ import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chat
 import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
-import i18n, { getCurrentLocale } from '../../../shared/i18n'
+import i18n from '../../../shared/i18n'
+import { formatMessageTime } from '../../../shared/lib/formatDateTime'
 import { useToastStore } from '../../../shared/api/toastStore'
 
 type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
@@ -110,9 +111,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           senderInitials:  initials(msg.senderName),
           senderColor:     msg.senderAvatarColor,
           senderAvatarUrl: msg.senderAvatarUrl,
-          time:            new Date(msg.sentAt).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+          time:            formatMessageTime(msg.sentAt),
           sentAt:          msg.sentAt,
-          date:            i18n.t('common.today'),
           // свои сообщения сюда попадают только пересланными (см. guard выше) — сервер уже
           // подтвердил отправку, значит статус сразу 'sent', иначе галочка никогда бы не появилась
           status:          own ? 'sent' as const : undefined,
@@ -266,9 +266,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     const now = new Date()
     const newMsg: Message = {
       ...meSender, id: tempId, text,
-      time: now.toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+      time: formatMessageTime(now.toISOString()),
       sentAt: now.toISOString(),
-      date: i18n.t('common.today'),
       status: 'pending',
       replyToMessageId:  replyTo?.messageId,
       replyToSenderName: replyTo?.senderName,
@@ -292,15 +291,13 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     onUploadProgress?: (percent: number) => void,
   ) => {
     const result = await uploadChatMessageFiles(chatId, files, caption, onUploadProgress)
-    const sentDate = new Date(result.sentAt)
     const newMsg: Message = {
       ...meSender,
       id:          nextMessageId(),
       messageId:   result.messageId,
       text:        result.content,
-      time:        sentDate.toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' }),
+      time:        formatMessageTime(result.sentAt),
       sentAt:      result.sentAt,
-      date:        i18n.t('common.today'),
       status:      'sent',
       attachments: result.attachments.map(a => ({
         fileUrl:         a.fileUrl,

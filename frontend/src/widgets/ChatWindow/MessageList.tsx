@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { MessageAttachments } from './MessageAttachment'
 import { CheckIcon } from './icons'
+import { dateKey, formatDateLabel } from '../../shared/lib/formatDateTime'
 import type { ChatMeta, Message, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -12,10 +13,15 @@ type RenderedItem =
 
 function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[] {
   const rendered: RenderedItem[] = []
-  let lastDate = ''
+  let lastDateKey = ''
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i], prev = messages[i - 1], next = messages[i + 1]
-    if (msg.date !== lastDate) { rendered.push({ type: 'sep', label: msg.date }); lastDate = msg.date }
+    // Группируем по стабильному, не зависящему от языка ключу календарного дня (а не по
+    // готовой переведённой метке) — иначе сообщения, загруженные до и после смены языка
+    // интерфейса, оказались бы в разных группах на один и тот же день (ровно тот баг:
+    // "Сегодня" и "Today" одновременно). Саму метку считаем заново при каждом рендере.
+    const key = dateKey(msg.sentAt)
+    if (key !== lastDateKey) { rendered.push({ type: 'sep', label: formatDateLabel(msg.sentAt) }); lastDateKey = key }
     rendered.push({
       type: 'msg', msg,
       showAvatar: !next || next.senderId !== msg.senderId,

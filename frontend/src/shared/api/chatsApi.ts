@@ -1,6 +1,7 @@
 import { apiClient } from './apiClient'
 import { getMyUserId } from '../lib/auth/authTokens'
-import i18n, { getCurrentLocale } from '../i18n'
+import i18n from '../i18n'
+import { formatChatListTime, formatMessageTime } from '../lib/formatDateTime'
 import type { Chat, Message, GroupMember } from '../types/messenger'
 
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
@@ -46,31 +47,6 @@ export function initials(name: string | null): string {
   return w.length >= 2 ? (w[0][0] + w[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase()
 }
 
-function formatTime(iso: string): string {
-  const d   = new Date(iso)
-  const now = new Date()
-  const locale = getCurrentLocale()
-  if (d.toDateString() === now.toDateString())
-    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return i18n.t('common.yesterday')
-  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })
-}
-
-function formatMessageTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDate(iso: string): string {
-  const d   = new Date(iso)
-  const now = new Date()
-  const locale = getCurrentLocale()
-  if (d.toDateString() === now.toDateString()) return i18n.t('common.today')
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
-  if (d.toDateString() === yesterday.toDateString()) return i18n.t('common.yesterday')
-  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long' })
-}
-
 let _msgId = 100_000
 
 /** Единый источник локальных (клиентских) ID сообщений — и для истории, и для realtime,
@@ -93,7 +69,7 @@ export async function fetchChats(): Promise<Chat[]> {
     previewAttachmentUrl:         dto.lastMessage?.firstAttachmentUrl ?? undefined,
     previewAttachmentContentType: dto.lastMessage?.firstAttachmentContentType ?? undefined,
     previewAttachmentFileName:    dto.lastMessage?.firstAttachmentFileName ?? undefined,
-    time:        dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
+    time:        dto.lastMessage ? formatChatListTime(dto.lastMessage.sentAt) : '',
     unread:      dto.unreadCount,
     online:      dto.isOnline,
     group:       dto.type === 'group',
@@ -131,7 +107,6 @@ export async function fetchMessages(
       senderAvatarUrl: dto.senderAvatarUrl,
       time:           formatMessageTime(dto.sentAt),
       sentAt:         dto.sentAt,
-      date:           formatDate(dto.sentAt),
       attachments: dto.attachments.map(a => ({
         fileUrl:         a.fileUrl,
         fileName:        a.fileName,
