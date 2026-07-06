@@ -14,4 +14,5 @@ public sealed record ChatSummaryDto(
     LastMessageDto? LastMessage,
     Guid?           OtherUserId,
     bool            IsOnline,
-    DateTime?       OtherMemberLastReadAt);
+    DateTime?       OtherMemberLastReadAt,
+    int             UnreadCount);

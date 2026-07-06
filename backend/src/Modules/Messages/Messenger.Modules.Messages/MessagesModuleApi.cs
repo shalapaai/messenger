@@ -67,4 +67,40 @@ internal sealed class MessagesModuleApi(
 
         return Result.Success(dict);
     }
+
+    public async Task<Result<Dictionary<Guid, int>>> GetUnreadCountsByChatIdsAsync(
+        Guid userId, IReadOnlyDictionary<Guid, DateTime?> lastReadAtByChatId, CancellationToken ct = default)
+    {
+        if (lastReadAtByChatId.Count == 0)
+            return Result.Success(new Dictionary<Guid, int>());
+
+        var chatIds = lastReadAtByChatId.Keys.ToList();
+
+        // Самая ранняя точка отсчёта среди всех чатов — всё, что отправлено раньше нeё,
+        // прочитано гарантированно везде, можно не тянуть из БД вовсе. Если хотя бы один
+        // чат ещё ни разу не читали (null) — нижнюю границу поставить нельзя, читаем всё.
+        DateTime? earliestSince = lastReadAtByChatId.Values.Any(v => v is null)
+            ? null
+            : lastReadAtByChatId.Values.Min();
+
+        var query = dbContext.Messages
+            .Where(m => chatIds.Contains(m.ChatId) && m.SenderId != userId && m.Status != MessageStatus.Deleted);
+
+        if (earliestSince is not null)
+            query = query.Where(m => m.SentAt > earliestSince);
+
+        var candidates = await query
+            .Select(m => new { m.ChatId, m.SentAt })
+            .ToListAsync(ct);
+
+        var result = chatIds.ToDictionary(
+            id => id,
+            id =>
+            {
+                var since = lastReadAtByChatId[id];
+                return candidates.Count(m => m.ChatId == id && (since is null || m.SentAt > since));
+            });
+
+        return Result.Success(result);
+    }
 }
