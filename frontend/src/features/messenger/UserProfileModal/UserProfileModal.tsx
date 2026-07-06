@@ -11,9 +11,11 @@ interface UserProfileModalProps {
   user: ModalUser | null
   onClose: () => void
   onDeleteChat?: () => void
+  /** Открыть/создать личный чат с этим пользователем — undefined для собственного профиля */
+  onMessage?: () => void
 }
 
-export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileModalProps) {
+export function UserProfileModal({ user, onClose, onDeleteChat, onMessage }: UserProfileModalProps) {
   const { t } = useTranslation()
   const [full, setFull] = useState<PublicUserProfile | null>(null)
   const [loading, setLoading] = useState(false)
@@ -92,6 +94,15 @@ export function UserProfileModal({ user, onClose, onDeleteChat }: UserProfileMod
             {city       && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.city')}</span><span className={s.umFieldValue}>{city}</span></div>}
             {department && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.department')}</span><span className={s.umFieldValue}>{department}</span></div>}
           </>
+        )}
+        {onMessage && (
+          <button
+            type="button"
+            className={s.umMessageBtn}
+            onClick={onMessage}
+          >
+            {t('messenger.writeMessage')}
+          </button>
         )}
         {onDeleteChat && (
           <button

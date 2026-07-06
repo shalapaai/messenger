@@ -333,6 +333,18 @@ export function MessengerPage() {
     }
   }
 
+  // createDirectChat идемпотентен — если чат с этим пользователем уже есть, просто вернёт его id
+  async function handleOpenDirectChat(userId: string) {
+    setModalUser(null)
+    try {
+      const chatId = await createDirectChat(userId)
+      await loadChats()
+      navigate(`/chats/${chatId}`)
+    } catch {
+      // ignored
+    }
+  }
+
   async function handleLeaveGroup() {
     if (!id || !profile) return
     try {
@@ -580,6 +592,9 @@ export function MessengerPage() {
         user={modalUser}
         onClose={() => setModalUser(null)}
         onDeleteChat={id && modalUserIsChatPartner ? handleDeleteChat : undefined}
+        onMessage={modalUser?.userId && modalUser.userId !== profile?.userId
+          ? () => handleOpenDirectChat(modalUser.userId!)
+          : undefined}
       />
 
       {id && meta && (

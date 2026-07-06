@@ -1,6 +1,5 @@
 import { type MouseEvent } from 'react'
-import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { MessageAttachments } from './MessageAttachment'
 import { CheckIcon } from './icons'
@@ -10,20 +9,19 @@ import s from './ChatWindow.module.css'
 
 type RenderedItem =
   | { type: 'sep'; label: string }
-  | { type: 'system'; label: string }
+  | { type: 'system'; msg: Message }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
 
-function systemMessageLabel(msg: Message, t: TFunction): string {
-  const name = msg.targetUserName ?? ''
-  switch (msg.systemEventType) {
-    case 'MemberAdded':   return t('messenger.systemMemberAdded', { name })
-    case 'MemberLeft':    return t('messenger.systemMemberLeft', { name })
-    case 'MemberRemoved': return t('messenger.systemMemberRemoved', { name })
-    default: return ''
+function systemMessageKey(eventType: Message['systemEventType']): string | null {
+  switch (eventType) {
+    case 'MemberAdded':   return 'messenger.systemMemberAdded'
+    case 'MemberLeft':    return 'messenger.systemMemberLeft'
+    case 'MemberRemoved': return 'messenger.systemMemberRemoved'
+    default: return null
   }
 }
 
-function buildRenderedItems(messages: Message[], meta: ChatMeta, t: TFunction): RenderedItem[] {
+function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[] {
   const rendered: RenderedItem[] = []
   let lastDateKey = ''
   for (let i = 0; i < messages.length; i++) {
@@ -36,7 +34,7 @@ function buildRenderedItems(messages: Message[], meta: ChatMeta, t: TFunction): 
     if (key !== lastDateKey) { rendered.push({ type: 'sep', label: formatDateLabel(msg.sentAt) }); lastDateKey = key }
 
     if (msg.kind === 'System') {
-      rendered.push({ type: 'system', label: systemMessageLabel(msg, t) })
+      rendered.push({ type: 'system', msg })
       continue
     }
 
@@ -80,7 +78,7 @@ export function MessageList({
   onToggleSelect, onAvatarClick, onContextMenu, onRetry, onScrollToMessage, onForwardedUserClick,
 }: MessageListProps) {
   const { t } = useTranslation()
-  const rendered = buildRenderedItems(messages, meta, t)
+  const rendered = buildRenderedItems(messages, meta)
 
   const isReadByOther = (msg: Message) =>
     !!otherReadAt && new Date(msg.sentAt).getTime() <= new Date(otherReadAt).getTime()
@@ -92,11 +90,32 @@ export function MessageList({
           <div key={`sep-${i}`} className={s.dateSep}>
             <span className={s.dateSepLabel}>{item.label}</span>
           </div>
-        ) : item.type === 'system' ? (
-          <div key={`system-${i}`} className={s.dateSep}>
-            <span className={s.dateSepLabel}>{item.label}</span>
-          </div>
-        ) : (() => {
+        ) : item.type === 'system' ? (() => {
+          const i18nKey = systemMessageKey(item.msg.systemEventType)
+          if (!i18nKey) return null
+          return (
+            <div key={`system-${i}`} className={s.dateSep}>
+              <span className={s.dateSepLabel}>
+                <Trans
+                  i18nKey={i18nKey}
+                  values={{ name: item.msg.targetUserName ?? '' }}
+                  components={{
+                    user: item.msg.targetUserId ? (
+                      <span
+                        className={s.systemMsgName}
+                        onClick={() => onAvatarClick({
+                          ...item.msg,
+                          senderId:   item.msg.targetUserId!,
+                          senderName: item.msg.targetUserName ?? '',
+                        })}
+                      />
+                    ) : <span />,
+                  }}
+                />
+              </span>
+            </div>
+          )
+        })() : (() => {
           const displaySender = item.msg.own
             ? { ...item.msg, senderColor: meSender.senderColor, senderAvatarUrl: meSender.senderAvatarUrl, senderInitials: meSender.senderInitials, senderName: meSender.senderName }
             : item.msg
