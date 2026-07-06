@@ -5,8 +5,44 @@ import { useOnlineStore } from '../../shared/api/onlineStore'
 import { searchUsers, type UserSearchResult } from '../../shared/api/usersApi'
 import { initials, colorFromId } from '../../shared/api/chatsApi'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
+import { useAuthedFileUrl } from '../../shared/hooks/useAuthedFileUrl'
 import { ChatListSkeleton } from './ChatListSkeleton'
 import s from './ChatListPanel.module.css'
+
+const isImageContentType = (contentType: string | null | undefined) =>
+  !!contentType?.startsWith('image/')
+
+/** Мини-превью вложения последнего сообщения в строке списка чатов — вложения чатов
+ *  отдаются не анонимно (см. useAuthedFileUrl), поэтому обычный <img src> тут не сработает. */
+function PreviewThumbnail({ src, alt }: { src: string; alt: string }) {
+  const { blobUrl } = useAuthedFileUrl(src)
+  if (!blobUrl) return <span className={s.clPreviewAttachmentIcon}>🖼</span>
+  return <img src={blobUrl} alt={alt} className={s.clPreviewThumb} />
+}
+
+function ChatPreview({ chat }: { chat: Chat }) {
+  const { t } = useTranslation()
+
+  if (chat.previewIsAttachment) {
+    const isPhoto = isImageContentType(chat.previewAttachmentContentType)
+    return (
+      <>
+        {isPhoto && chat.previewAttachmentUrl ? (
+          <PreviewThumbnail src={chat.previewAttachmentUrl} alt={chat.name} />
+        ) : (
+          <span className={s.clPreviewAttachmentIcon}>📎</span>
+        )}
+        <span>{isPhoto ? t('messenger.previewPhoto') : (chat.previewAttachmentFileName ?? t('messenger.attachmentFile'))}</span>
+      </>
+    )
+  }
+
+  return chat.preview ? (
+    <span>{chat.preview}</span>
+  ) : (
+    <span className={s.clPreviewEmpty}>{t('messenger.noMessages')}</span>
+  )
+}
 
 interface ChatListPanelProps {
   chats: Chat[]
@@ -203,11 +239,7 @@ export function ChatListPanel({
                       )}
                     </div>
                     <div className={s.clPreview}>
-                      {chat.preview || (
-                        <span className={s.clPreviewEmpty}>
-                          {t('messenger.noMessages')}
-                        </span>
-                      )}
+                      <ChatPreview chat={chat} />
                     </div>
                   </div>
                   <div className={s.clMeta}>

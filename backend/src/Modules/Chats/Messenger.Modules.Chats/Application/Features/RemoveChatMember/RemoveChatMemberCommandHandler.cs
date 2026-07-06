@@ -24,6 +24,12 @@ public sealed class RemoveChatMemberCommandHandler(
         if (result.IsFailure)
             return result;
 
+        // Если это был последний участник (например, единственный Owner покинул группу) —
+        // удаляем сам чат, иначе он навсегда остаётся в БД пустым и недоступным
+        // (добавить участника нельзя — им нужно уже состоять в чате, удалить как Direct тоже нельзя).
+        if (chat.IsEmpty)
+            chatRepository.Delete(chat);
+
         await unitOfWork.SaveChangesAsync(ct);
 
         return Result.Success();

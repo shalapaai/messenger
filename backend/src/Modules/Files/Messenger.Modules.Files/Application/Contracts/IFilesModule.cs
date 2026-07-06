@@ -2,9 +2,11 @@ namespace Messenger.Modules.Files.Application.Contracts;
 
 using Messenger.Shared.Kernel.Results;
 
+public sealed record UploadedAttachmentInfo(string FileKey, string PublicUrl);
+
 public interface IFilesModule
 {
-    Task<Result<string>> UploadChatAttachmentAsync(
+    Task<Result<UploadedAttachmentInfo>> UploadChatAttachmentAsync(
         Stream      content,
         string      fileName,
         string      contentType,
@@ -23,4 +25,9 @@ public interface IFilesModule
         Guid        uploadedBy,
         Guid        chatId,
         CancellationToken ct = default);
+
+    /// <summary>Компенсирующее удаление уже загруженного вложения — используется, если после
+    /// успешной загрузки файла последующий шаг того же запроса (загрузка другого файла из того
+    /// же батча, создание сообщения) провалился, и файл иначе остался бы orphaned.</summary>
+    Task DeleteChatAttachmentAsync(string fileKey, CancellationToken ct = default);
 }

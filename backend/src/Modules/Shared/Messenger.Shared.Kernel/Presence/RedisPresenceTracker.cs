@@ -6,10 +6,18 @@ public sealed class RedisPresenceTracker(IConnectionMultiplexer redis) : IPresen
 {
     private static string Key(Guid userId) => $"presence:{userId}";
 
+    // Защитный TTL на случай падения/передеплоя инстанса, когда OnDisconnectedAsync для
+    // "зависших" соединений так и не выполнится, а декремент никогда не произойдёт —
+    // без TTL счётчик остался бы в Redis навсегда. Обновляется при каждом новом
+    // подключении, так что для активных пользователей практического значения не имеет.
+    private static readonly TimeSpan StaleConnectionTtl = TimeSpan.FromHours(24);
+
     public async Task<long> ConnectAsync(Guid userId, CancellationToken ct = default)
     {
         var db = redis.GetDatabase();
-        return await db.StringIncrementAsync(Key(userId));
+        var count = await db.StringIncrementAsync(Key(userId));
+        await db.KeyExpireAsync(Key(userId), StaleConnectionTtl);
+        return count;
     }
 
     public async Task<long> DisconnectAsync(Guid userId, CancellationToken ct = default)

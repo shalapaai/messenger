@@ -68,11 +68,16 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
 
     set((state) => {
       const time = new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+      const firstAttachment = msg.attachments?.[0]
       const chats = state.chats.map(chat =>
         chat.id === msg.chatId
           ? {
               ...chat,
               preview: msg.content,
+              previewIsAttachment: !msg.content && !!firstAttachment,
+              previewAttachmentUrl: firstAttachment?.fileUrl,
+              previewAttachmentContentType: firstAttachment?.fileContentType,
+              previewAttachmentFileName: firstAttachment?.fileName,
               time,
               lastMessageId: msg.messageId,
               // не считаем непрочитанными если чат сейчас открыт или сообщение отправлено мной же

@@ -6,7 +6,14 @@ public sealed record LastMessageDto(
     Guid     MessageId,
     Guid     SenderId,
     string   Content,
-    DateTime SentAt);
+    DateTime SentAt,
+    // Для превью в списке чатов: сообщение без текста, но с вложением (например, фото без
+    // подписи) не должно выглядеть как "нет сообщений" — фронт показывает мини-превью и
+    // подпись по типу вложения вместо этого.
+    bool     HasAttachments,
+    string?  FirstAttachmentUrl,
+    string?  FirstAttachmentContentType,
+    string?  FirstAttachmentFileName);
 
 public sealed record MessagePreviewDto(
     Guid   MessageId,

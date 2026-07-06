@@ -5,7 +5,13 @@ import type { Chat, Message, GroupMember } from '../types/messenger'
 
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
 
-interface LastMessageDto { messageId: string; senderId: string; content: string; sentAt: string }
+interface LastMessageDto {
+  messageId: string; senderId: string; content: string; sentAt: string
+  hasAttachments: boolean
+  firstAttachmentUrl: string | null
+  firstAttachmentContentType: string | null
+  firstAttachmentFileName: string | null
+}
 interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean; otherMemberLastReadAt: string | null }
 interface ChatMemberDto { userId: string; displayName: string; avatarUrl: string | null; avatarColor: string; role: 'owner' | 'admin' | 'member'; joinedAt: string; online: boolean }
 interface ChatDetailDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; createdAt: string; members: ChatMemberDto[] }
@@ -76,6 +82,10 @@ export async function fetchChats(): Promise<Chat[]> {
     color:       dto.avatarColor ?? colorFromId(dto.id),
     avatarUrl:   dto.avatarUrl,
     preview:     dto.lastMessage?.content ?? '',
+    previewIsAttachment:          dto.lastMessage?.hasAttachments && !dto.lastMessage.content ? true : undefined,
+    previewAttachmentUrl:         dto.lastMessage?.firstAttachmentUrl ?? undefined,
+    previewAttachmentContentType: dto.lastMessage?.firstAttachmentContentType ?? undefined,
+    previewAttachmentFileName:    dto.lastMessage?.firstAttachmentFileName ?? undefined,
     time:        dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
     unread:      0,
     online:      dto.isOnline,

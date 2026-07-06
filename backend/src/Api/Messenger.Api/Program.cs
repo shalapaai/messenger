@@ -26,6 +26,7 @@ var redisConnectionString = builder.Configuration["Redis:ConnectionString"]!;
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisConnectionString));
 builder.Services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
+builder.Services.AddSingleton<IConnectionTracker, RedisConnectionTracker>();
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 IModuleInstaller[] modules =

@@ -16,6 +16,7 @@ public sealed class MessengerHub(
     IChatsModule            chatsModule,
     IChatMembershipChecker  membershipChecker,
     IPresenceTracker        presence,
+    IConnectionTracker      connectionTracker,
     ILogger<MessengerHub>   logger) : Hub
 {
     // ── Подписка на чат ───────────────────────────────────────────────────────
@@ -78,6 +79,7 @@ public sealed class MessengerHub(
     {
         var userId = Context.UserIdentifier!;
         await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
+        await connectionTracker.AddConnectionAsync(Guid.Parse(userId), Context.ConnectionId);
 
         var connectionCount = await presence.ConnectAsync(Guid.Parse(userId));
 
@@ -91,9 +93,21 @@ public sealed class MessengerHub(
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = Context.UserIdentifier!;
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
+        long connectionCount;
 
-        var connectionCount = await presence.DisconnectAsync(Guid.Parse(userId));
+        // presence.DisconnectAsync и connectionTracker.RemoveConnectionAsync должны выполниться,
+        // даже если удаление из группы упадёт (например, кратковременный сбой связи с
+        // Redis-backplane) — иначе счётчик онлайн-соединений и набор connectionId этого
+        // пользователя навсегда останутся в неверном состоянии.
+        try
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
+        }
+        finally
+        {
+            await connectionTracker.RemoveConnectionAsync(Guid.Parse(userId), Context.ConnectionId);
+            connectionCount = await presence.DisconnectAsync(Guid.Parse(userId));
+        }
 
         if (exception is not null)
             logger.LogWarning(exception, "User {UserId} disconnected with error", userId);

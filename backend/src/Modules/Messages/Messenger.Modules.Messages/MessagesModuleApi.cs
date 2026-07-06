@@ -35,12 +35,19 @@ internal sealed class MessagesModuleApi(
         var messages = await dbContext.Messages
             .Where(m => chatIds.Contains(m.ChatId) && m.Status != MessageStatus.Deleted)
             .GroupBy(m => m.ChatId)
-            .Select(g => g.OrderByDescending(m => m.SentAt).First())
+            .Select(g => g.OrderByDescending(m => m.Sequence).First())
             .ToListAsync(ct);
 
         var dict = messages.ToDictionary(
             m => m.ChatId,
-            m => new LastMessageDto(m.Id.Value, m.SenderId, m.Content, m.SentAt));
+            m =>
+            {
+                var firstAttachment = m.Attachments.OrderBy(a => a.SortOrder).FirstOrDefault();
+                return new LastMessageDto(
+                    m.Id.Value, m.SenderId, m.Content, m.SentAt,
+                    m.Attachments.Count > 0, firstAttachment?.FileUrl, firstAttachment?.ContentType,
+                    firstAttachment?.FileName);
+            });
 
         return Result.Success(dict);
     }

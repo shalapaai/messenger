@@ -86,15 +86,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_user_profile_login
 -- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS chats.chats (
-    id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    type       VARCHAR(10)  NOT NULL,
-    name       VARCHAR(100) DEFAULT NULL,
-    avatar_url VARCHAR(512) DEFAULT NULL,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    type             VARCHAR(10)  NOT NULL,
+    name             VARCHAR(100) DEFAULT NULL,
+    avatar_url       VARCHAR(512) DEFAULT NULL,
+    created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    -- Заполнены только для type='direct', всегда в каноническом порядке (меньший uuid первым) —
+    -- основа уникального индекса ux_chats_direct_pair ниже, не позволяющего гонке из двух
+    -- одновременных запросов создать два разных direct-чата между одной и той же парой.
+    direct_user_id_1 UUID         DEFAULT NULL,
+    direct_user_id_2 UUID         DEFAULT NULL,
 
     CONSTRAINT ck_chats_type       CHECK (type IN ('direct', 'group')),
     CONSTRAINT ck_chats_group_name CHECK (type = 'direct' OR name IS NOT NULL)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_chats_direct_pair
+    ON chats.chats (direct_user_id_1, direct_user_id_2)
+    WHERE type = 'direct';
 
 CREATE TABLE IF NOT EXISTS chats.members (
     chat_id      UUID        NOT NULL,
@@ -122,6 +131,11 @@ CREATE INDEX IF NOT EXISTS idx_chats_members_user_id ON chats.members (user_id);
 
 CREATE TABLE IF NOT EXISTS messages.message (
     id                        UUID          PRIMARY KEY,
+    -- Монотонно возрастающий identity — тай-брейкер к sent_at для курсорной пагинации
+    -- (несколько сообщений могут получить одинаковый sent_at, например при пересылке
+    -- пачки сообщений подряд; чистая сортировка по времени в этом случае может
+    -- пропустить или задвоить сообщение на границе страницы).
+    sequence                  BIGINT        GENERATED ALWAYS AS IDENTITY,
     chat_id                   UUID          NOT NULL,
     sender_id                 UUID          NOT NULL,
     content                   VARCHAR(4096) NOT NULL,
@@ -132,6 +146,8 @@ CREATE TABLE IF NOT EXISTS messages.message (
     reply_to_message_id       UUID          DEFAULT NULL,
     forwarded_from_message_id UUID          DEFAULT NULL,
     forwarded_from_user_id    UUID          DEFAULT NULL,
+
+    CONSTRAINT uq_message_sequence UNIQUE (sequence),
 
     CONSTRAINT fk_message_chat_id
         FOREIGN KEY (chat_id) REFERENCES chats.chats (id) ON DELETE CASCADE,
@@ -153,6 +169,9 @@ CREATE TABLE IF NOT EXISTS messages.message (
 
 CREATE INDEX IF NOT EXISTS ix_message_chat_id_sent_at
     ON messages.message (chat_id, sent_at);
+
+CREATE INDEX IF NOT EXISTS ix_message_chat_id_sequence
+    ON messages.message (chat_id, sequence);
 
 CREATE INDEX IF NOT EXISTS ix_message_sender_id
     ON messages.message (sender_id);
@@ -189,8 +208,9 @@ CREATE TABLE IF NOT EXISTS files.file_upload (
     uploaded_by   UUID         NOT NULL,
     uploaded_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     category      VARCHAR(30)  DEFAULT NULL,
-    -- Заполнено только для ChatAttachment — для проверки доступа при скачивании.
-    -- Без FK на chats.chat: модули не должны зависеть друг от друга на уровне схемы.
+    -- Заполнено для ChatAttachment (проверка членства в чате при скачивании) и для
+    -- GroupAvatar (поиск текущей аватарки группы при замене). Без FK на chats.chat:
+    -- модули не должны зависеть друг от друга на уровне схемы.
     chat_id       UUID         DEFAULT NULL,
 
     CONSTRAINT fk_file_upload_uploaded_by
@@ -202,3 +222,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_file_upload_file_key
 
 CREATE INDEX IF NOT EXISTS ix_file_upload_uploaded_by_category
     ON files.file_upload (uploaded_by, category);
+
+-- Не даёт двум одновременным загрузкам аватара от одного пользователя (или для одного и
+-- того же чата — аватара группы) создать по второй "текущей" записи (см. UploadAvatarCommandHandler
+-- / FilesModuleApi.UploadGroupAvatarAsync — оба ловят конфликт и возвращают 409).
+CREATE UNIQUE INDEX IF NOT EXISTS ux_file_upload_avatar_per_user
+    ON files.file_upload (uploaded_by)
+    WHERE category = 'Avatar';
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_file_upload_group_avatar_per_chat
+    ON files.file_upload (chat_id)
+    WHERE category = 'GroupAvatar';

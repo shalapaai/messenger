@@ -5,6 +5,14 @@ export interface Chat {
   color: string
   avatarUrl: string | null
   preview: string
+  /** true, если последнее сообщение — вложение без текста (например, фото без подписи) —
+   *  тогда preview пуст и список должен показать мини-превью + подпись по типу, а не "нет сообщений" */
+  previewIsAttachment?: boolean
+  /** URL первого вложения последнего сообщения — для мини-превью в списке (только если это изображение) */
+  previewAttachmentUrl?: string | null
+  previewAttachmentContentType?: string | null
+  /** Имя файла первого вложения — показывается вместо общей подписи "Файл" для не-фото вложений */
+  previewAttachmentFileName?: string | null
   time: string
   unread: number
   online: boolean

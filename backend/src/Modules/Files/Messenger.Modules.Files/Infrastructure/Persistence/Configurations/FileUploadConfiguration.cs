@@ -23,6 +23,20 @@ public sealed class FileUploadConfiguration : IEntityTypeConfiguration<FileUploa
         builder.HasIndex(f => new { f.UploadedBy, f.Category })
                .HasDatabaseName("ix_file_upload_uploaded_by_category");
 
+        // Не даёт двум одновременным загрузкам аватара от одного пользователя (или от одного
+        // и того же чата для аватара группы) создать по второй "текущей" записи — без этого
+        // индекса гонка read-old→upload-new→delete-old могла молча оставить одну из двух
+        // новых записей+файл orphaned (см. UploadAvatarCommandHandler/UploadGroupAvatarAsync).
+        builder.HasIndex(f => f.UploadedBy)
+               .IsUnique()
+               .HasFilter("category = 'Avatar'")
+               .HasDatabaseName("ux_file_upload_avatar_per_user");
+
+        builder.HasIndex(f => f.ChatId)
+               .IsUnique()
+               .HasFilter("category = 'GroupAvatar'")
+               .HasDatabaseName("ux_file_upload_group_avatar_per_chat");
+
         builder.ToTable("file_upload");
     }
 }

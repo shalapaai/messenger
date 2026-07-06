@@ -3,6 +3,7 @@ namespace Messenger.Modules.Messages.Application.Features.EditMessage;
 using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
+using Microsoft.EntityFrameworkCore;
 
 public sealed class EditMessageCommandHandler(
     IMessageRepository messageRepository,
@@ -22,7 +23,18 @@ public sealed class EditMessageCommandHandler(
             return result;
 
         messageRepository.Update(message);
-        await unitOfWork.SaveChangesAsync(ct);
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Кто-то другой (или это же сообщение с другой вкладки) успел изменить/удалить
+            // сообщение между чтением и записью — явный конфликт вместо тихого перезатирания.
+            return Result.Failure(Error.Conflict("Message"));
+        }
+
         return Result.Success();
     }
 }
