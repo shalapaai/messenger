@@ -35,7 +35,7 @@ public static class UsersEndpoints
         group.MapGet("/me", GetMe)
             .WithName("GetMe")
             .WithSummary("Получить свой профиль")
-            .WithDescription("Возвращает полный профиль текущего пользователя. Поле `login` содержит @ или null, если логин не [...]
+            .WithDescription("Возвращает полный профиль текущего пользователя. Поле `login` содержит @ или null, если логин не задан.")
             .Produces<MeDto>()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
