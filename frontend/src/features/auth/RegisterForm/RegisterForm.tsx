@@ -4,14 +4,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { register, verifyOtp } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
-import { useToastStore } from '../../../shared/api/toastStore'
 import styles from './RegisterForm.module.css'
 
 function RegisterForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const showSuccess = useToastStore((state) => state.showSuccess)
-  const showError = useToastStore((state) => state.showError)
 
   const [email, setEmail]               = useState('')
   const [password, setPassword]         = useState('')
@@ -53,16 +50,12 @@ function RegisterForm() {
 
       if (result.requiresOtp) {
         setOtpEmail(result.email!)
-        showSuccess(t('toast.otpSent'))
       } else {
         saveAuthTokens({ accessToken: result.accessToken!, refreshToken: result.refreshToken })
-        showSuccess(t('toast.registerSuccess'))
         navigate('/profile/setup')
       }
     } catch {
-      const message = t('auth.errors.registerFailed')
-      setError(message)
-      showError(message)
+      setError(t('auth.errors.registerFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -78,12 +71,9 @@ function RegisterForm() {
     try {
       const tokens = await verifyOtp(otpEmail, otpCode.trim())
       saveAuthTokens(tokens)
-      showSuccess(t('toast.registerSuccess'))
       navigate('/profile/setup')
     } catch {
-      const message = t('auth.errors.invalidOrExpiredCode')
-      setOtpError(message)
-      showError(message)
+      setOtpError(t('auth.errors.invalidOrExpiredCode'))
     } finally {
       setOtpLoading(false)
     }

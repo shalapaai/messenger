@@ -12,7 +12,7 @@ public sealed class CreateGroupChatCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateGroupChatCommand command, CancellationToken ct)
     {
-        var result = Chat.CreateGroup(command.Name);
+        var result = Chat.CreateGroup(command.Name, command.AvatarColor);
         if (result.IsFailure)
             return Result.Failure<Guid>(result.Error);
 

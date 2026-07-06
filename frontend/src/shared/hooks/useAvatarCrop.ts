@@ -52,10 +52,23 @@ export function useAvatarCrop() {
     setCroppedAvatarFile(null)
   }
 
+  /** Полностью сбросить черновик аватарки — по кнопке "убрать" и при закрытии модалки
+   *  (иначе при повторном открытии всё ещё показывался бы старый превью, хотя он уже
+   *  никуда не применится: croppedAvatarFile из предыдущей сессии редактирования потерян). */
+  function removeAvatar() {
+    if (cropImageSrc) URL.revokeObjectURL(cropImageSrc)
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview)
+    setCropImageSrc(undefined)
+    setSelectedAvatarFile(null)
+    setCroppedAvatarFile(null)
+    setAvatarPreview(undefined)
+  }
+
   return {
     avatarPreview,
     croppedAvatarFile,
     clearCroppedFile,
+    removeAvatar,
     cropImageSrc,
     handleAvatarChange,
     handleCropCancel,

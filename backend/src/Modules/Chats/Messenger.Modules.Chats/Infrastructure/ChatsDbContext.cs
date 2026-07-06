@@ -29,6 +29,7 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMe
                 .HasMaxLength(10).IsRequired();
             b.Property(c => c.Name).HasColumnName("name").HasMaxLength(100);
             b.Property(c => c.AvatarUrl).HasColumnName("avatar_url");
+            b.Property(c => c.AvatarColor).HasColumnName("avatar_color").HasMaxLength(7);
             b.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
             b.Property(c => c.DirectUserId1).HasColumnName("direct_user_id_1");
             b.Property(c => c.DirectUserId2).HasColumnName("direct_user_id_2");

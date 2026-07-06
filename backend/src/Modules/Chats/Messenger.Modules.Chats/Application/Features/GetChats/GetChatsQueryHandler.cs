@@ -63,7 +63,7 @@ public sealed class GetChatsQueryHandler(
 
                 var name        = c.Name;
                 var avatarUrl   = c.AvatarUrl;
-                string? avatarColor = null;
+                var avatarColor = c.AvatarColor;
                 Guid? otherUserId = null;
 
                 DateTime? otherMemberLastReadAt = null;

@@ -30,4 +30,8 @@ public interface IFilesModule
     /// успешной загрузки файла последующий шаг того же запроса (загрузка другого файла из того
     /// же батча, создание сообщения) провалился, и файл иначе остался бы orphaned.</summary>
     Task DeleteChatAttachmentAsync(string fileKey, CancellationToken ct = default);
+
+    /// <summary>Удаляет текущую аватарку группового чата (если есть) — вызывается ДО очистки
+    /// Chat.AvatarUrl на стороне Chats-модуля, тем же порядком, что и UploadGroupAvatarAsync.</summary>
+    Task DeleteGroupAvatarAsync(Guid chatId, CancellationToken ct = default);
 }

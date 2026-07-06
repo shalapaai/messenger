@@ -1,8 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
-import { useTranslation } from 'react-i18next'
-import axios from 'axios'
 import { isAllowedAttachment, MAX_ATTACHMENT_SIZE_BYTES } from '../../../shared/lib/fileType'
-import { useToastStore } from '../../../shared/api/toastStore'
 
 const MAX_ATTACHMENT_COUNT = 10
 
@@ -15,7 +12,6 @@ export interface QueuedFile {
 
 interface UseAttachmentQueueOptions {
   onSendFiles: (files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) => Promise<void>
-  showError: (message: string) => void
 }
 
 /**
@@ -23,9 +19,7 @@ interface UseAttachmentQueueOptions {
  * валидация типа/размера/количества, и отправка всей очереди одним запросом — одним сообщением
  * с несколькими вложениями, а не по файлу за раз (см. sendQueuedFiles).
  */
-export function useAttachmentQueue({ onSendFiles, showError }: UseAttachmentQueueOptions) {
-  const { t } = useTranslation()
-  const showSuccess = useToastStore((state) => state.showSuccess)
+export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([])
   const [fileUploading, setFileUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -44,22 +38,13 @@ export function useAttachmentQueue({ onSendFiles, showError }: UseAttachmentQueu
   // в очередь НИ ОДНОГО из них — иначе легко случайно отправить часть альбома, даже не
   // заметив, что один файл молча отсеялся
   function selectFiles(files: File[]) {
-    if (queuedFiles.length + files.length > MAX_ATTACHMENT_COUNT) {
-      showError(t('messenger.attachmentTooMany', { count: MAX_ATTACHMENT_COUNT }))
-      return
-    }
+    if (queuedFiles.length + files.length > MAX_ATTACHMENT_COUNT) return
 
     const invalidFile = files.find(file => !isAllowedAttachment(file))
-    if (invalidFile) {
-      showError(t('messenger.attachmentTypeNotSupportedNamed', { name: invalidFile.name }))
-      return
-    }
+    if (invalidFile) return
 
     const tooLargeFile = files.find(file => file.size > MAX_ATTACHMENT_SIZE_BYTES)
-    if (tooLargeFile) {
-      showError(t('messenger.attachmentTooLargeNamed', { name: tooLargeFile.name }))
-      return
-    }
+    if (tooLargeFile) return
 
     const newItems: QueuedFile[] = files.map(file => ({
       key: nextFileKeyRef.current++,
@@ -135,15 +120,8 @@ export function useAttachmentQueue({ onSendFiles, showError }: UseAttachmentQueu
     try {
       await onSendFiles(filesToSend, caption, setUploadProgress)
       clearQueuedFiles()
-      showSuccess(t(filesToSend.length === 1 ? 'toast.fileSent' : 'toast.filesSent'))
       return true
-    } catch (err) {
-      const code = axios.isAxiosError(err)
-        ? (err.response?.data as { code?: string } | undefined)?.code
-        : undefined
-      if (code === 'Validation.ContentType') showError(t('messenger.attachmentTypeNotSupported'))
-      else if (code === 'Validation.FileSize') showError(t('messenger.attachmentTooLarge'))
-      else showError(t('messenger.attachmentSendFailed'))
+    } catch {
       return false
     } finally {
       setFileUploading(false)

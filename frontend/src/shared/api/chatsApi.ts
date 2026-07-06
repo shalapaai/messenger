@@ -136,8 +136,8 @@ export async function createDirectChat(otherUserId: string): Promise<string> {
 }
 
 /** Создаёт новый групповой чат — текущий пользователь становится владельцем. */
-export async function createGroupChat(name: string, memberIds: string[]): Promise<string> {
-  const res = await apiClient.post<string>('/chats/group', { name, memberIds })
+export async function createGroupChat(name: string, memberIds: string[], avatarColor?: string): Promise<string> {
+  const res = await apiClient.post<string>('/chats/group', { name, memberIds, avatarColor })
   return res.data
 }
 
@@ -146,8 +146,8 @@ export async function addChatMember(chatId: string, userId: string): Promise<voi
   await apiClient.post(`/chats/${chatId}/members`, { userId })
 }
 
-/** Обновляет название/аватарку группового чата (доступно admin/owner). */
-export async function updateChat(chatId: string, patch: { name?: string; avatarUrl?: string }): Promise<void> {
+/** Обновляет название/аватарку/цвет группового чата (доступно admin/owner). */
+export async function updateChat(chatId: string, patch: { name?: string; avatarUrl?: string; avatarColor?: string }): Promise<void> {
   await apiClient.patch(`/chats/${chatId}`, patch)
 }
 
@@ -159,6 +159,11 @@ export async function uploadChatAvatar(chatId: string, file: File): Promise<stri
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return res.data.url
+}
+
+/** Удаляет аватарку группового чата — доступно admin/owner. */
+export async function removeChatAvatar(chatId: string): Promise<void> {
+  await apiClient.delete(`/chats/${chatId}/avatar`)
 }
 
 /** Детальная информация о чате с резолвленными данными участников (имя, аватар, онлайн). */

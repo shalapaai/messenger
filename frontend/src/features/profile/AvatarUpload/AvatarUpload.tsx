@@ -8,11 +8,12 @@ type AvatarUploadProps = {
   name: string
   avatarPreview?: string
   color?: string
+  shape?: 'circle' | 'square'
   onChange: (file: File) => void
   onRemove?: () => void
 }
 
-function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: AvatarUploadProps) {
+function AvatarUpload({ name, avatarPreview, color, shape, onChange, onRemove }: AvatarUploadProps) {
   const { t } = useTranslation()
   const inputId = useId()
 
@@ -29,7 +30,7 @@ function AvatarUpload({ name, avatarPreview, color, onChange, onRemove }: Avatar
 
   return (
     <div className={styles.upload}>
-      <Avatar src={avatarPreview} name={name} size="large" color={color} />
+      <Avatar src={avatarPreview} name={name} size="large" color={color} shape={shape} />
 
       <div className={styles.actions}>
         <div className={styles.buttonsRow}>

@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { useAvatarCrop } from '../../../shared/hooks/useAvatarCrop'
-import { uploadChatAvatar } from '../../../shared/api/chatsApi'
-import { useToastStore } from '../../../shared/api/toastStore'
+import { uploadChatAvatar, removeChatAvatar } from '../../../shared/api/chatsApi'
+import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
 import s from './EditGroupModal.module.css'
 
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
@@ -16,7 +16,7 @@ interface EditGroupModalProps {
   currentAvatarUrl: string | null
   currentColor: string
   onClose: () => void
-  onSave: (name: string) => Promise<void>
+  onSave: (name: string, avatarColor: string) => Promise<void>
   onAvatarUploaded: () => void
 }
 
@@ -42,9 +42,9 @@ type SaveError = 'name' | 'size' | 'avatarSavedNameFailed' | null
 
 function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentColor, onClose, onSave, onAvatarUploaded }: EditGroupModalContentProps) {
   const { t } = useTranslation()
-  const showSuccess = useToastStore((state) => state.showSuccess)
-  const showError = useToastStore((state) => state.showError)
   const [name, setName] = useState(currentName)
+  const [avatarColor, setAvatarColor] = useState(currentColor)
+  const [avatarRemoved, setAvatarRemoved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState<SaveError>(null)
   const avatarCrop = useAvatarCrop()
@@ -59,8 +59,9 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
     setSaving(true)
     setError(null)
 
-    // если аватарка уже успешно сохранилась, а следующий шаг (переименование) упадёт —
-    // очищаем черновик файла сразу, чтобы повторное "Сохранить" не перезалило его ещё раз
+    // если аватарка уже успешно сохранилась/удалилась, а следующий шаг (переименование)
+    // упадёт — очищаем черновик файла сразу, чтобы повторное "Сохранить" не перезалило
+    // его ещё раз
     let avatarAlreadySaved = false
     try {
       if (avatarCrop.croppedAvatarFile) {
@@ -68,14 +69,16 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
         avatarCrop.clearCroppedFile()
         avatarAlreadySaved = true
         onAvatarUploaded()
+      } else if (avatarRemoved && currentAvatarUrl) {
+        await removeChatAvatar(chatId)
+        avatarAlreadySaved = true
+        onAvatarUploaded()
       }
-      if (trimmed !== currentName) await onSave(trimmed)
-      showSuccess(t('toast.groupUpdated'))
+      if (trimmed !== currentName || avatarColor !== currentColor) await onSave(trimmed, avatarColor)
       onClose()
     } catch {
       const nextError = avatarAlreadySaved ? 'avatarSavedNameFailed' : 'name'
       setError(nextError)
-      showError(t(nextError === 'avatarSavedNameFailed' ? 'group.avatarSavedNameFailed' : 'messenger.updateGroupFailed'))
       setSaving(false)
     }
   }
@@ -90,10 +93,16 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
           <div className={s.avatarBlock}>
             <AvatarUpload
               name={name}
-              avatarPreview={avatarCrop.avatarPreview ?? currentAvatarUrl ?? undefined}
-              color={currentColor}
-              onChange={avatarCrop.handleAvatarChange}
+              avatarPreview={avatarRemoved ? undefined : (avatarCrop.avatarPreview ?? currentAvatarUrl ?? undefined)}
+              color={avatarColor}
+              shape="square"
+              onChange={(file) => { setAvatarRemoved(false); avatarCrop.handleAvatarChange(file) }}
+              onRemove={() => { avatarCrop.removeAvatar(); setAvatarRemoved(true) }}
             />
+            <div className={s.colorPickerWrap}>
+              <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
+              <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+            </div>
           </div>
 
           <input
@@ -118,6 +127,7 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
       {avatarCrop.cropImageSrc && (
         <AvatarCropModal
           imageSrc={avatarCrop.cropImageSrc}
+          shape="square"
           onCancel={avatarCrop.handleCropCancel}
           onConfirm={avatarCrop.handleCropConfirm}
         />

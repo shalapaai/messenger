@@ -5,6 +5,7 @@ using Messenger.Modules.Chats.Application.Features.AddChatMember;
 using Messenger.Modules.Chats.Application.Features.CreateDirectChat;
 using Messenger.Modules.Chats.Application.Features.CreateGroupChat;
 using Messenger.Modules.Chats.Application.Features.DeleteChat;
+using Messenger.Modules.Chats.Application.Features.RemoveChatAvatar;
 using Messenger.Modules.Chats.Application.Features.RemoveChatMember;
 using Messenger.Modules.Chats.Application.Features.UpdateChat;
 using Messenger.Modules.Chats.Application.Features.GetChatById;
@@ -118,6 +119,15 @@ public static class ChatsEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
+        group.MapDelete("/{id:guid}/avatar", RemoveChatAvatar)
+            .WithName("RemoveChatAvatar")
+            .WithSummary("Удалить аватарку группового чата")
+            .WithDescription("Доступно только Admin и Owner. После удаления в списке чатов снова виден фолбэк-цвет.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return app;
     }
 
@@ -172,7 +182,22 @@ public static class ChatsEndpoints
         CancellationToken ct)
     {
         var requesterId = httpContext.GetUserId();
-        var command = new UpdateChatCommand(id, requesterId, request.Name, request.AvatarUrl);
+        var command = new UpdateChatCommand(id, requesterId, request.Name, request.AvatarUrl, request.AvatarColor);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> RemoveChatAvatar(
+        Guid              id,
+        HttpContext       httpContext,
+        ISender           sender,
+        CancellationToken ct)
+    {
+        var requesterId = httpContext.GetUserId();
+        var command = new RemoveChatAvatarCommand(id, requesterId);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess
@@ -243,7 +268,7 @@ public static class ChatsEndpoints
         CancellationToken      ct)
     {
         var creatorId = httpContext.GetUserId();
-        var command   = new CreateGroupChatCommand(creatorId, request.Name, request.MemberIds ?? []);
+        var command   = new CreateGroupChatCommand(creatorId, request.Name, request.MemberIds ?? [], request.AvatarColor);
         var result    = await sender.Send(command, ct);
 
         return result.IsSuccess
@@ -290,9 +315,9 @@ public static class ChatsEndpoints
     }
 }
 
-public sealed record UpdateChatRequest(string? Name, string? AvatarUrl);
+public sealed record UpdateChatRequest(string? Name, string? AvatarUrl, string? AvatarColor);
 public sealed record AddChatMemberRequest(Guid UserId);
 public sealed record CreateDirectChatRequest(Guid OtherUserId);
-public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds);
+public sealed record CreateGroupChatRequest(string Name, List<Guid>? MemberIds, string? AvatarColor);
 public sealed record SetChatMemberRoleRequest(string Role);
 public sealed record UploadChatAvatarResponse(string Url);

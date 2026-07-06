@@ -7,12 +7,14 @@ import styles from './AvatarCropModal.module.css'
 
 type AvatarCropModalProps = {
   imageSrc: string
+  shape?: 'circle' | 'square'
   onCancel: () => void
   onConfirm: (croppedAreaPixels: CroppedAreaPixels) => void
 }
 
 export function AvatarCropModal({
   imageSrc,
+  shape = 'circle',
   onCancel,
   onConfirm,
 }: AvatarCropModalProps) {
@@ -43,7 +45,8 @@ export function AvatarCropModal({
             crop={crop}
             zoom={zoom}
             aspect={1}
-            cropShape="round"
+            cropShape={shape === 'square' ? 'rect' : 'round'}
+            style={shape === 'square' ? { cropAreaStyle: { borderRadius: '20%' } } : undefined}
             showGrid={false}
             onCropChange={setCrop}
             onZoomChange={setZoom}

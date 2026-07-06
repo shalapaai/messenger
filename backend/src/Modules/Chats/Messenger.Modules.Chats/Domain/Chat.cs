@@ -57,6 +57,9 @@ public sealed class Chat : AggregateRoot<ChatId>
     public ChatType Type { get; private set; }
     public string? Name { get; private set; }
     public string? AvatarUrl { get; private set; }
+    /// <summary>Только для Group — цвет фолбэк-аватарки, выбранный при создании группы (пока нет
+    /// загруженной картинки). Direct-чаты берут цвет из профиля собеседника, а не отсюда.</summary>
+    public string? AvatarColor { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     // Заполняются только для Direct-чатов, всегда в каноническом порядке (меньший Guid первым) —
@@ -78,13 +81,13 @@ public sealed class Chat : AggregateRoot<ChatId>
         };
     }
 
-    public static Result<Chat> CreateGroup(string name)
+    public static Result<Chat> CreateGroup(string name, string? avatarColor = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             return Result.Failure<Chat>(Error.Validation("Name", "Group chat name cannot be empty"));
         if (name.Length > 100)
             return Result.Failure<Chat>(Error.Validation("Name", "Group chat name exceeds 100 characters"));
-        return Result.Success(new Chat(ChatId.New(), ChatType.Group, name.Trim()));
+        return Result.Success(new Chat(ChatId.New(), ChatType.Group, name.Trim()) { AvatarColor = avatarColor });
     }
 
     public void AddMember(Guid userId, ChatMemberRole role = ChatMemberRole.Member)
@@ -101,7 +104,7 @@ public sealed class Chat : AggregateRoot<ChatId>
     public void NotifyMembershipChanged() =>
         RaiseDomainEvent(new ChatUpdatedDomainEvent(Id.Value, _members.Select(m => m.UserId).ToList()));
 
-    public Result UpdateInfo(Guid requesterId, string? name, string? avatarUrl)
+    public Result UpdateInfo(Guid requesterId, string? name, string? avatarUrl, string? avatarColor = null)
     {
         var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
         if (requester is null)
@@ -122,6 +125,25 @@ public sealed class Chat : AggregateRoot<ChatId>
         if (avatarUrl is not null)
             AvatarUrl = avatarUrl;
 
+        if (avatarColor is not null)
+            AvatarColor = avatarColor;
+
+        NotifyMembershipChanged();
+        return Result.Success();
+    }
+
+    /// <summary>Явно очищает аватарку (в отличие от UpdateInfo, где avatarUrl: null означает
+    /// "не менять") — после этого фолбэк-цвет AvatarColor снова становится видимым в списке чатов.</summary>
+    public Result ClearAvatar(Guid requesterId)
+    {
+        var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
+        if (requester is null)
+            return Result.Failure(Error.Forbidden("You are not a member of this chat"));
+
+        if (requester.Role == ChatMemberRole.Member)
+            return Result.Failure(Error.Forbidden("Only admins can update chat info"));
+
+        AvatarUrl = null;
         NotifyMembershipChanged();
         return Result.Success();
     }

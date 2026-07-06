@@ -7,20 +7,21 @@ import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { useAvatarCrop } from '../../../shared/hooks/useAvatarCrop'
 import { AvatarImage } from '../../../shared/ui/AvatarImage'
+import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
+import { randomAvatarColor } from '../../../shared/lib/avatarColors'
 import { UserListSkeleton } from '../UserListSkeleton'
-import { useToastStore } from '../../../shared/api/toastStore'
 import s from './NewGroupModal.module.css'
 
 interface NewGroupModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreate: (name: string, memberIds: string[], avatarFile?: File) => Promise<void>
+  onCreate: (name: string, memberIds: string[], avatarColor: string, avatarFile?: File) => Promise<void>
 }
 
 export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps) {
   const { t } = useTranslation()
-  const showError = useToastStore((state) => state.showError)
   const [name,     setName]     = useState('')
+  const [avatarColor, setAvatarColor] = useState(() => randomAvatarColor())
   const [selected, setSelected] = useState<Map<string, UserSearchResult>>(new Map())
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState(false)
@@ -31,10 +32,11 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
     if (isOpen) return
     const timer = setTimeout(() => {
       setName('')
+      setAvatarColor(randomAvatarColor())
       setSelected(new Map())
       setCreating(false)
       setCreateError(false)
-      avatarCrop.clearCroppedFile()
+      avatarCrop.removeAvatar()
     }, 0)
     return () => clearTimeout(timer)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,10 +59,9 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
     setCreating(true)
     setCreateError(false)
     try {
-      await onCreate(trimmed, [...selected.keys()], avatarCrop.croppedAvatarFile ?? undefined)
+      await onCreate(trimmed, [...selected.keys()], avatarColor, avatarCrop.croppedAvatarFile ?? undefined)
     } catch {
       setCreateError(true)
-      showError(t('messenger.createGroupFailed'))
       setCreating(false)
     }
   }
@@ -81,9 +82,15 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
             <AvatarUpload
               name={name}
               avatarPreview={avatarCrop.avatarPreview}
-              color={colorFromId(name || 'group')}
+              color={avatarColor}
+              shape="square"
               onChange={avatarCrop.handleAvatarChange}
+              onRemove={avatarCrop.removeAvatar}
             />
+            <div className={s.colorPickerWrap}>
+              <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
+              <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+            </div>
           </div>
 
           <input
@@ -158,6 +165,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
       {avatarCrop.cropImageSrc && (
         <AvatarCropModal
           imageSrc={avatarCrop.cropImageSrc}
+          shape="square"
           onCancel={avatarCrop.handleCropCancel}
           onConfirm={avatarCrop.handleCropConfirm}
         />

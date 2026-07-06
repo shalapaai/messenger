@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { forgotPassword, resetPassword } from '../api/authApi'
-import { useToastStore } from '../../../shared/api/toastStore'
 import styles from '../LoginForm/LoginForm.module.css'
 
 type Step = 'email' | 'code'
@@ -10,8 +9,6 @@ type Step = 'email' | 'code'
 function ForgotPasswordForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const showSuccess = useToastStore((state) => state.showSuccess)
-  const showError = useToastStore((state) => state.showError)
 
   const [step, setStep]               = useState<Step>('email')
   const [email, setEmail]             = useState('')
@@ -30,11 +27,8 @@ function ForgotPasswordForm() {
     try {
       await forgotPassword(email.trim())
       setStep('code')
-      showSuccess(t('toast.otpSent'))
     } catch {
-      const message = t('auth.errors.forgotPasswordFailed')
-      setError(message)
-      showError(message)
+      setError(t('auth.errors.forgotPasswordFailed'))
     } finally {
       setLoading(false)
     }
@@ -49,12 +43,9 @@ function ForgotPasswordForm() {
 
     try {
       await resetPassword(email.trim(), code, newPassword)
-      showSuccess(t('toast.passwordResetSuccess'))
       navigate('/login')
     } catch {
-      const message = t('auth.errors.invalidOrExpiredCode')
-      setError(message)
-      showError(message)
+      setError(t('auth.errors.invalidOrExpiredCode'))
     } finally {
       setLoading(false)
     }

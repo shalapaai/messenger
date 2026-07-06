@@ -6,4 +6,5 @@ public sealed record UpdateChatCommand(
     Guid    ChatId,
     Guid    RequesterId,
     string? Name,
-    string? AvatarUrl) : ICommand;
+    string? AvatarUrl,
+    string? AvatarColor) : ICommand;

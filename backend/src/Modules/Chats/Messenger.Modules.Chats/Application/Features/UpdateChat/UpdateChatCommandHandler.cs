@@ -20,7 +20,7 @@ public sealed class UpdateChatCommandHandler(
         if (chat.Type != ChatType.Group)
             return Result.Failure(Error.Validation("ChatType", "Cannot update a direct chat"));
 
-        var result = chat.UpdateInfo(command.RequesterId, command.Name, command.AvatarUrl);
+        var result = chat.UpdateInfo(command.RequesterId, command.Name, command.AvatarUrl, command.AvatarColor);
         if (result.IsFailure)
             return result;
 

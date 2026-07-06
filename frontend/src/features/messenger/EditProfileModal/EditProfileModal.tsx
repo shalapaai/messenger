@@ -6,7 +6,6 @@ import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { getCroppedImage, type CroppedAreaPixels } from '../../../shared/lib/image'
 import { profileApi } from '../../../shared/api/profileApi'
 import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
-import { useToastStore } from '../../../shared/api/toastStore'
 import type { UserProfile } from '../../../shared/types/user'
 import s from './EditProfileModal.module.css'
 
@@ -28,8 +27,6 @@ export function EditProfileModal(props: EditProfileModalProps) {
 
 function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalProps) {
   const { t } = useTranslation()
-  const showSuccess = useToastStore((state) => state.showSuccess)
-  const showError = useToastStore((state) => state.showError)
   const [displayName,  setDisplayName]  = useState(profile.displayName)
   const [avatarColor,  setAvatarColor]  = useState(profile.avatarColor)
   const [editLogin,    setEditLogin]    = useState(profile.login?.replace(/^@/, '') ?? '')
@@ -102,16 +99,12 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
 
       const updated = await profileApi.getMe()
       onSave(updated)
-      showSuccess(t('toast.profileSaved'))
       onClose()
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
         setLoginError(t('profileSetup.errors.loginTaken'))
       } else {
-        console.error('Profile update error:', err)
-        const message = t('profile.saveFailed')
-        setFormError(message)
-        showError(message)
+        setFormError(t('profile.saveFailed'))
       }
     } finally {
       setIsLoading(false)

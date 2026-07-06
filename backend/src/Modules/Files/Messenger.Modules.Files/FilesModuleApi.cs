@@ -109,4 +109,14 @@ internal sealed class FilesModuleApi(
             fileStorage, fileRepository, unitOfWork,
             existing, record, uploadResult.FileKey, uploadResult.PublicUrl, "GroupAvatar", ct);
     }
+
+    public async Task DeleteGroupAvatarAsync(Guid chatId, CancellationToken ct = default)
+    {
+        var existing = await fileRepository.GetGroupAvatarByChatIdAsync(chatId, ct);
+        if (existing is null) return;
+
+        fileRepository.Remove(existing);
+        await unitOfWork.SaveChangesAsync(ct);
+        await fileStorage.DeleteAsync(existing.FileKey, ct);
+    }
 }

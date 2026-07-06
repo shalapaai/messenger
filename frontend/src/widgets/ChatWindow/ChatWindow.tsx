@@ -17,7 +17,6 @@ import { ContextMenu, type ContextMenuState } from './ContextMenu'
 import { AttachIcon, ForwardIcon, TrashIcon } from './icons'
 import { useAttachmentQueue } from './hooks/useAttachmentQueue'
 import { useMobileInputLayer } from './hooks/useMobileInputLayer'
-import { useToastStore } from '../../shared/api/toastStore'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -71,7 +70,6 @@ export function ChatWindow({
   onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
 }: ChatWindowProps) {
   const { t } = useTranslation()
-  const showError = useToastStore(st => st.showError)
   const [text, setText] = useState('')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [editingMsg, setEditingMsg] = useState<Message | null>(null)
@@ -83,7 +81,7 @@ export function ChatWindow({
   const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
-  const attachments = useAttachmentQueue({ onSendFiles, showError })
+  const attachments = useAttachmentQueue({ onSendFiles })
   const mobileInput = useMobileInputLayer()
 
   const hasMessages = messages.length > 0
@@ -247,18 +245,10 @@ export function ChatWindow({
   async function send() {
     const trimmed = text.trim()
 
-    // Проверяем лимиты ДО отправки — иначе сообщение уходит на сервер, откуда возвращается
-    // отказом (или в случае строк — просто отправляется, раз бэкенд их не считает), вместо
-    // понятного предупреждения. Кнопка отправки уже задизейблена в этом случае, так что сюда
-    // попасть можно только напрямую через Enter.
-    if (trimmed.length > MESSAGE_MAX_LENGTH) {
-      showError(t('messenger.messageTooLong', { max: MESSAGE_MAX_LENGTH }))
-      return
-    }
-    if (trimmed.split('\n').length > MESSAGE_MAX_LINES) {
-      showError(t('messenger.messageTooManyLines', { max: MESSAGE_MAX_LINES }))
-      return
-    }
+    // Проверяем лимиты ДО отправки — кнопка отправки уже задизейблена в этом случае (и виден
+    // инлайн-баннер isOverLimit), так что сюда попасть можно только напрямую через Enter.
+    if (trimmed.length > MESSAGE_MAX_LENGTH) return
+    if (trimmed.split('\n').length > MESSAGE_MAX_LINES) return
 
     if (attachments.queuedFiles.length > 0) {
       if (attachments.fileUploading) return

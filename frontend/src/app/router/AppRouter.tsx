@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { LoginPage } from '../../pages/LoginPage'
 import { RegisterPage } from '../../pages/RegisterPage'
@@ -6,7 +6,7 @@ import { ForgotPasswordPage } from '../../pages/ForgotPasswordPage'
 import { useFeatures } from '../../shared/context/useFeatures'
 import { MessengerPage } from '../../pages/MessengerPage'
 import { ProfileSetupPage } from '../../pages/ProfileSetupPage'
-import { hasAuthTokens } from '../../shared/lib/auth/authTokens'
+import { hasAuthTokens, getMyUserId } from '../../shared/lib/auth/authTokens'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalRConnection } from '../../shared/api/useSignalRConnection'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -18,6 +18,7 @@ import {
   getActiveChatIdFromPathname,
   getDraftDirectUserIdFromPathname,
   isSameNotificationId,
+  showIncomingMessageNotification,
   syncActiveNotificationRoute,
   syncPushSubscription,
 } from '../../shared/lib/notifications'
@@ -37,6 +38,7 @@ function ForgotPasswordRoute() {
 function ConnectedLayout({ children }: { children: ReactNode }) {
   useSignalRConnection()
 
+  const navigate = useNavigate()
   const { pathname } = useLocation()
   const handleNewMessage = useChatsStore((s) => s.handleNewMessage)
   const setOnline        = useOnlineStore((s) => s.setOnline)
@@ -89,7 +91,18 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
 
   const onMessage = useCallback((msg: IncomingMessage) => {
     handleNewMessage(msg, activeChatId)
-  }, [activeChatId, handleNewMessage])
+
+    if (msg.senderId !== getMyUserId()) {
+      showIncomingMessageNotification({
+        title: msg.senderName,
+        body: msg.content,
+        chatId: msg.chatId,
+        notificationId: msg.messageId,
+        icon: msg.senderAvatarUrl,
+        onClick: () => navigate(`/chats/${msg.chatId}`),
+      })
+    }
+  }, [activeChatId, handleNewMessage, navigate])
 
   const onUserOnline = useCallback((event: UserOnlineEvent) => {
     setOnline(event.userId, event.isOnline)

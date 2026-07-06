@@ -8,6 +8,7 @@ type AvatarProps = {
   name: string
   size?: 'small' | 'medium' | 'large'
   color?: string
+  shape?: 'circle' | 'square'
 }
 
 const avatarBackgrounds = [
@@ -25,9 +26,9 @@ function getRandomAvatarBackground() {
   return avatarBackgrounds[randomIndex]
 }
 
-function Avatar({ src, name, size = 'medium', color }: AvatarProps) {
+function Avatar({ src, name, size = 'medium', color, shape = 'circle' }: AvatarProps) {
   const { t } = useTranslation()
-  const avatarClassName = `${styles.avatar} ${styles[size]}`
+  const avatarClassName = `${styles.avatar} ${styles[size]} ${shape === 'square' ? styles.square : ''}`
   const trimmed = name.trim()
   const words = trimmed.split(/\s+/)
   const fallbackLetter = trimmed

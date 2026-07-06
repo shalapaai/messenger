@@ -4,9 +4,7 @@ import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chat
 import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
-import i18n from '../../../shared/i18n'
 import { formatMessageTime } from '../../../shared/lib/formatDateTime'
-import { useToastStore } from '../../../shared/api/toastStore'
 
 type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
 
@@ -251,7 +249,6 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
         ),
       }))
     } catch {
-      useToastStore.getState().showError(i18n.t('messenger.sendFailed'))
       setChatMessages(prev => ({
         ...prev,
         [chatId]: (prev[chatId] ?? []).map(m =>

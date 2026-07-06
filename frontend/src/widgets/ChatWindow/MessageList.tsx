@@ -151,13 +151,13 @@ export function MessageList({
             </div>
             <span className={s.msgTime}>
               {item.msg.time}
-              {item.msg.edited && <span className={s.msgEdited}>{t('messenger.edited')}</span>}
               {item.msg.own && item.msg.status === 'pending' && <span className={`${s.msgStatusIcon} ${s.msgStatusPending}`}>●</span>}
               {item.msg.own && item.msg.status === 'sent' && (
                 isReadByOther(item.msg)
                   ? <span className={`${s.msgStatusIcon} ${s.msgStatusRead}`}>✓✓</span>
                   : <span className={`${s.msgStatusIcon} ${s.msgStatusSent}`}>✓</span>
               )}
+              {item.msg.edited && <span className={s.msgEdited}>{t('messenger.edited')}</span>}
             </span>
             {item.msg.status === 'failed' && (
               <button className={s.msgRetry} onClick={() => onRetry(item.msg)}>

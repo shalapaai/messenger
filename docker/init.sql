@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS chats.chats (
     type             VARCHAR(10)  NOT NULL,
     name             VARCHAR(100) DEFAULT NULL,
     avatar_url       VARCHAR(512) DEFAULT NULL,
+    avatar_color     VARCHAR(7)   DEFAULT NULL,
     created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     -- Заполнены только для type='direct', всегда в каноническом порядке (меньший uuid первым) —
     -- основа уникального индекса ux_chats_direct_pair ниже, не позволяющего гонке из двух

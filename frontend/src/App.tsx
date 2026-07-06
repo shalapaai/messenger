@@ -4,7 +4,6 @@ import { ThemeProvider } from './shared/context/ThemeContext'
 import { UserProfileProvider } from './shared/context/UserProfileContext'
 import { FeaturesProvider } from './shared/context/FeaturesContext'
 import { onAuthTokensCleared, onAuthTokensSaved } from './shared/lib/auth/authTokens'
-import { ToastViewport } from './shared/ui/ToastViewport'
 
 function App() {
   // Логаут в одной вкладке (кнопка "Выйти" или неудачный refresh токена в apiClient) должен
@@ -24,7 +23,6 @@ function App() {
       <FeaturesProvider>
         <UserProfileProvider>
           <AppRouter />
-          <ToastViewport />
         </UserProfileProvider>
       </FeaturesProvider>
     </ThemeProvider>
