@@ -1,8 +1,33 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 
-const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 300
+const MOBILE_INPUT_LAYER_HEIGHT_STORAGE_KEY = 'messenger_mobile_input_layer_height'
+const DEFAULT_MOBILE_INPUT_LAYER_HEIGHT = 260
 const MIN_MOBILE_INPUT_LAYER_HEIGHT = 180
-const MAX_MOBILE_INPUT_LAYER_RATIO = 0.45
+const MAX_MOBILE_INPUT_LAYER_RATIO = 0.5
+
+function getMaxMobileInputLayerHeight() {
+  return Math.round((window.visualViewport?.height ?? window.innerHeight) * MAX_MOBILE_INPUT_LAYER_RATIO)
+}
+
+function clampMobileInputLayerHeight(height: number) {
+  return Math.min(Math.round(height), getMaxMobileInputLayerHeight())
+}
+
+function getInitialMobileInputLayerHeight() {
+  let storedHeight: number
+
+  try {
+    storedHeight = Number(window.localStorage.getItem(MOBILE_INPUT_LAYER_HEIGHT_STORAGE_KEY))
+  } catch {
+    storedHeight = 0
+  }
+
+  if (Number.isFinite(storedHeight) && storedHeight >= MIN_MOBILE_INPUT_LAYER_HEIGHT) {
+    return clampMobileInputLayerHeight(storedHeight)
+  }
+
+  return DEFAULT_MOBILE_INPUT_LAYER_HEIGHT
+}
 
 /**
  * Мобильная раскладка ввода: виртуальная клавиатура и собственный эмодзи-пикер живут в одном
@@ -15,7 +40,7 @@ const MAX_MOBILE_INPUT_LAYER_RATIO = 0.45
 export function useMobileInputLayer() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
   const [isInputLayerActive, setIsInputLayerActive] = useState(false)
-  const [mobileInputLayerHeight, setMobileInputLayerHeight] = useState(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
+  const [mobileInputLayerHeight, setMobileInputLayerHeight] = useState(getInitialMobileInputLayerHeight)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiAreaRef = useRef<HTMLDivElement>(null)
@@ -26,7 +51,7 @@ export function useMobileInputLayer() {
   const keyboardWasOpenRef = useRef(false)
   const openingEmojiPickerRef = useRef(false)
   const keyboardClosedViewportHeightRef = useRef<number | null>(null)
-  const mobileInputLayerHeightRef = useRef(DEFAULT_MOBILE_INPUT_LAYER_HEIGHT)
+  const mobileInputLayerHeightRef = useRef(mobileInputLayerHeight)
   const textSelectionRef = useRef({ start: 0, end: 0 })
 
   const clearKeyboardCloseWait = useCallback(() => {
@@ -44,18 +69,28 @@ export function useMobileInputLayer() {
   }
 
   function rememberKeyboardClosedViewportHeight() {
-    keyboardClosedViewportHeightRef.current = window.visualViewport?.height ?? window.innerHeight
+    const currentHeight = window.visualViewport?.height ?? window.innerHeight
+    const previousHeight = keyboardClosedViewportHeightRef.current
+
+    keyboardClosedViewportHeightRef.current = previousHeight
+      ? Math.max(previousHeight, currentHeight)
+      : currentHeight
   }
 
   function updateMobileInputLayerHeight(nextHeight: number) {
-    const maxHeight = Math.round(
-      (keyboardClosedViewportHeightRef.current ?? window.innerHeight) * MAX_MOBILE_INPUT_LAYER_RATIO,
-    )
+    if (!Number.isFinite(nextHeight)) return
+
+    const maxHeight = Math.round((keyboardClosedViewportHeightRef.current ?? window.innerHeight) * MAX_MOBILE_INPUT_LAYER_RATIO)
     const roundedHeight = Math.min(Math.round(nextHeight), maxHeight)
 
     if (roundedHeight < MIN_MOBILE_INPUT_LAYER_HEIGHT) return
 
     mobileInputLayerHeightRef.current = roundedHeight
+    try {
+      window.localStorage.setItem(MOBILE_INPUT_LAYER_HEIGHT_STORAGE_KEY, String(roundedHeight))
+    } catch {
+      // localStorage может быть недоступен в приватном режиме; это не должно ломать ввод.
+    }
     setMobileInputLayerHeight(roundedHeight)
   }
 
@@ -131,6 +166,31 @@ export function useMobileInputLayer() {
   useEffect(() => {
     isEmojiPickerOpenRef.current = isEmojiPickerOpen
   }, [isEmojiPickerOpen])
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+
+    function rememberClosedViewportIfKeyboardIsHidden() {
+      const currentHeight = viewport?.height ?? window.innerHeight
+      const previousHeight = keyboardClosedViewportHeightRef.current
+      const viewportIsNotShrunk = !previousHeight || currentHeight >= previousHeight - 40
+
+      if (!isInputLayerActive && viewportIsNotShrunk) {
+        keyboardClosedViewportHeightRef.current = previousHeight
+          ? Math.max(previousHeight, currentHeight)
+          : currentHeight
+      }
+    }
+
+    rememberClosedViewportIfKeyboardIsHidden()
+    viewport?.addEventListener('resize', rememberClosedViewportIfKeyboardIsHidden)
+    window.addEventListener('orientationchange', rememberClosedViewportIfKeyboardIsHidden)
+
+    return () => {
+      viewport?.removeEventListener('resize', rememberClosedViewportIfKeyboardIsHidden)
+      window.removeEventListener('orientationchange', rememberClosedViewportIfKeyboardIsHidden)
+    }
+  }, [isInputLayerActive])
 
   useEffect(() => {
     if (!isEmojiPickerOpen) return

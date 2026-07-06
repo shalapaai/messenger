@@ -64,6 +64,7 @@ export function MessengerPage() {
   const stopTypingRef = useRef<() => void>(() => undefined)
 
   const inChatView   = !!id || !!newUserId
+  const chatId       = id ?? newUserId
   const draftUser    = newUserId ? (location.state as DraftUserState | null) : null
   const focusInput   = !!(location.state as { focusInput?: boolean } | null)?.focusInput
 
@@ -160,6 +161,20 @@ export function MessengerPage() {
   }, [id])
 
   const scroll = useScrollRestore(messages)
+  const {
+    bottomRef,
+    messagesRef,
+    topSentinelRef,
+    scrollToBottomNow,
+    prepareRestoreBeforePrepend,
+    triggerRestore,
+  } = scroll
+  const hasLoadedMessages = messages.length > 0
+
+  useEffect(() => {
+    if (!chatId || loadingInitial || !hasLoadedMessages) return
+    scrollToBottomNow(false)
+  }, [chatId, loadingInitial, hasLoadedMessages, scrollToBottomNow])
 
   // ── SignalR: чужая печать, своя печать (дебаунс), отправка ─────────────────
   const typingIndicator = useTypingIndicator(
@@ -191,23 +206,25 @@ export function MessengerPage() {
   // loadMoreHistory. Без него колбэк захватывает устаревший экземпляр функции,
   // где loadingHistory === true, и повторные скроллы вверх молча игнорируются.
   const loadMoreHistoryRef = useRef(loadMoreHistory)
-  loadMoreHistoryRef.current = loadMoreHistory
+  useEffect(() => {
+    loadMoreHistoryRef.current = loadMoreHistory
+  }, [loadMoreHistory])
 
   useEffect(() => {
-    const el       = scroll.messagesRef.current
-    const sentinel = scroll.topSentinelRef.current
+    const el       = messagesRef.current
+    const sentinel = topSentinelRef.current
     if (!el || !sentinel || !id || messages.length === 0 || historyLoaded) return
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          loadMoreHistoryRef.current(scroll.prepareRestoreBeforePrepend, scroll.triggerRestore)
+          loadMoreHistoryRef.current(prepareRestoreBeforePrepend, triggerRestore)
         }
       },
       { root: el, threshold: 0 }
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [id, messages.length, historyLoaded])
+  }, [id, messages.length, historyLoaded, messagesRef, prepareRestoreBeforePrepend, topSentinelRef, triggerRestore])
 
   useEffect(() => {
     const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen || !!forwardState
@@ -412,7 +429,6 @@ export function MessengerPage() {
           otherUserId: newUserId,
         }
       : null
-  const chatId = id ?? newUserId
   const myGroupRole = isGroupChat && profile
     ? (groupMembers.find(m => m.userId === profile.userId)?.role ?? null)
     : null
@@ -490,9 +506,9 @@ export function MessengerPage() {
               loadingInitial={loadingInitial}
               loadError={loadError}
               onRetryLoad={retryLoadInitial}
-              messagesRef={scroll.messagesRef}
-              topSentinelRef={scroll.topSentinelRef}
-              bottomRef={scroll.bottomRef}
+              messagesRef={messagesRef}
+              topSentinelRef={topSentinelRef}
+              bottomRef={bottomRef}
               onSend={handleSend}
               onSendFiles={handleSendFiles}
               onRetry={handleRetrySend}
