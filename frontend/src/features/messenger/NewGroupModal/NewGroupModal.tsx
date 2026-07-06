@@ -131,7 +131,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
                   >
                     {user.avatarUrl
                       ? <AvatarImage src={user.avatarUrl} alt={init} className={s.avatarImg} />
-                      : <div className={s.avatar} style={{ background: colorFromId(user.userId) }}>{init}</div>
+                      : <div className={s.avatar} style={{ background: user.avatarColor ?? colorFromId(user.userId) }}>{init}</div>
                     }
                     <div className={s.info}>
                       <span className={s.name}>{user.displayName}</span>
