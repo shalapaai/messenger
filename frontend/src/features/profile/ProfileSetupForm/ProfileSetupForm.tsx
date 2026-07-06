@@ -10,6 +10,7 @@ import { AvatarCropModal } from '../AvatarCropModal'
 import { AvatarUpload } from '../AvatarUpload'
 import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
 import { randomAvatarColor } from '../../../shared/lib/avatarColors'
+import { useToastStore } from '../../../shared/api/toastStore'
 import styles from './ProfileSetupForm.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
@@ -19,6 +20,8 @@ function ProfileSetupForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { setProfile } = useUserProfile()
+  const showSuccess = useToastStore((state) => state.showSuccess)
+  const showError = useToastStore((state) => state.showError)
 
   const [displayName, setDisplayName] = useState('')
   const [login, setLogin]             = useState('')
@@ -118,10 +121,13 @@ function ProfileSetupForm() {
 
       const profile = await profileApi.getMe()
       setProfile(profile)
+      showSuccess(t('toast.profileCreated'))
       navigate('/chats')
     } catch (err) {
       console.error('Profile setup error:', err)
-      setError(t('profileSetup.errors.saveFailed'))
+      const message = t('profileSetup.errors.saveFailed')
+      setError(message)
+      showError(message)
     } finally {
       setIsLoading(false)
     }

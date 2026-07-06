@@ -10,11 +10,16 @@
   <ItemGroup>
     <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="WebPush" Version="1.0.12" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Messenger.Shared.Kernel\Messenger.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Chats\Messenger.Modules.Chats\Messenger.Modules.Chats.csproj" />
     <ProjectReference Include="..\..\Messages\Messenger.Modules.Messages\Messenger.Modules.Messages.csproj" />
+    <ProjectReference Include="..\..\Users\Messenger.Modules.Users\Messenger.Modules.Users.csproj" />
   </ItemGroup>
 
 </Project>

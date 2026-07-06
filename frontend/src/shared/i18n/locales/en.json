@@ -36,6 +36,38 @@
     "ok": "OK",
     "back": "Back"
   },
+  "toast": {
+    "dismiss": "Dismiss notification",
+    "loginSuccess": "Signed in",
+    "registerSuccess": "Account created",
+    "otpSent": "Code sent to email",
+    "passwordResetSuccess": "Password updated",
+    "profileCreated": "Profile saved",
+    "profileSaved": "Profile updated",
+    "messageDeleted": "Message deleted",
+    "messagesDeleted": "Messages deleted",
+    "messageEdited": "Message edited",
+    "messagesForwarded": "Message forwarded",
+    "chatDeleted": "Chat deleted",
+    "groupCreated": "Group created",
+    "groupUpdated": "Group updated",
+    "groupLeft": "You left the group",
+    "memberAdded": "Member added",
+    "memberRemoved": "Member removed",
+    "roleUpdated": "Member role updated",
+    "fileSent": "File sent",
+    "filesSent": "Files sent",
+    "fileDownloaded": "File downloaded"
+  },
+  "notifications": {
+    "label": "Notifications",
+    "enable": "Enable",
+    "enabled": "Enabled",
+    "blocked": "Blocked",
+    "unsupported": "Unavailable",
+    "newMessage": "New message",
+    "attachmentMessage": "Attachment"
+  },
   "auth": {
     "loginTitle": "Sign in",
     "loginSubtitle": "Enter your details to continue messaging.",

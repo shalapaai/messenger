@@ -85,6 +85,9 @@ services:
       Jwt__SecretKey:                     ${JWT_SECRET_KEY}
       Jwt__Issuer:                        ${JWT_ISSUER:-Messenger.Api}
       Jwt__Audience:                      ${JWT_AUDIENCE:-Messenger.Client}
+      WebPush__Subject:                   ${WEB_PUSH_SUBJECT:-mailto:dev@example.com}
+      WebPush__PublicKey:                 ${WEB_PUSH_PUBLIC_KEY:-BBVFUz7LeSmQA6R3k136nvN6MvyvoEz-J-jaCdTYUj3TeZDg91DlZDRlCrORQu_f8ckkzHBW6UT4fFJurvl1PyM}
+      WebPush__PrivateKey:                ${WEB_PUSH_PRIVATE_KEY:-YgBkAgJx0eRBIUTtAPQn1O4CGRLbrVYmnYUoJKk5kN4}
       FileStorage__Type:                  ${FILE_STORAGE_TYPE:-Local}
       FileStorage__Local__BasePath:       /app/uploads
       Localization__DefaultCulture:       en

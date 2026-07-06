@@ -36,6 +36,38 @@
     "ok": "Понятно",
     "back": "Назад"
   },
+  "toast": {
+    "dismiss": "Закрыть уведомление",
+    "loginSuccess": "Вы вошли в аккаунт",
+    "registerSuccess": "Аккаунт создан",
+    "otpSent": "Код отправлен на почту",
+    "passwordResetSuccess": "Пароль обновлён",
+    "profileCreated": "Профиль сохранён",
+    "profileSaved": "Профиль обновлён",
+    "messageDeleted": "Сообщение удалено",
+    "messagesDeleted": "Сообщения удалены",
+    "messageEdited": "Сообщение изменено",
+    "messagesForwarded": "Сообщение переслано",
+    "chatDeleted": "Чат удалён",
+    "groupCreated": "Группа создана",
+    "groupUpdated": "Группа обновлена",
+    "groupLeft": "Вы вышли из группы",
+    "memberAdded": "Участник добавлен",
+    "memberRemoved": "Участник удалён",
+    "roleUpdated": "Роль участника изменена",
+    "fileSent": "Файл отправлен",
+    "filesSent": "Файлы отправлены",
+    "fileDownloaded": "Файл скачан"
+  },
+  "notifications": {
+    "label": "Уведомления",
+    "enable": "Включить",
+    "enabled": "Включены",
+    "blocked": "Запрещены",
+    "unsupported": "Недоступны",
+    "newMessage": "Новое сообщение",
+    "attachmentMessage": "Вложение"
+  },
   "auth": {
     "loginTitle": "Вход",
     "loginSubtitle": "Введите данные, чтобы продолжить общение.",

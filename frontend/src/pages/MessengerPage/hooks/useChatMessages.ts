@@ -5,6 +5,7 @@ import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi,
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
 import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
+import { useToastStore } from '../../../shared/api/toastStore'
 
 type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
 
@@ -65,7 +66,6 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       setLoadError(prev => ({ ...prev, [chatId]: true }))
       setLoadingInitial(prev => ({ ...prev, [chatId]: false }))
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -251,6 +251,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
         ),
       }))
     } catch {
+      useToastStore.getState().showError(i18n.t('messenger.sendFailed'))
       setChatMessages(prev => ({
         ...prev,
         [chatId]: (prev[chatId] ?? []).map(m =>

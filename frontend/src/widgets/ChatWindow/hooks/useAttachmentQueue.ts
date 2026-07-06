@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type Dr
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { isAllowedAttachment, MAX_ATTACHMENT_SIZE_BYTES } from '../../../shared/lib/fileType'
+import { useToastStore } from '../../../shared/api/toastStore'
 
 const MAX_ATTACHMENT_COUNT = 10
 
@@ -24,6 +25,7 @@ interface UseAttachmentQueueOptions {
  */
 export function useAttachmentQueue({ onSendFiles, showError }: UseAttachmentQueueOptions) {
   const { t } = useTranslation()
+  const showSuccess = useToastStore((state) => state.showSuccess)
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([])
   const [fileUploading, setFileUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -133,6 +135,7 @@ export function useAttachmentQueue({ onSendFiles, showError }: UseAttachmentQueu
     try {
       await onSendFiles(filesToSend, caption, setUploadProgress)
       clearQueuedFiles()
+      showSuccess(t(filesToSend.length === 1 ? 'toast.fileSent' : 'toast.filesSent'))
       return true
     } catch (err) {
       const code = axios.isAxiosError(err)
