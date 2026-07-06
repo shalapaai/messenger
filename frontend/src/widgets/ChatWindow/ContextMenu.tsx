@@ -24,13 +24,18 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const { t } = useTranslation()
   const { msg, selection } = state
+  // Сообщение без messageId ещё отправляется или не отправилось — на сервере его нет, поэтому
+  // ответить/переслать/выделить/редактировать нечего, доступно только удаление черновика
+  // (и оно не завязано на canDeleteMessages — это право удалять чужие/групповые сообщения,
+  // а тут пользователь убирает свой же неотправленный черновик, который никто больше не видел)
+  const isLocalOnly = !msg.messageId
 
   return (
     <div
       className={s.contextMenu}
       style={{
         left: Math.min(state.x, window.innerWidth - 190),
-        top:  Math.min(state.y, window.innerHeight - (selection ? 88 : msg.own ? 192 : 156)),
+        top:  Math.min(state.y, window.innerHeight - (selection ? 88 : isLocalOnly ? 56 : msg.own ? 192 : 156)),
       }}
     >
       {selection ? (
@@ -44,6 +49,10 @@ export function ContextMenu({
             </button>
           )}
         </>
+      ) : isLocalOnly ? (
+        <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => onDelete(msg)}>
+          <TrashIcon />{t('messenger.deleteMessage')}
+        </button>
       ) : (
         <>
           <button type="button" className={s.contextMenuItem} onClick={() => onReply(msg)}>

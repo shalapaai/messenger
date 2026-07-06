@@ -21,6 +21,10 @@ import { useErrorModalStore } from '../../shared/api/errorModalStore'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
+// должно совпадать с лимитом на бэкенде (Message.Create / Message.Edit) — проверяем длину
+// на клиенте до отправки, чтобы слишком длинное сообщение не превращалось молча в "не отправлено"
+const MESSAGE_MAX_LENGTH = 4096
+
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
@@ -76,6 +80,7 @@ export function ChatWindow({
   const mobileInput = useMobileInputLayer()
 
   const hasMessages = messages.length > 0
+  const isOverLimit = text.length > MESSAGE_MAX_LENGTH
 
   useEffect(() => {
     if (shouldAutoFocus) mobileInput.textareaRef.current?.focus()
@@ -139,9 +144,12 @@ export function ChatWindow({
   }, [contextMenu, messagesRef])
 
   function openContextMenu(e: MouseEvent, msg: Message) {
-    if (!msg.messageId) return
+    // Сообщение без messageId — ещё отправляется или не отправилось; меню для него имеет смысл
+    // только чтобы удалить черновик (см. ContextMenu: остальные пункты требуют messageId)
+    if (!msg.messageId && msg.status !== 'failed') return
     e.preventDefault()
     if (selectMode) {
+      if (!msg.messageId) return
       if (!selectedIds.has(msg.id)) toggleSelect(msg)
       setContextMenu({ x: e.clientX, y: e.clientY, msg, selection: true })
       return
@@ -218,6 +226,14 @@ export function ChatWindow({
 
   async function send() {
     const trimmed = text.trim()
+
+    // Проверяем лимит ДО отправки — иначе сообщение уходит на сервер, откуда возвращается
+    // отказом, и превращается в "не отправлено" вместо понятного предупреждения. Кнопка отправки
+    // уже задизейблена в этом случае, так что сюда попасть можно только напрямую через Enter.
+    if (trimmed.length > MESSAGE_MAX_LENGTH) {
+      showError(t('messenger.messageTooLong', { max: MESSAGE_MAX_LENGTH }))
+      return
+    }
 
     if (attachments.queuedFiles.length > 0) {
       if (attachments.fileUploading) return
@@ -425,6 +441,12 @@ export function ChatWindow({
           </div>
         )}
 
+        {isOverLimit && (
+          <div className={s.lengthWarningBar}>
+            {t('messenger.messageTooLongInline', { length: text.length, max: MESSAGE_MAX_LENGTH })}
+          </div>
+        )}
+
         <FilePreviewBar
           queuedFiles={attachments.queuedFiles}
           fileUploading={attachments.fileUploading}
@@ -515,7 +537,7 @@ export function ChatWindow({
 
           <button
             className={s.sendBtn}
-            disabled={(!text.trim() && attachments.queuedFiles.length === 0) || attachments.fileUploading}
+            disabled={(!text.trim() && attachments.queuedFiles.length === 0) || attachments.fileUploading || isOverLimit}
             onClick={send}
           >
             <svg className={s.sendIcon} viewBox="0 0 24 24">

@@ -169,6 +169,8 @@
     "confirmBulkDelete_many": "Удалить {{count}} сообщений?",
     "confirmBulkDelete_other": "Удалить {{count}} сообщения?",
     "sendFailed": "Не удалось отправить сообщение. Попробуйте ещё раз.",
+    "messageTooLong": "Сообщение слишком длинное. Максимум {{max}} символов.",
+    "messageTooLongInline": "Сообщение слишком длинное: {{length}} / {{max}}",
     "attachFile": "Прикрепить файл",
     "downloadFile": "Скачать файл",
     "dropFilesTitle": "Перетащите файлы сюда",

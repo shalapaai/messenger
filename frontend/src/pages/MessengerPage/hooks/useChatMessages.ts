@@ -157,6 +157,15 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }))
   }, [])
 
+  // Сообщение без messageId (ещё не подтверждено сервером — pending/failed) никогда там не
+  // существовало, удалять его через API нечего: просто убираем локальный черновик из состояния
+  const removeLocalMessage = useCallback((chatId: string, msg: Message) => {
+    setChatMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] ?? []).filter(m => m.id !== msg.id),
+    }))
+  }, [])
+
   const deleteMessages = useCallback(async (chatId: string, msgs: Message[]) => {
     const messageIds = msgs.map(m => m.messageId).filter((mid): mid is string => !!mid)
     if (messageIds.length === 0) return
@@ -342,6 +351,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     sendFiles,
     retry,
     deleteMessage,
+    removeLocalMessage,
     deleteMessages,
     editMessage,
   }

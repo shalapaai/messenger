@@ -165,6 +165,8 @@
     "confirmBulkDelete_one": "Delete {{count}} message?",
     "confirmBulkDelete_other": "Delete {{count}} messages?",
     "sendFailed": "Could not send the message. Please try again.",
+    "messageTooLong": "Message is too long. Maximum {{max}} characters.",
+    "messageTooLongInline": "Message is too long: {{length}} / {{max}}",
     "attachFile": "Attach file",
     "downloadFile": "Download file",
     "dropFilesTitle": "Drop files here",

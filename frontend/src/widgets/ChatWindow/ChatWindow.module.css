@@ -696,6 +696,16 @@
 }
 .editingBarCancel:hover { color: var(--color-text); }
 
+/* ── Предупреждение о превышении лимита длины сообщения ───────────────────── */
+.lengthWarningBar {
+  padding: 8px 24px;
+  background: #fee2e2;
+  border-top: 1px solid #fca5a5;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
 /* ── Панель ответа на сообщение ───────────────────────────────────────────── */
 .replyingBar {
   display: flex;

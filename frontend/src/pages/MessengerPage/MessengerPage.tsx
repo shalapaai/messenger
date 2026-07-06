@@ -148,7 +148,7 @@ export function MessengerPage() {
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, sendFiles, retry, deleteMessage, deleteMessages, editMessage,
+    send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -267,6 +267,9 @@ export function MessengerPage() {
 
   async function handleDeleteMessage(msg: Message) {
     if (!id) return
+    // Сообщение без messageId (не отправилось / ещё отправляется) не существует на сервере —
+    // удаляем локально, без запроса
+    if (!msg.messageId) { removeLocalMessage(id, msg); return }
     try {
       await deleteMessage(id, msg)
     } catch {
