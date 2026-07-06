@@ -34,7 +34,7 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
                             p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))
             : dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
-                            (EF.Functions.ILike(p.Email, $"%{q}%") ||
+                            (EF.Functions.ILike(p.Email, $"{q}@%") ||
                              EF.Functions.ILike(p.DisplayName, $"%{q}%") ||
                              (p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))));
 
