@@ -6,6 +6,8 @@ using Messenger.Shared.Kernel.Results;
 
 public sealed class Message : AggregateRoot<MessageId>
 {
+    public const int MaxAttachmentsPerMessage = 10;
+
     private readonly List<MessageAttachment> _attachments = [];
 
     private Message() { } // EF Core
@@ -20,6 +22,13 @@ public sealed class Message : AggregateRoot<MessageId>
         Status = MessageStatus.Sent;
         SentAt = DateTime.UtcNow;
     }
+
+    // Монотонно возрастающий идентификатор вставки (DB identity) — используется ТОЛЬКО для
+    // курсорной пагинации как тай-брейкер к SentAt. Несколько сообщений могут получить
+    // одинаковый SentAt (например, быстрый цикл вставок при пересылке нескольких сообщений
+    // сразу — см. ForwardMessagesCommandHandler), и сортировка по одному только SentAt в
+    // таком случае может пропустить или задвоить сообщение на границе страницы.
+    public long Sequence { get; private set; }
 
     public Guid ChatId { get; private set; }
     public Guid SenderId { get; private set; }
@@ -55,6 +64,9 @@ public sealed class Message : AggregateRoot<MessageId>
     {
         if (attachments.Count == 0)
             return Result.Failure<Message>(Error.Validation("Attachments", "At least one file is required"));
+
+        if (attachments.Count > MaxAttachmentsPerMessage)
+            return Result.Failure<Message>(Error.Validation("Attachments", $"Cannot attach more than {MaxAttachmentsPerMessage} files to a single message"));
 
         var message = new Message(MessageId.New(), chatId, senderId, caption?.Trim() ?? string.Empty, null);
         message._attachments.AddRange(attachments);

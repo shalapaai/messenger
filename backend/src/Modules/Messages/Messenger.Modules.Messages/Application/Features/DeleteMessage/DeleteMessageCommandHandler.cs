@@ -28,7 +28,7 @@ public sealed class DeleteMessageCommandHandler(
             return result;
 
         messageRepository.Update(message);
-        await unitOfWork.SaveChangesAsync(ct);
-        return Result.Success();
+
+        return await ConcurrencySafe.SaveChangesAsync(unitOfWork, "Message", ct);
     }
 }

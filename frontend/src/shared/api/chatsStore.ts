@@ -49,13 +49,15 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
 
     if (!target) {
       // сообщение пришло в чат, которого ещё нет в списке — собеседник только что создал
-      // его первым сообщением. Подтягиваем список целиком, чтобы чат появился сразу,
-      // без перезагрузки страницы.
+      // его первым сообщением. Подтягиваем список целиком, чтобы чат появился сразу, без
+      // перезагрузки страницы — сервер уже отдаст верный unreadCount для него (сообщение
+      // к этому моменту уже сохранено в БД), вручную прибавлять +1 НЕЛЬЗЯ: это задвоило бы
+      // счётчик (сервер и так его уже посчитал). lastMessageId всё равно проставляем — иначе
+      // повторная доставка этого же сообщения (chat-группа + личная группа) не задедуплицируется.
       get().loadChats().then(() => {
-        if (msg.chatId === activeChatId || isOwnMessage) return
         set((s) => ({
           chats: s.chats.map(c =>
-            c.id === msg.chatId ? { ...c, unread: c.unread + 1, lastMessageId: msg.messageId } : c
+            c.id === msg.chatId ? { ...c, lastMessageId: msg.messageId } : c
           ),
         }))
       })
@@ -68,11 +70,15 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
 
     set((state) => {
       const time = new Date(msg.sentAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+      const firstAttachment = msg.attachments?.[0]
       const chats = state.chats.map(chat =>
         chat.id === msg.chatId
           ? {
               ...chat,
               preview: msg.content,
+              previewAttachmentUrl: firstAttachment?.fileUrl,
+              previewAttachmentContentType: firstAttachment?.fileContentType,
+              previewAttachmentFileName: firstAttachment?.fileName,
               time,
               lastMessageId: msg.messageId,
               // не считаем непрочитанными если чат сейчас открыт или сообщение отправлено мной же

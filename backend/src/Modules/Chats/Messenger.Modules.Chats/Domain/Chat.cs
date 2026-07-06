@@ -59,10 +59,24 @@ public sealed class Chat : AggregateRoot<ChatId>
     public string? AvatarUrl { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    public IReadOnlyList<ChatMember> Members => _members.AsReadOnly();
+    // Заполняются только для Direct-чатов, всегда в каноническом порядке (меньший Guid первым) —
+    // основа для уникального индекса (см. ChatsDbContext), не позволяющего двум одновременным
+    // запросам создать два разных direct-чата между одной и той же парой пользователей.
+    public Guid? DirectUserId1 { get; private set; }
+    public Guid? DirectUserId2 { get; private set; }
 
-    public static Chat CreateDirect() =>
-        new(ChatId.New(), ChatType.Direct, null);
+    public IReadOnlyList<ChatMember> Members => _members.AsReadOnly();
+    public bool IsEmpty => _members.Count == 0;
+
+    public static Chat CreateDirect(Guid userId1, Guid userId2)
+    {
+        var (first, second) = userId1.CompareTo(userId2) <= 0 ? (userId1, userId2) : (userId2, userId1);
+        return new Chat(ChatId.New(), ChatType.Direct, null)
+        {
+            DirectUserId1 = first,
+            DirectUserId2 = second,
+        };
+    }
 
     public static Result<Chat> CreateGroup(string name)
     {

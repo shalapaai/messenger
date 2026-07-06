@@ -23,14 +23,24 @@ public sealed class DeleteChatCommandHandler(
         if (check.IsFailure)
             return check;
 
-        // Явный межмодульный вызов, а не FK ON DELETE CASCADE — Chats не должен
-        // полагаться на то, что у Messages именно такая схема хранения.
-        var deleteMessages = await messagesModule.DeleteAllMessagesInChatAsync(command.ChatId, ct);
-        if (deleteMessages.IsFailure)
-            return deleteMessages;
-
         chatRepository.Delete(chat);
         await unitOfWork.SaveChangesAsync(ct);
+
+        // Явный межмодульный вызов, а не FK ON DELETE CASCADE — Chats не должен
+        // полагаться на то, что у Messages именно такая схема хранения.
+        // Выполняется ПОСЛЕ коммита удаления чата и намеренно best-effort: если бы порядок
+        // был обратным (как раньше) и это удаление сообщений (ExecuteDeleteAsync, отдельный
+        // DbContext/соединение) выполнилось раньше, но SaveChangesAsync ниже упал бы,
+        // сообщения были бы уже необратимо удалены, а чат — нет. Теперь худший случай —
+        // чат удалён, а сообщения остаются orphaned (безопасно, подчищаются повторной попыткой).
+        try
+        {
+            await messagesModule.DeleteAllMessagesInChatAsync(command.ChatId, ct);
+        }
+        catch (Exception)
+        {
+            // не мешаем успешному ответу — с точки зрения пользователя чат уже удалён
+        }
 
         return Result.Success();
     }

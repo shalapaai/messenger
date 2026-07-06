@@ -35,7 +35,7 @@ public sealed class DeleteMessagesCommandHandler(
         if (deleted.Count == 0)
             return Result.Failure<List<Guid>>(Error.NotFound("Message"));
 
-        await unitOfWork.SaveChangesAsync(ct);
-        return Result.Success(deleted);
+        var saveResult = await ConcurrencySafe.SaveChangesAsync(unitOfWork, "Message", ct);
+        return saveResult.IsFailure ? Result.Failure<List<Guid>>(saveResult.Error) : Result.Success(deleted);
     }
 }

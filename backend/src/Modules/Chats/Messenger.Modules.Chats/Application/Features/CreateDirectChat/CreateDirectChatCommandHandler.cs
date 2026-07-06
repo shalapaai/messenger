@@ -4,6 +4,7 @@ using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
+using Microsoft.EntityFrameworkCore;
 
 public sealed class CreateDirectChatCommandHandler(
     IChatRepository chatRepository,
@@ -19,12 +20,28 @@ public sealed class CreateDirectChatCommandHandler(
         if (existingId is not null)
             return Result.Success(existingId.Value);
 
-        var chat = Chat.CreateDirect();
+        var chat = Chat.CreateDirect(command.CurrentUserId, command.OtherUserId);
         chat.AddMember(command.CurrentUserId);
         chat.AddMember(command.OtherUserId);
 
         chatRepository.Add(chat);
-        await unitOfWork.SaveChangesAsync(ct);
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // TOCTOU: два одновременных запроса на создание direct-чата с одним и тем же
+            // собеседником оба проходят проверку FindDirectChatIdAsync выше (ни один ещё не
+            // закоммичен), и второй SaveChangesAsync падает на уникальном индексе пары
+            // участников (ux_chats_direct_pair). Возвращаем уже существующий чат, а не 500.
+            var existingAfterConflict = await chatRepository.FindDirectChatIdAsync(command.CurrentUserId, command.OtherUserId, ct);
+            if (existingAfterConflict is not null)
+                return Result.Success(existingAfterConflict.Value);
+
+            throw;
+        }
 
         return Result.Success(chat.Id.Value);
     }

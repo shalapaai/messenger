@@ -75,8 +75,9 @@ public static class UsersEndpoints
             .WithName("SearchUsers")
             .WithSummary("Поиск пользователей")
             .WithDescription(
-                "Поиск по email, displayName и login. " +
+                "Поиск по локальной части email (до @), displayName и login. " +
                 "Если `q` начинается с `@` — поиск только по полю login (например, `@anna`). " +
+                "Результаты всегда содержат оба поля: email и login (если задан). " +
                 "Поддерживает пагинацию: `page` (default 1), `pageSize` (default 20, max 50). " +
                 "Текущий пользователь исключается из результатов.")
             .Produces<SearchResultDto>()

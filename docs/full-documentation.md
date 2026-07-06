@@ -146,6 +146,7 @@ PostgreSQL (одна БД)
 | login | varchar(30) | Уникальный логин вида `@login` (nullable) |
 | status | varchar(200) | Статус-сообщение под именем (nullable) |
 | avatar_url | varchar(2048) | URL аватарки (nullable) |
+| avatar_color | varchar(7) | Цвет фона инициалов, если аватарки нет (`#RRGGBB`, дефолт `#2C5BF0`) |
 | phone | varchar(20) | Телефон (nullable) |
 | city | varchar(100) | Город (nullable) |
 | department | varchar(100) | Отдел (nullable) |
@@ -166,6 +167,10 @@ PostgreSQL (одна БД)
 | name | varchar(100) | Название (только для группового) |
 | avatar_url | varchar(512) | Аватарка группового чата |
 | created_at | timestamptz | Дата создания |
+| direct_user_id_1 | uuid | Только для `direct`, канонически отсортированная пара (меньший uuid первым) |
+| direct_user_id_2 | uuid | Только для `direct`, вторая половина пары |
+
+**Индекс:** `ux_chats_direct_pair` (unique, частичный — `WHERE type = 'direct'`) на `(direct_user_id_1, direct_user_id_2)` — не даёт двум одновременным запросам создать два разных direct-чата между одной и той же парой пользователей (см. «Удаление чата»/§6 и `CreateDirectChatCommandHandler`).
 
 #### Таблица `chats.members`
 | Колонка | Тип | Описание |
@@ -188,10 +193,10 @@ PostgreSQL (одна БД)
 | Колонка | Тип | Описание |
 |---|---|---|
 | id | uuid | Первичный ключ |
+| sequence | bigint | Автоинкрементный identity — монотонный тай-брейкер к `sent_at` для курсорной пагинации (см. §7); сам по себе клиенту не отдаётся |
 | chat_id | uuid | Какой чат (FK на chats.chats) |
 | sender_id | uuid | Кто отправил (FK на auth.user) |
 | content | varchar(4096) | Текст сообщения |
-| file_url | varchar(2048) | URL файла (если вложение) |
 | status | varchar(20) | `"Sent"`, `"Delivered"`, `"Read"`, `"Deleted"` |
 | sent_at | timestamptz | Когда отправлено |
 | edited_at | timestamptz | Когда отредактировано (null если нет) |
@@ -200,9 +205,28 @@ PostgreSQL (одна БД)
 | forwarded_from_message_id | uuid | Если сообщение — пересланная копия: id исходного сообщения (FK на messages.message, SET NULL если оригинал удалён) |
 | forwarded_from_user_id | uuid | Автор исходного (пересылаемого) сообщения — для подписи «Переслано от», не совпадает с `sender_id` (FK на auth.user, SET NULL) |
 
+Вложений на `message` нет отдельной колонкой — одно сообщение может нести несколько файлов сразу, они живут в отдельной таблице `messages.message_attachment` (ниже).
+
 **Индексы:**
 - `ix_message_chat_id_sent_at` — пагинация истории чата (самый частый запрос)
+- `ix_message_chat_id_sequence` — курсорная пагинация (см. §7 «Cursor-пагинация»)
 - `ix_message_sender_id` — поиск сообщений по отправителю
+- `uq_message_sequence` (unique) — гарантия, что `sequence` действительно уникален и монотонен
+
+**Concurrency:** редактирование/удаление защищено optimistic concurrency через системную колонку Postgres `xmin` (не требует отдельной миграции — есть у каждой строки "из коробки"). Если сообщение успели изменить/удалить параллельно между чтением и записью — `EditMessageCommandHandler`/`DeleteMessageCommandHandler` ловят `DbUpdateConcurrencyException` и возвращают `409 Conflict` вместо тихой перезаписи.
+
+#### Таблица `messages.message_attachment`
+| Колонка | Тип | Описание |
+|---|---|---|
+| id | uuid | Первичный ключ |
+| message_id | uuid | Владеющее сообщение (FK на messages.message, CASCADE) |
+| file_url | varchar(2048) | URL файла в хранилище |
+| file_name | varchar(255) | Оригинальное имя файла |
+| content_type | varchar(100) | MIME-тип |
+| file_size_bytes | bigint | Размер в байтах |
+| sort_order | int | Порядок, в котором пользователь выбрал файлы |
+
+**Индекс:** `ix_message_attachment_message_id`. **Ограничение:** максимум 10 вложений на сообщение (`Message.MaxAttachmentsPerMessage`, см. §7).
 
 ---
 
@@ -218,12 +242,14 @@ PostgreSQL (одна БД)
 | size_bytes | bigint | Размер в байтах |
 | uploaded_by | uuid | Кто загрузил (FK на auth.user) |
 | uploaded_at | timestamptz | Когда загружен |
-| category | varchar(30) | `"Avatar"`, `"ChatAttachment"`, `"Document"` |
-| chat_id | uuid | Заполнено только для `ChatAttachment` — нужно при скачивании, чтобы проверить членство в чате. Без FK на `chats.chats` — модули не должны зависеть друг от друга на уровне схемы (см. §8, §10) |
+| category | varchar(30) | `"Avatar"`, `"ChatAttachment"`, `"Document"`, `"GroupAvatar"` |
+| chat_id | uuid | Заполнено для `ChatAttachment` (проверка членства при скачивании) и для `GroupAvatar` (поиск текущей аватарки группы при замене). Без FK на `chats.chats` — модули не должны зависеть друг от друга на уровне схемы (см. §8, §10) |
 
 **Индексы:**
 - `ix_file_upload_file_key` (unique) — поиск при отдаче файла клиенту
 - `ix_file_upload_uploaded_by_category` — поиск аватара конкретного пользователя
+- `ux_file_upload_avatar_per_user` (unique, частичный — `WHERE category = 'Avatar'`) — не даёт двум одновременным загрузкам личного аватара создать вторую "текущую" запись
+- `ux_file_upload_group_avatar_per_chat` (unique, частичный — `WHERE category = 'GroupAvatar'`) — то же самое для аватарки группы
 
 ---
 
@@ -281,11 +307,13 @@ JWT истёк → клиент отправляет refresh token →
 
 | Метод | URL | Описание |
 |---|---|---|
-| POST | `/api/users/profile` | Создать профиль после регистрации |
-| GET | `/api/users/me` | Получить свой профиль |
-| PATCH | `/api/users/profile` | Обновить имя, биографию |
-| POST | `/api/users/avatar` | Загрузить аватарку |
-| GET | `/api/users/search?q=...` | Поиск пользователей по имени/логину |
+| POST | `/api/users` | Создать профиль после регистрации (`login` необязателен) |
+| GET | `/api/users/me` | Получить свой полный профиль |
+| PATCH | `/api/users/me` | Частичное обновление профиля (только переданные поля) |
+| POST | `/api/users/me/avatar` | Загрузить аватарку (JPEG/PNG/WebP, до 5 МБ) |
+| DELETE | `/api/users/me/avatar` | Удалить аватарку |
+| GET | `/api/users/{userId}` | Публичный профиль пользователя по id |
+| GET | `/api/users/search?q=...` | Поиск пользователей по email/displayName/login (см. §11), с пагинацией (`page`, `pageSize`, max 50) |
 
 ### Логин пользователя
 
@@ -301,7 +329,7 @@ JWT истёк → клиент отправляет refresh token →
 
 ### Типы чатов
 
-- **Direct** — личный чат между двумя пользователями. Создаётся идемпотентно (повторный запрос вернёт тот же ID).
+- **Direct** — личный чат между двумя пользователями. Создаётся идемпотентно (повторный запрос вернёт тот же ID) — защищено не только проверкой перед вставкой, но и уникальным индексом `ux_chats_direct_pair` в БД (см. §3): если два одновременных запроса проскочат проверку разом, второй `SaveChangesAsync` упадёт на индексе, и `CreateDirectChatCommandHandler` просто вернёт уже созданный первым запросом чат вместо ошибки.
 - **Group** — групповой чат с названием. Участники могут иметь роли.
 
 ### Роли участников
@@ -324,6 +352,8 @@ JWT истёк → клиент отправляет refresh token →
 | DELETE | `/api/chats/{id}` | Удалить личный чат целиком (см. ниже) |
 | POST | `/api/chats/{id}/members` | Добавить участника |
 | DELETE | `/api/chats/{id}/members/{userId}` | Удалить участника / выйти |
+| PATCH | `/api/chats/{id}/members/{userId}/role` | Изменить роль участника (только Owner) |
+| POST | `/api/chats/{id}/avatar` | Загрузить аватарку группового чата (Admin+, см. §8) |
 | POST | `/api/chats/{id}/read` | Отметить чат прочитанным текущим пользователем (см. «Прочитано» ниже) |
 
 ### Удаление чата
@@ -334,13 +364,17 @@ JWT истёк → клиент отправляет refresh token →
 - может вызвать **любой участник** (не только условный "владелец" — у direct-чата нет ролей), `403` если ты не состоишь в чате (`Chat.EnsureCanBeDeletedBy`, домен сам решает можно ли удалить — обработчик только пересылает результат, как и в `UpdateChat`/`RemoveMember`)
 - удаляет чат **для обеих сторон сразу** — это не "удалить только у себя", собеседник тоже потеряет чат и всю историю. Более мягкий вариант ("скрыть у себя, не трогая собеседника") потребовал бы новой колонки вроде `chat_member.left_at` и отдельной фильтрации в `GetChats` — сознательно не делали, пока не понадобится
 - сообщения чата удаляются **явным межмодульным вызовом** `IMessagesModule.DeleteAllMessagesInChatAsync(chatId)` — не через `ON DELETE CASCADE` в БД (хотя FK `messages.message.chat_id → chats.chats.id` с каскадом тоже есть, как подстраховка). Так `DeleteChatCommandHandler` не полагается на то, что Messages именно так хранит данные — соответствует общему принципу межмодульных связей через интерфейсы (см. §10)
-- если что-то из этого падает посреди операции (Messages недоступен, обрыв сети) — это два отдельных вызова к разным `DbContext`, без общей распределённой транзакции; то же ограничение уже есть у `UploadAndSendMessage` (Files → Messages). В масштабе учебного проекта риск принят, не оборачивали в `TransactionScope`
+- **порядок важен**: сначала коммитится удаление самого чата (`chatRepository.Delete` + `SaveChangesAsync`), и только потом — best-effort вызов `DeleteAllMessagesInChatAsync` (обёрнут в `try/catch`, ошибка не мешает успешному ответу). Раньше было наоборот: если бы `ExecuteDeleteAsync` сообщений (отдельный `DbContext`/соединение) прошёл, а следующий `SaveChangesAsync` чата упал — сообщения были бы уже необратимо удалены, а чат остался. Теперь худший случай безопаснее: чат удалён, а сообщения остаются orphaned до повторной попытки
+
+### Выход последнего участника из группы
+
+Если Owner — единственный участник группового чата и выходит (`DELETE /chats/{id}/members/{userId}` с собственным id), `RemoveChatMemberCommandHandler` удаляет сам чат (`Chat.IsEmpty`), а не оставляет пустую, никому не видимую и неудаляемую запись — добавить участника в неё уже нельзя (нужно уже состоять в чате), а `DeleteChat` для групп не работает (см. выше).
 
 ### Как получить список чатов
 
 1. Запрос `GET /api/chats`
 2. Система находит все чаты пользователя из `chats.members`
-3. **Межмодульный вызов** к Messages через `IMessagesModule.GetLastMessagesByChatIdsAsync()` — получает последнее сообщение для каждого чата
+3. **Межмодульный вызов** к Messages через `IMessagesModule.GetLastMessagesByChatIdsAsync()` — получает последнее сообщение для каждого чата, включая `hasAttachments`/`firstAttachmentUrl`/`firstAttachmentContentType` (для превью в списке чатов: сообщение-вложение без текста — например, фото без подписи — иначе выглядело бы как «нет сообщений»; фронтенд показывает мини-превью и подпись по типу вложения вместо этого текста)
 4. Для личных чатов без имени (`name IS NULL`) — **межмодульный вызов** к Users через `IUsersModule.GetSummariesByAuthUserIdsAsync()`, резолвится displayName и avatarUrl собеседника
 5. Для личных чатов — **межмодульный вызов** к `IPresenceTracker.GetOnlineAsync()` (Shared.Kernel, см. §10), узнаём `isOnline` собеседника прямо сейчас (а не только из будущих realtime-событий — иначе клиент не знал бы текущий статус до первого изменения)
 6. Возвращает объединённые данные клиенту, включая `otherUserId` и `isOnline` для личных чатов
@@ -394,6 +428,7 @@ Sent (0) → Delivered (1) → Read (2)
 | POST | `/api/chats/{chatId}/messages/upload` | Загрузить файл и отправить как сообщение |
 | PATCH | `/api/chats/{chatId}/messages/{id}` | Редактировать своё сообщение |
 | DELETE | `/api/chats/{chatId}/messages/{id}` | Удалить сообщение — любым участником чата (мягко, см. ниже) |
+| POST | `/api/chats/{chatId}/messages/delete-bulk` | Удалить несколько сообщений одним запросом (та же семантика, что и одиночное удаление) |
 | POST | `/api/chats/{chatId}/messages/forward` | Переслать одно или несколько сообщений в этот чат (см. «Пересылка» ниже) |
 
 ### Авторизация по членству в чате
@@ -416,6 +451,8 @@ Sent (0) → Delivered (1) → Read (2)
 
 Это эффективнее страниц: не нужно считать OFFSET в БД.
 
+Внутри курсор резолвится не по `sent_at`, а по монотонному `sequence` (см. §3) — несколько сообщений могут получить одинаковый `sent_at` (например, при пересылке пачки сообщений подряд), и сортировка по одному только времени могла бы пропустить или задвоить сообщение на границе страницы. Курсор (`before`) также ищется **строго внутри текущего чата** — раньше id сообщения-курсора резолвился без проверки `chatId`, и участник чата A мог передать id чужого сообщения из чата B (в котором не состоит) как курсор и по ответу узнать, что оно существует, и его точный `sent_at`.
+
 ### Удаление сообщения (мягкое)
 
 `DELETE /api/chats/{chatId}/messages/{id}` → `DeleteMessageCommand` → `Message.Delete()`. Сообщения не удаляются физически. При удалении:
@@ -428,6 +465,8 @@ Sent (0) → Delivered (1) → Read (2)
 Удалить может **любой участник чата**, не только автор — авторизация через `IChatMembershipChecker.IsMemberAsync` (см. §10), `403` если не состоишь в чате. Повторное удаление уже удалённого — доменная ошибка `Message.AlreadyDeleted`.
 
 > Изначально было наоборот: удалять мог только автор (`SenderId != requesterId` → `403`). Решение расширить право на всех участников чата — сознательный выбор в рамках задачи «удалить сообщение (любое)», а не случайная дыра в авторизации.
+
+Редактирование и удаление (одиночное и пакетное) защищены optimistic concurrency через системную колонку Postgres `xmin` (см. §3) — если сообщение успели изменить/удалить параллельно между чтением и записью (например, два участника одновременно жмут "удалить" на одном сообщении), проигравший запрос получает `409 Conflict` вместо тихой перезаписи чужого изменения.
 
 При успешном удалении поднимается `MessageDeletedDomainEvent` → Realtime-модуль рассылает `MessageDeleted` всем в группе `chat:{chatId}` (см. §9), включая инициатора — это не проблема, так как у клиента пометка "удалено" идемпотентна.
 
@@ -460,10 +499,13 @@ Sent (0) → Delivered (1) → Read (2)
 
 ### Прикреплённые файлы
 
-Когда пользователь отправляет файл:
-1. `POST /api/chats/{id}/messages/upload` — файл + опциональный caption
-2. Handler вызывает `IFilesModule.UploadChatAttachmentAsync()` → файл сохраняется в хранилище
-3. Создаётся запись в `messages.message` с `file_url` и пустым/caption текстом
+Когда пользователь отправляет файл(ы):
+1. `POST /api/chats/{id}/messages/upload` — один или несколько файлов (`multipart/form-data`) + опциональный `caption`
+2. `UploadAndSendMessageCommandHandler` грузит файлы **последовательно** (не параллельно — Files-модуль пишет через тот же scoped `DbContext`, EF Core не поддерживает параллельные операции на одном инстансе), для каждого вызывая `IFilesModule.UploadChatAttachmentAsync()`
+3. Создаётся **одно** сообщение с несколькими `MessageAttachment` (таблица `messages.message_attachment`, см. §3) — максимум **10** вложений (`Message.MaxAttachmentsPerMessage`), `caption` относится ко всему сообщению целиком, а не к отдельному файлу
+4. Если загрузка любого файла в батче или итоговое сохранение сообщения проваливается — уже загруженные до этого файлы этого же запроса удаляются компенсирующим вызовом `IFilesModule.DeleteChatAttachmentAsync()` (`try/finally`), чтобы не оставались в хранилище без владельца
+
+Файл валидируется трижды: белый список MIME-типов (`AllowedAttachmentMimeTypes`, см. §8), лимит размера, и сверка по сигнатуре первых байт файла с заявленным `Content-Type` (`FileSignatureValidator`, см. §8) — не даёт выдать, например, исполняемый файл за картинку простой подменой заголовка запроса.
 
 ### Доменные события (Domain Events)
 
@@ -508,24 +550,26 @@ Sent (0) → Delivered (1) → Read (2)
 
 ### Ограничения
 
-- Аватарки: только изображения, максимум **5 МБ**
-- Вложения в сообщения: любой тип, максимум **20 МБ**
+- Аватарки (личные и групповые): только изображения (JPEG/PNG/WebP/GIF), максимум **5 МБ**
+- Вложения в сообщения: не любой тип — белый список (`AllowedAttachmentMimeTypes`): изображения, документы (PDF/Word/Excel/PowerPoint/txt/csv), архивы (zip/rar/7z), аудио, видео; исполняемые/скриптовые типы (exe, sh, bat, js и т.п.) намеренно исключены. Максимум **25 МБ** на файл, максимум **10** файлов на сообщение
+- Заявленный `Content-Type` дополнительно сверяется с реальным содержимым файла по сигнатуре первых байт (`FileSignatureValidator`) — просто переименовать `.exe` в `.pdf` и подделать заголовок запроса недостаточно
 - При загрузке новой аватарки старая автоматически удаляется
 
 ### Как работает загрузка аватарки
 
-1. `POST /api/files/avatar` с файлом в `multipart/form-data`
-2. Проверка MIME-типа и размера
-3. Удаление предыдущего аватара (поиск в `files.file_upload` по `uploaded_by + category=Avatar`)
-4. Сохранение в хранилище → получение `fileKey` и публичного URL
-5. Создание записи в `files.file_upload`
-6. Возврат URL клиенту
+1. `POST /api/files/avatar` (личная) или `POST /api/chats/{id}/avatar` (групповая, см. §6) с файлом в `multipart/form-data`
+2. Проверка MIME-типа, размера и сигнатуры содержимого
+3. Сначала сохраняется **новый** файл в хранилище (получение `fileKey` и публичного URL) и создаётся новая запись в `files.file_upload` — и только при успехе удаляется старая (поиск по `uploaded_by + category=Avatar` для личной / `chat_id + category=GroupAvatar` для групповой). Порядок важен: если бы сначала удалялся старый файл, а загрузка нового потом падала (сеть, лимит хранилища) — пользователь/группа остались бы совсем без аватарки
+4. Если два запроса на замену аватарки от одного пользователя (или для одного чата) проскочат разом — второй упирается в уникальный индекс (`ux_file_upload_avatar_per_user`/`ux_file_upload_group_avatar_per_chat`, см. §3), уже загруженный им файл компенсирующе удаляется, и клиент получает `409 Conflict` вместо орфанного файла без ссылки в БД
+5. Возврат URL клиенту
 
 ### Публичный API модуля
 
-Другие модули (Messages) обращаются к Files только через интерфейс:
+Другие модули обращаются к Files только через интерфейс:
 ```
-IFilesModule.UploadChatAttachmentAsync(...)  → возвращает URL файла
+IFilesModule.UploadChatAttachmentAsync(...)  → загрузить вложение к сообщению, возвращает fileKey + URL (Messages)
+IFilesModule.DeleteChatAttachmentAsync(...)  → компенсирующее удаление вложения при откате (Messages)
+IFilesModule.UploadGroupAvatarAsync(...)     → загрузить/заменить аватарку группы (Chats)
 ```
 
 ---
@@ -579,7 +623,9 @@ WebSocket URL: ws://host/hubs/messenger
 SignalR использует группы для адресной рассылки:
 
 - `chat:{chatId}` — все подключённые участники конкретного чата, вступившие через `JoinChat`
-- `user:{userId}` — личная группа только своих подключений (вкладок/устройств) пользователя. В основном используется как счётчик подключений для presence (см. ниже), но `MessageSentEventHandler` **дополнительно** шлёт туда же `ReceiveMessage` для всех участников чата, кроме отправителя — на случай если чат только что создан и получатель ещё не успел вступить в `chat:{chatId}` через `JoinChat`
+- `user:{userId}` — личная группа только своих подключений (вкладок/устройств) пользователя. В основном используется как счётчик подключений для presence (см. ниже), но `MessageSentEventHandler`, `MessageEditedEventHandler`, `MessageDeletedEventHandler` и `ChatReadEventHandler` **дополнительно** шлют туда же своё событие (`ReceiveMessage`/`MessageEdited`/`MessageDeleted`/`MessagesRead`) всем участникам чата — на случай если чат только что создан и получатель ещё не успел вступить в `chat:{chatId}` через `JoinChat` (общая логика вынесена в `ChatFallback.BroadcastToMembersAsync`)
+
+**Принудительный выход из группы при исключении.** Когда участника удаляют из группового чата (`RemoveChatMember`) или он выходит сам, `ChatUpdatedEventHandler` проверяет через `IChatMembershipChecker`, кто из затронутых пользователей больше не состоит в чате, и принудительно выводит их **живые** SignalR-соединения из группы `chat:{chatId}` (`Groups.RemoveFromGroupAsync`). Для этого `IPresenceTracker.GetConnectionsAsync` (Shared.Kernel, Redis-реализация — набор connectionId пользователя, обновляемый в `OnConnectedAsync`/`OnDisconnectedAsync`) отдаёт все текущие connectionId пользователя. Без этого исключённый участник продолжал бы получать `ReceiveMessage`/`MessageEdited`/... для чата, из которого его только что удалили, пока сам не переподключится.
 
 > **Важно — двойная доставка.** `ConnectedLayout` на фронтенде вступает в SignalR-группы **всех** чатов пользователя сразу при подключении (см. ниже). Значит для уже существующих (не только что созданных) чатов получатель почти всегда состоит **и** в `chat:{chatId}`, **и** в своей `user:{userId}` — и получает одно и то же `ReceiveMessage` **дважды**: один раз через рассылку в группу чата, второй раз через персональную рассылку. Серверная логика это не фильтрует (не отслеживает, кто в какой SignalR-группе уже состоит — это недёшево сделать надёжно). Решение — дедупликация на клиенте по `messageId`: и `useChatMessages.ts → handleIncomingMessage`, и `chatsStore.ts → handleNewMessage` перед добавлением сообщения проверяют, не обработали ли уже такой `messageId` (в сторе чатов — сравнением с `chat.lastMessageId`), и тихо игнорируют повтор. Без этой проверки в каждом чате задваивались бы все входящие сообщения.
 
@@ -590,18 +636,20 @@ SignalR использует группы для адресной рассылк
 ```
 OnConnected:
   → пользователь добавляется в группу user:{userId} (только свои подключения)
-  → IPresenceTracker.ConnectAsync(userId) — инкремент счётчика в Redis
+  → IPresenceTracker.ConnectAsync(userId, connectionId) — добавляет connectionId в Redis SET
   → если счётчик стал 1 (было 0 подключений) — BroadcastOnlineStatus(true):
       запросить у IChatsModule все chatId пользователя →
       разослать UserOnline(isOnline: true) в группы chat:{id} каждого из них
 
 OnDisconnected:
   → пользователь удаляется из группы user:{userId}
-  → IPresenceTracker.DisconnectAsync(userId) — декремент счётчика
+  → IPresenceTracker.DisconnectAsync(userId, connectionId) — убирает connectionId из SET
   → если счётчик дошёл до 0 — BroadcastOnlineStatus(false) аналогично выше
 ```
 
 **Важно — это поведение исправлено в этой версии.** Раньше `UserOnline` рассылался в группу `user:{userId}`, в которую кроме самого пользователя никто не входит — событие физически не могло дойти до собеседников. Текущая версия рассылает в группы ЧАТОВ пользователя, куда его собеседники уже вступили через `JoinChat`.
+
+**Отказоустойчивость счётчика.** `RedisPresenceTracker` ставит защитный TTL (24 часа) на ключ множества при каждом подключении — если инстанс упадёт/передеплоится и `OnDisconnectedAsync` для зависших соединений так и не выполнится, множество не останется в Redis навсегда, а самоисцелится по истечении TTL. Дополнительно `OnDisconnectedAsync` оборачивает удаление connectionId в `try/finally` вокруг удаления из SignalR-группы — чтобы кратковременный сбой связи с Redis-backplane не пропустил сам декремент и не завысил счётчик онлайна навсегда.
 
 Дополнительно: `GetChatsQueryHandler` (см. §6) читает текущее состояние `IPresenceTracker` напрямую при отдаче списка чатов — иначе клиент не узнал бы, что собеседник уже онлайн, до первого изменения его статуса после открытия приложения.
 
@@ -631,10 +679,10 @@ MessageSentEventHandler (Realtime модуль) получает событие
 
 ```
 Chats → IMessagesModule:
-  - GetLastMessagesByChatIdsAsync()   — последние сообщения для списка чатов
-  - DeleteAllMessagesInChatAsync()    — DeleteChatCommandHandler вызывает перед удалением
-                                         самого чата (явно, а не полагаясь на ON DELETE CASCADE
-                                         в БД — см. §6 "Удаление чата")
+  - GetLastMessagesByChatIdsAsync()   — последние сообщения (+ признак вложений) для списка чатов
+  - DeleteAllMessagesInChatAsync()    — DeleteChatCommandHandler вызывает ПОСЛЕ удаления самого
+                                         чата, best-effort (явно, а не полагаясь на ON DELETE
+                                         CASCADE в БД — см. §6 "Удаление чата")
   - GetMessageCountInChatAsync()      — есть в контракте, пока не вызывается ни одним хендлером
 
 Chats → IUsersModule:
@@ -642,6 +690,11 @@ Chats → IUsersModule:
 
 Messages → IFilesModule:
   - UploadChatAttachmentAsync()       — загрузить файл-вложение (с привязкой к chatId)
+  - DeleteChatAttachmentAsync()       — компенсирующее удаление, если последующий шаг того же
+                                         запроса (другой файл в батче, сохранение сообщения) упал
+
+Chats → IFilesModule:
+  - UploadGroupAvatarAsync()          — загрузить/заменить аватарку группы (UploadChatAvatarCommandHandler)
 
 Messages → IUsersModule:
   - GetSummariesByAuthUserIdsAsync()  — displayName/avatarUrl отправителей в истории сообщений
@@ -650,7 +703,8 @@ Messages → IUsersModule:
 Realtime → IChatsModule:
   - GetChatIdsByUserIdAsync()         — список чатов пользователя для рассылки UserOnline
   - GetMemberIdsAsync()               — участники чата для дополнительной personal-group
-                                         рассылки ReceiveMessage (см. §9 "Важно — двойная доставка")
+                                         рассылки ReceiveMessage/MessageEdited/MessageDeleted/
+                                         MessagesRead (см. §9 "Важно — двойная доставка")
 
 Realtime → IUsersModule:
   - GetSummariesByAuthUserIdsAsync()  — имя отправителя (и автора пересылки/цитаты) в ReceiveMessage
@@ -668,7 +722,7 @@ Realtime ← Chats (через MediatR INotification):
   - ChatReadDomainEvent               — чат отмечен прочитанным → WebSocket рассылка MessagesRead
 
 Auth → Users (вне кода, по соглашению):
-  - После регистрации клиент сам вызывает POST /api/users/profile
+  - После регистрации клиент сам вызывает POST /api/users
   - auth_user_id в user_profile связывает auth.user и users.user_profile
 ```
 
@@ -687,11 +741,16 @@ IChatMembershipChecker (Shared.Kernel, реализация — Chats):
                 Realtime (JoinChat/StartTyping/StopTyping — HubException если не участник),
                 Files (DownloadFile для ChatAttachment — 401/403)
 
-IPresenceTracker (Shared.Kernel, Redis-реализация):
-  - ConnectAsync()/DisconnectAsync()  — счётчик активных подключений пользователя
-  - GetOnlineAsync(userIds)           — текущий онлайн-статус списка пользователей
+IPresenceTracker (Shared.Kernel, Redis-реализация — один Redis SET connectionId на пользователя):
+  - ConnectAsync(userId, connectionId)/DisconnectAsync(userId, connectionId) — добавляют/убирают
+    connectionId из множества, возвращают его размер (= счётчик активных подключений)
+  - GetOnlineAsync(userIds)           — текущий онлайн-статус списка пользователей (размер > 0)
+  - GetConnectionsAsync(userId)       — все текущие connectionId пользователя, нужно
+                                         Groups.RemoveFromGroupAsync (принимает connectionId, не userId)
   - Пишет: Realtime (MessengerHub.OnConnectedAsync/OnDisconnectedAsync)
-  - Читает: Chats (GetChatsQueryHandler — текущий статус собеседника при отдаче списка чатов)
+  - Читает: Chats (GetChatsQueryHandler — текущий статус собеседника при отдаче списка чатов),
+            Realtime (ChatUpdatedEventHandler — принудительный вывод исключённого участника
+            из SignalR-группы chat:{id}, см. §9)
 ```
 
 Без `IChatMembershipChecker` любой залогиненный пользователь, узнав GUID чужого чата, мог читать/писать в него; кикнутый из группы участник сохранял бы доступ по старому `chatId` — этот контракт закрывает именно эту дыру.
@@ -704,7 +763,7 @@ IPresenceTracker (Shared.Kernel, Redis-реализация):
 
 ```
 1. POST /api/auth/register  { email, password }
-2. POST /api/users/profile  { displayName, login }
+2. POST /api/users         { displayName, login }
 3. POST /api/auth/login     { email, password } → { accessToken, refreshToken }
 ```
 
@@ -735,6 +794,15 @@ DELETE /api/chats/{chatId}
 DELETE /api/chats/{chatId}/messages/{messageId}
   → 204, status="Deleted", content стирается, остальным рассылается MessageDeleted по WebSocket
   → 403 если ты не участник чата (не обязательно автор — удалить может любой участник)
+```
+
+### Удалить несколько сообщений сразу
+
+```
+POST /api/chats/{chatId}/messages/delete-bulk  { messageIds: [...] }
+  → 200 [ ...id успешно удалённых ]
+  → уже удалённые id внутри списка молча пропускаются, а не роняют весь запрос
+  → 409 если один из выбранных успели изменить/удалить параллельно (см. §7)
 ```
 
 ### Отредактировать сообщение
@@ -781,14 +849,16 @@ GET /api/chats/{chatId}/messages?before={nextCursor}&limit=50
   → следующие 50 сообщений
 ```
 
-### Отправить фото в чат
+### Отправить фото (или несколько файлов) в чат
 
 ```
 POST /api/chats/{chatId}/messages/upload
   Body: multipart/form-data
-    file: <бинарные данные>
-    caption: "Смотри что нашёл"
-  → 201 { messageId }
+    <один или несколько файлов>
+    caption: "Смотри что нашёл"  (необязательно, относится ко всему сообщению)
+  → 201 { messageId, content, attachments: [...], sentAt }
+  → 400 если файлов не передано
+  → 422 если тип не в белом списке, файл больше 25 МБ или вложений больше 10
 ```
 
 ### Создать групповой чат

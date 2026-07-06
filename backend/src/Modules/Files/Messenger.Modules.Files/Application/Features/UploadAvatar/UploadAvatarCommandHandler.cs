@@ -11,28 +11,24 @@ public sealed class UploadAvatarCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UploadAvatarCommand, string>
 {
-    private static readonly HashSet<string> AllowedMimeTypes =
-        ["image/jpeg", "image/png", "image/webp", "image/gif"];
-
-    private const long MaxSizeBytes = 5 * 1024 * 1024; // 5 MB
-
     public async Task<Result<string>> Handle(UploadAvatarCommand command, CancellationToken ct)
     {
-        if (!AllowedMimeTypes.Contains(command.ContentType))
+        if (!AvatarReplace.AllowedMimeTypes.Contains(command.ContentType))
             return Result.Failure<string>(
                 Error.Validation("ContentType", "Avatar must be JPEG, PNG, WebP or GIF"));
 
-        if (command.FileSizeBytes > MaxSizeBytes)
+        if (command.FileSizeBytes > AvatarReplace.MaxSizeBytes)
             return Result.Failure<string>(
                 Error.Validation("FileSize", "Avatar cannot exceed 5 MB"));
 
-        // Удалить предыдущий аватар, если есть
+        if (!FileSignatureValidator.IsPlausible(command.FileContent, command.ContentType))
+            return Result.Failure<string>(
+                Error.Validation("ContentType", "File content does not match declared type"));
+
+        // Сначала грузим новый файл и только при успехе удаляем старый — если бы порядок был
+        // обратным, а загрузка нового упала (сеть/лимит хранилища), пользователь остался бы
+        // без аватарки: старый файл уже стёрт, а новый так и не появился
         var existing = await fileRepository.GetAvatarByUserIdAsync(command.UserId, ct);
-        if (existing is not null)
-        {
-            await fileStorage.DeleteAsync(existing.FileKey, ct);
-            fileRepository.Remove(existing);
-        }
 
         var uploadResult = await fileStorage.UploadAsync(
             command.FileContent, command.FileName, command.ContentType, ct);
@@ -41,9 +37,8 @@ public sealed class UploadAvatarCommandHandler(
             command.UserId, uploadResult.FileKey, command.FileName,
             command.ContentType, uploadResult.SizeBytes, FileCategory.Avatar);
 
-        fileRepository.Add(record);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        return Result.Success(uploadResult.PublicUrl);
+        return await AvatarReplace.CommitAsync(
+            fileStorage, fileRepository, unitOfWork,
+            existing, record, uploadResult.FileKey, uploadResult.PublicUrl, "Avatar", ct);
     }
 }

@@ -79,7 +79,7 @@ public sealed class MessengerHub(
         var userId = Context.UserIdentifier!;
         await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
 
-        var connectionCount = await presence.ConnectAsync(Guid.Parse(userId));
+        var connectionCount = await presence.ConnectAsync(Guid.Parse(userId), Context.ConnectionId);
 
         logger.LogInformation("User {UserId} connected", userId);
         await base.OnConnectedAsync();
@@ -91,9 +91,19 @@ public sealed class MessengerHub(
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = Context.UserIdentifier!;
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
+        long connectionCount;
 
-        var connectionCount = await presence.DisconnectAsync(Guid.Parse(userId));
+        // presence.DisconnectAsync должен выполниться, даже если удаление из группы упадёт
+        // (например, кратковременный сбой связи с Redis-backplane) — иначе счётчик
+        // онлайн-соединений этого пользователя навсегда останется в неверном состоянии.
+        try
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
+        }
+        finally
+        {
+            connectionCount = await presence.DisconnectAsync(Guid.Parse(userId), Context.ConnectionId);
+        }
 
         if (exception is not null)
             logger.LogWarning(exception, "User {UserId} disconnected with error", userId);

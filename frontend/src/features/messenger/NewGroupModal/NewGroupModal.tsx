@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UserSearchResult } from '../../../shared/api/usersApi'
-import { colorFromId, initials } from '../../../shared/api/chatsApi'
+import { colorFromId, initials, userSubtitle } from '../../../shared/api/chatsApi'
 import { useUserSearch } from '../../../shared/hooks/useUserSearch'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
@@ -138,7 +138,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
                     }
                     <div className={s.info}>
                       <span className={s.name}>{user.displayName}</span>
-                      <span className={s.sub}>{user.login ?? user.email}</span>
+                      <span className={s.sub}>{userSubtitle(user)}</span>
                     </div>
                     <span className={`${s.checkbox} ${checked ? s.checkboxChecked : ''}`}>{checked && '✓'}</span>
                   </div>

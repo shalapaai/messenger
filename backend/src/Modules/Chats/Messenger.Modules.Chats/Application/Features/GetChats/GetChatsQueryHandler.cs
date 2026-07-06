@@ -26,6 +26,19 @@ public sealed class GetChatsQueryHandler(
 
         var lastMessages = lastMessagesResult.Value!;
 
+        // Свой собственный last_read_at по каждому чату — основа для реального счётчика
+        // непрочитанных (см. ниже), а не только для "прочитано собеседником" (otherMemberLastReadAt).
+        var myLastReadAtByChatId = chats.ToDictionary(
+            c => c.Id.Value,
+            c => c.Members.FirstOrDefault(m => m.UserId == query.CurrentUserId)?.LastReadAt);
+
+        var unreadCountsResult = await messagesModule.GetUnreadCountsByChatIdsAsync(
+            query.CurrentUserId, myLastReadAtByChatId, ct);
+        if (unreadCountsResult.IsFailure)
+            return Result.Failure<List<ChatSummaryDto>>(unreadCountsResult.Error);
+
+        var unreadCounts = unreadCountsResult.Value!;
+
         // Для личных чатов без имени резолвим displayName собеседника
         var otherUserIds = chats
             .Where(c => c.Type == ChatType.Direct)
@@ -81,6 +94,8 @@ public sealed class GetChatsQueryHandler(
                         .Max();
                 }
 
+                unreadCounts.TryGetValue(c.Id.Value, out var unreadCount);
+
                 return new ChatSummaryDto(
                     c.Id.Value,
                     c.Type.ToString().ToLower(),
@@ -90,7 +105,8 @@ public sealed class GetChatsQueryHandler(
                     lastMessage,
                     otherUserId,
                     otherUserId.HasValue && onlineUserIds.Contains(otherUserId.Value),
-                    otherMemberLastReadAt);
+                    otherMemberLastReadAt,
+                    unreadCount);
             })
             .OrderByDescending(c => c.LastMessage?.SentAt)
             .ToList();

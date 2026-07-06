@@ -6,7 +6,14 @@ public sealed record LastMessageDto(
     Guid     MessageId,
     Guid     SenderId,
     string   Content,
-    DateTime SentAt);
+    DateTime SentAt,
+    // Для превью в списке чатов: сообщение без текста, но с вложением (например, фото без
+    // подписи) не должно выглядеть как "нет сообщений" — фронт показывает мини-превью и
+    // подпись по типу вложения вместо этого.
+    bool     HasAttachments,
+    string?  FirstAttachmentUrl,
+    string?  FirstAttachmentContentType,
+    string?  FirstAttachmentFileName);
 
 public sealed record MessagePreviewDto(
     Guid   MessageId,
@@ -34,4 +41,9 @@ public interface IMessagesModule
     Task<Result<Dictionary<Guid, LastMessageDto>>> GetLastMessagesByChatIdsAsync(IReadOnlyList<Guid> chatIds, CancellationToken ct = default);
     // Для карточки цитирования в realtime-ответе на сообщение (Realtime → payload "replyTo...")
     Task<Result<Dictionary<Guid, MessagePreviewDto>>> GetMessagePreviewsByIdsAsync(IReadOnlyList<Guid> messageIds, CancellationToken ct = default);
+    // Количество непрочитанных (не своих, не удалённых) сообщений на чат — lastReadAtByChatId
+    // передаёт СВОЙ (вызывающего пользователя) last_read_at по каждому чату; null означает
+    // "ещё ни разу не читал", тогда unread = все чужие сообщения в чате.
+    Task<Result<Dictionary<Guid, int>>> GetUnreadCountsByChatIdsAsync(
+        Guid userId, IReadOnlyDictionary<Guid, DateTime?> lastReadAtByChatId, CancellationToken ct = default);
 }

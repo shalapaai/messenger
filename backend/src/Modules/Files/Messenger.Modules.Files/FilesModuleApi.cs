@@ -1,5 +1,6 @@
 namespace Messenger.Modules.Files;
 
+using Messenger.Modules.Files.Application;
 using Messenger.Modules.Files.Application.Abstractions;
 using Messenger.Modules.Files.Application.Contracts;
 using Messenger.Modules.Files.Domain;
@@ -38,22 +39,21 @@ internal sealed class FilesModuleApi(
         "video/mp4", "video/webm", "video/quicktime",
     };
 
-    private static readonly HashSet<string> AllowedAvatarMimeTypes =
-        ["image/jpeg", "image/png", "image/webp", "image/gif"];
-
-    private const long MaxAvatarSizeBytes = 5 * 1024 * 1024; // 5 MB
-
-    public async Task<Result<string>> UploadChatAttachmentAsync(
+    public async Task<Result<UploadedAttachmentInfo>> UploadChatAttachmentAsync(
         Stream content, string fileName, string contentType,
         long fileSizeBytes, Guid uploadedBy, Guid chatId, CancellationToken ct = default)
     {
         if (!AllowedAttachmentMimeTypes.Contains(contentType))
-            return Result.Failure<string>(
+            return Result.Failure<UploadedAttachmentInfo>(
                 Error.Validation("ContentType", "This file type is not supported"));
 
         if (fileSizeBytes > MaxAttachmentSizeBytes)
-            return Result.Failure<string>(
+            return Result.Failure<UploadedAttachmentInfo>(
                 Error.Validation("FileSize", "Attachment cannot exceed 25 MB"));
+
+        if (!FileSignatureValidator.IsPlausible(content, contentType))
+            return Result.Failure<UploadedAttachmentInfo>(
+                Error.Validation("ContentType", "File content does not match declared type"));
 
         var uploadResult = await fileStorage.UploadAsync(content, fileName, contentType, ct);
 
@@ -64,20 +64,34 @@ internal sealed class FilesModuleApi(
         fileRepository.Add(record);
         await unitOfWork.SaveChangesAsync(ct);
 
-        return Result.Success(uploadResult.PublicUrl);
+        return Result.Success(new UploadedAttachmentInfo(uploadResult.FileKey, uploadResult.PublicUrl));
+    }
+
+    public async Task DeleteChatAttachmentAsync(string fileKey, CancellationToken ct = default)
+    {
+        var record = await fileRepository.GetByKeyAsync(fileKey, ct);
+        if (record is null) return;
+
+        fileRepository.Remove(record);
+        await unitOfWork.SaveChangesAsync(ct);
+        await fileStorage.DeleteAsync(fileKey, ct);
     }
 
     public async Task<Result<string>> UploadGroupAvatarAsync(
         Stream content, string fileName, string contentType,
         long fileSizeBytes, Guid uploadedBy, Guid chatId, CancellationToken ct = default)
     {
-        if (!AllowedAvatarMimeTypes.Contains(contentType))
+        if (!AvatarReplace.AllowedMimeTypes.Contains(contentType))
             return Result.Failure<string>(
                 Error.Validation("ContentType", "Avatar must be JPEG, PNG, WebP or GIF"));
 
-        if (fileSizeBytes > MaxAvatarSizeBytes)
+        if (fileSizeBytes > AvatarReplace.MaxSizeBytes)
             return Result.Failure<string>(
                 Error.Validation("FileSize", "Avatar cannot exceed 5 MB"));
+
+        if (!FileSignatureValidator.IsPlausible(content, contentType))
+            return Result.Failure<string>(
+                Error.Validation("ContentType", "File content does not match declared type"));
 
         // Сначала грузим новый файл и только при успехе удаляем старый — если бы порядок был
         // обратным, а загрузка нового упала (сеть/лимит хранилища), группа осталась бы без
@@ -86,19 +100,12 @@ internal sealed class FilesModuleApi(
 
         var uploadResult = await fileStorage.UploadAsync(content, fileName, contentType, ct);
 
-        if (existing is not null)
-        {
-            await fileStorage.DeleteAsync(existing.FileKey, ct);
-            fileRepository.Remove(existing);
-        }
-
         var record = FileUpload.Create(
             uploadedBy, uploadResult.FileKey, fileName,
             contentType, uploadResult.SizeBytes, FileCategory.GroupAvatar, chatId);
 
-        fileRepository.Add(record);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        return Result.Success(uploadResult.PublicUrl);
+        return await AvatarReplace.CommitAsync(
+            fileStorage, fileRepository, unitOfWork,
+            existing, record, uploadResult.FileKey, uploadResult.PublicUrl, "GroupAvatar", ct);
     }
 }

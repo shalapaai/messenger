@@ -30,7 +30,19 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMe
             b.Property(c => c.Name).HasColumnName("name").HasMaxLength(100);
             b.Property(c => c.AvatarUrl).HasColumnName("avatar_url");
             b.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
+            b.Property(c => c.DirectUserId1).HasColumnName("direct_user_id_1");
+            b.Property(c => c.DirectUserId2).HasColumnName("direct_user_id_2");
             b.HasMany(c => c.Members).WithOne().HasForeignKey(m => m.ChatId).OnDelete(DeleteBehavior.Cascade);
+
+            // Не даёт двум одновременным запросам создать два разных direct-чата между одной
+            // и той же парой пользователей (TOCTOU: оба видят "чата ещё нет" и оба вставляют).
+            // Не индекс на members — там нет способа выразить "уникальная пара для этого чата"
+            // без агрегатного запроса, поэтому пара хранится прямо на Chat в каноническом порядке.
+            b.HasIndex(c => new { c.DirectUserId1, c.DirectUserId2 })
+                .IsUnique()
+                .HasFilter("type = 'direct'")
+                .HasDatabaseName("ux_chats_direct_pair");
+
             b.ToTable("chats");
         });
 

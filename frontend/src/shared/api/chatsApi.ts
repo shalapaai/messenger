@@ -5,8 +5,14 @@ import type { Chat, Message, GroupMember } from '../types/messenger'
 
 // ── DTO-формы от сервера ──────────────────────────────────────────────────────
 
-interface LastMessageDto { messageId: string; senderId: string; content: string; sentAt: string }
-interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean; otherMemberLastReadAt: string | null }
+interface LastMessageDto {
+  messageId: string; senderId: string; content: string; sentAt: string
+  hasAttachments: boolean
+  firstAttachmentUrl: string | null
+  firstAttachmentContentType: string | null
+  firstAttachmentFileName: string | null
+}
+interface ChatSummaryDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; avatarColor: string | null; lastMessage: LastMessageDto | null; otherUserId: string | null; isOnline: boolean; otherMemberLastReadAt: string | null; unreadCount: number }
 interface ChatMemberDto { userId: string; displayName: string; avatarUrl: string | null; avatarColor: string; role: 'owner' | 'admin' | 'member'; joinedAt: string; online: boolean }
 interface ChatDetailDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; createdAt: string; members: ChatMemberDto[] }
 interface AttachmentDto  { fileUrl: string; fileName: string; contentType: string; fileSizeBytes: number }
@@ -23,6 +29,14 @@ export function colorFromId(id: string): string {
   let h = 0
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0
   return COLORS[Math.abs(h) % COLORS.length]
+}
+
+/** Подпись под именем в результатах поиска — показываем и login (если есть), и email, а не
+ *  одно "login ?? email": иначе при совпадении по email (поиск матчит email/имя/login разом)
+ *  у пользователя с заданным login email просто не виден нигде в строке, и непонятно,
+ *  почему этот человек вообще оказался в выдаче. */
+export function userSubtitle(user: { login: string | null; email: string }): string {
+  return user.login ? `${user.login} · ${user.email}` : user.email
 }
 
 /** Инициалы из displayName — общий хелпер для REST-истории и realtime-сообщений. */
@@ -76,8 +90,11 @@ export async function fetchChats(): Promise<Chat[]> {
     color:       dto.avatarColor ?? colorFromId(dto.id),
     avatarUrl:   dto.avatarUrl,
     preview:     dto.lastMessage?.content ?? '',
+    previewAttachmentUrl:         dto.lastMessage?.firstAttachmentUrl ?? undefined,
+    previewAttachmentContentType: dto.lastMessage?.firstAttachmentContentType ?? undefined,
+    previewAttachmentFileName:    dto.lastMessage?.firstAttachmentFileName ?? undefined,
     time:        dto.lastMessage ? formatTime(dto.lastMessage.sentAt) : '',
-    unread:      0,
+    unread:      dto.unreadCount,
     online:      dto.isOnline,
     group:       dto.type === 'group',
     otherUserId: dto.otherUserId ?? undefined,

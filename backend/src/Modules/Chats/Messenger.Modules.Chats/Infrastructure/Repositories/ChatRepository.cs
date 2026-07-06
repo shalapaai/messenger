@@ -10,13 +10,18 @@ public sealed class ChatRepository(ChatsDbContext dbContext) : IChatRepository
             .Include(c => c.Members)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
 
-    public async Task<Guid?> FindDirectChatIdAsync(Guid userId1, Guid userId2, CancellationToken ct = default) =>
-        await dbContext.Chats
-            .Where(c => c.Type == ChatType.Direct
-                     && c.Members.Any(m => m.UserId == userId1)
-                     && c.Members.Any(m => m.UserId == userId2))
+    public async Task<Guid?> FindDirectChatIdAsync(Guid userId1, Guid userId2, CancellationToken ct = default)
+    {
+        // Тот же канонический порядок (меньший Guid первым), что и Chat.CreateDirect — так
+        // это прямое сравнение по (DirectUserId1, DirectUserId2) бьёт в уникальный индекс
+        // ux_chats_direct_pair напрямую, вместо join через members в обе стороны.
+        var (first, second) = userId1.CompareTo(userId2) <= 0 ? (userId1, userId2) : (userId2, userId1);
+
+        return await dbContext.Chats
+            .Where(c => c.Type == ChatType.Direct && c.DirectUserId1 == first && c.DirectUserId2 == second)
             .Select(c => (Guid?)c.Id.Value)
             .FirstOrDefaultAsync(ct);
+    }
 
     public async Task<List<Chat>> GetByUserIdAsync(Guid userId, CancellationToken ct = default) =>
         await dbContext.Chats

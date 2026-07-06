@@ -5,6 +5,12 @@ export interface Chat {
   color: string
   avatarUrl: string | null
   preview: string
+  /** URL первого вложения последнего сообщения — для мини-превью в списке (только если это изображение).
+   *  Вместе с пустым preview означает "последнее сообщение — вложение без текста" (см. ChatPreview) */
+  previewAttachmentUrl?: string | null
+  previewAttachmentContentType?: string | null
+  /** Имя файла первого вложения — показывается вместо общей подписи "Файл" для не-фото вложений */
+  previewAttachmentFileName?: string | null
   time: string
   unread: number
   online: boolean
