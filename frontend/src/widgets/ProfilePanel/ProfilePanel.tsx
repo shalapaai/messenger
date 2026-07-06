@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
@@ -8,6 +9,12 @@ import { accentColors, type AccentColor } from '../../shared/context/themeContex
 import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
 import { LanguageSwitcher } from '../../shared/ui/LanguageSwitcher'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
+import {
+  getBrowserNotificationPermission,
+  requestBrowserNotificationPermission,
+  unsubscribePushNotifications,
+  type BrowserNotificationPermission,
+} from '../../shared/lib/notifications'
 import { getCurrentLocale } from '../../shared/i18n'
 import type { UserProfile } from '../../shared/types/user'
 import s from './ProfilePanel.module.css'
@@ -35,17 +42,25 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
   const navigate = useNavigate()
   const { clearProfile } = useUserProfile()
   const { accentColor, setAccentColor } = useTheme()
+  const [notificationPermission, setNotificationPermission] =
+    useState<BrowserNotificationPermission>(() => getBrowserNotificationPermission())
 
   if (!isOpen) return null
 
   async function handleLogout() {
     try {
+      await unsubscribePushNotifications()
       await logout()
     } finally {
       clearAuthTokens()
       clearProfile()
       navigate('/login')
     }
+  }
+
+  async function handleEnableNotifications() {
+    const permission = await requestBrowserNotificationPermission()
+    setNotificationPermission(permission)
   }
 
   const initials = getInitials(profile.displayName)
@@ -103,6 +118,25 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
               <div className={s.ppSettingsHeader}>
                 <span className={s.ppSettingsTitle}>{t('language.label')}</span>
                 <LanguageSwitcher />
+              </div>
+              <div className={s.ppSettingsHeader}>
+                <span className={s.ppSettingsTitle}>{t('notifications.label')}</span>
+                {notificationPermission === 'granted' ? (
+                  <span className={s.ppSettingStatus}>{t('notifications.enabled')}</span>
+                ) : (
+                  <button
+                    type="button"
+                    className={s.ppSettingAction}
+                    onClick={handleEnableNotifications}
+                    disabled={notificationPermission === 'denied' || notificationPermission === 'unsupported'}
+                  >
+                    {notificationPermission === 'denied'
+                      ? t('notifications.blocked')
+                      : notificationPermission === 'unsupported'
+                        ? t('notifications.unsupported')
+                        : t('notifications.enable')}
+                  </button>
+                )}
               </div>
             </div>
             <button className={s.ppEditBtn} onClick={onEdit}>✎ {t('profile.edit')}</button>

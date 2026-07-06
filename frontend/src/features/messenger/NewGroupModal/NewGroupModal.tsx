@@ -8,6 +8,7 @@ import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { useAvatarCrop } from '../../../shared/hooks/useAvatarCrop'
 import { AvatarImage } from '../../../shared/ui/AvatarImage'
 import { UserListSkeleton } from '../UserListSkeleton'
+import { useToastStore } from '../../../shared/api/toastStore'
 import s from './NewGroupModal.module.css'
 
 interface NewGroupModalProps {
@@ -18,6 +19,7 @@ interface NewGroupModalProps {
 
 export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps) {
   const { t } = useTranslation()
+  const showError = useToastStore((state) => state.showError)
   const [name,     setName]     = useState('')
   const [selected, setSelected] = useState<Map<string, UserSearchResult>>(new Map())
   const [creating, setCreating] = useState(false)
@@ -58,6 +60,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
       await onCreate(trimmed, [...selected.keys()], avatarCrop.croppedAvatarFile ?? undefined)
     } catch {
       setCreateError(true)
+      showError(t('messenger.createGroupFailed'))
       setCreating(false)
     }
   }

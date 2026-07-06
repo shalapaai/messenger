@@ -6,6 +6,7 @@ import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
 import { isValidEmail } from '../../../shared/lib/validation/isValidEmail'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
 import { useFeatures } from '../../../shared/context/useFeatures'
+import { useToastStore } from '../../../shared/api/toastStore'
 import styles from './LoginForm.module.css'
 
 function LoginForm() {
@@ -13,6 +14,8 @@ function LoginForm() {
   const navigate = useNavigate()
   const { refetchProfile } = useUserProfile()
   const { passwordResetEnabled } = useFeatures()
+  const showSuccess = useToastStore((state) => state.showSuccess)
+  const showError = useToastStore((state) => state.showError)
 
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
@@ -38,9 +41,12 @@ function LoginForm() {
       const result = await login({ email: email.trim(), password })
       saveAuthTokens({ accessToken: result.accessToken!, refreshToken: result.refreshToken })
       const profile = await refetchProfile()
+      showSuccess(t('toast.loginSuccess'))
       navigate(profile ? '/chats' : '/profile/setup')
     } catch {
-      setError(t('auth.errors.loginFailed'))
+      const message = t('auth.errors.loginFailed')
+      setError(message)
+      showError(message)
     } finally {
       setIsLoading(false)
     }

@@ -17,7 +17,7 @@ import { ContextMenu, type ContextMenuState } from './ContextMenu'
 import { ForwardIcon, TrashIcon } from './icons'
 import { useAttachmentQueue } from './hooks/useAttachmentQueue'
 import { useMobileInputLayer } from './hooks/useMobileInputLayer'
-import { useErrorModalStore } from '../../shared/api/errorModalStore'
+import { useToastStore } from '../../shared/api/toastStore'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -60,7 +60,7 @@ export function ChatWindow({
   onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
 }: ChatWindowProps) {
   const { t } = useTranslation()
-  const showError = useErrorModalStore(st => st.showError)
+  const showError = useToastStore(st => st.showError)
   const [text, setText] = useState('')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [editingMsg, setEditingMsg] = useState<Message | null>(null)

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthedFileUrl, downloadAuthedFile } from '../../shared/hooks/useAuthedFileUrl'
 import { FileTypeIcon } from '../../shared/ui/FileTypeIcon'
-import { useErrorModalStore } from '../../shared/api/errorModalStore'
+import { useToastStore } from '../../shared/api/toastStore'
 import type { Attachment } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -16,7 +16,8 @@ function formatFileSize(bytes: number): string {
  *  см. MessageAttachments. */
 function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }: Attachment) {
   const { t } = useTranslation()
-  const showError = useErrorModalStore(st => st.showError)
+  const showSuccess = useToastStore(st => st.showSuccess)
+  const showError = useToastStore(st => st.showError)
   const isImage = fileContentType.startsWith('image/')
   const { blobUrl, error } = useAuthedFileUrl(fileUrl, isImage)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -27,6 +28,7 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
     setDownloading(true)
     try {
       await downloadAuthedFile(fileUrl, fileName)
+      showSuccess(t('toast.fileDownloaded'))
     } catch {
       showError(t('messenger.attachmentDownloadFailed'))
     } finally {
