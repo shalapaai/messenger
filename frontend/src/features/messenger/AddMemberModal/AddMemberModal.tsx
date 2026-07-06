@@ -50,7 +50,7 @@ export function AddMemberModal({ isOpen, excludeUserIds, onClose, onSelect }: Ad
                 <div key={user.userId} className={`${s.row} ${s.rowClickable}`} onClick={() => onSelect(user)}>
                   {user.avatarUrl
                     ? <AvatarImage src={user.avatarUrl} alt={init} className={s.avatarImg} />
-                    : <div className={s.avatar} style={{ background: colorFromId(user.userId) }}>{init}</div>
+                    : <div className={s.avatar} style={{ background: user.avatarColor ?? colorFromId(user.userId) }}>{init}</div>
                   }
                   <div className={s.info}>
                     <span className={s.name}>{user.displayName}</span>

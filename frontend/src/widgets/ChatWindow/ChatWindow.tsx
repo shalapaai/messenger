@@ -21,6 +21,14 @@ import { useErrorModalStore } from '../../shared/api/errorModalStore'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
+// должно совпадать с лимитом на бэкенде (Message.Create / Message.Edit) — проверяем длину
+// на клиенте до отправки, чтобы слишком длинное сообщение не превращалось молча в "не отправлено"
+const MESSAGE_MAX_LENGTH = 4096
+// чисто клиентское ограничение (бэкенд строки не считает) — без него вставка текста из
+// сотен коротких строк даёт вполне укладывающееся в лимит по символам, но нечитаемо длинное
+// сообщение на весь экран
+const MESSAGE_MAX_LINES = 30
+
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
@@ -45,6 +53,9 @@ interface ChatWindowProps {
   onBulkDelete: (msgs: Message[]) => void
   onForward: (msgs: Message[]) => void
   onTyping: () => void
+  /** Закрыть текущий чат — на десктопе список чатов и так виден, поэтому кнопка просто
+   *  возвращает в начальное состояние страницы без открытого чата (аналог мобильной "назад") */
+  onBack: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
   onForwardedUserClick?: (userId: string, name: string) => void
@@ -56,7 +67,7 @@ export function ChatWindow({
   chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onSendFiles, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onHeaderClick, onAvatarClick,
+  onSend, onSendFiles, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
   onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
 }: ChatWindowProps) {
   const { t } = useTranslation()
@@ -76,6 +87,20 @@ export function ChatWindow({
   const mobileInput = useMobileInputLayer()
 
   const hasMessages = messages.length > 0
+  const lineCount = text.split('\n').length
+  const isOverLength = text.length > MESSAGE_MAX_LENGTH
+  const isOverLines  = lineCount > MESSAGE_MAX_LINES
+  const isOverLimit  = isOverLength || isOverLines
+
+  // Растягиваем textarea под содержимое (многострочный ввод, Shift+Enter — перенос строки)
+  // до max-height из CSS, дальше — обычный внутренний скролл. useLayoutEffect, а не useEffect,
+  // чтобы пересчитать высоту синхронно до отрисовки кадра и не мигать старым размером.
+  useLayoutEffect(() => {
+    const el = mobileInput.textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [text, mobileInput.textareaRef])
 
   useEffect(() => {
     if (shouldAutoFocus) mobileInput.textareaRef.current?.focus()
@@ -104,7 +129,7 @@ export function ChatWindow({
   }
 
   function scrollToMessage(msgId: string) {
-    const el = messagesRef.current?.querySelector(`[data-message-id="${msgId}"]`) as HTMLElement | null
+    const el = messagesRef.current?.querySelector(`[data-message-id="${CSS.escape(msgId)}"]`) as HTMLElement | null
     if (!el) return
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setHighlightedMsgId(msgId)
@@ -139,9 +164,12 @@ export function ChatWindow({
   }, [contextMenu, messagesRef])
 
   function openContextMenu(e: MouseEvent, msg: Message) {
-    if (!msg.messageId) return
+    // Сообщение без messageId — ещё отправляется или не отправилось; меню для него имеет смысл
+    // только чтобы удалить черновик (см. ContextMenu: остальные пункты требуют messageId)
+    if (!msg.messageId && msg.status !== 'failed') return
     e.preventDefault()
     if (selectMode) {
+      if (!msg.messageId) return
       if (!selectedIds.has(msg.id)) toggleSelect(msg)
       setContextMenu({ x: e.clientX, y: e.clientY, msg, selection: true })
       return
@@ -218,6 +246,19 @@ export function ChatWindow({
 
   async function send() {
     const trimmed = text.trim()
+
+    // Проверяем лимиты ДО отправки — иначе сообщение уходит на сервер, откуда возвращается
+    // отказом (или в случае строк — просто отправляется, раз бэкенд их не считает), вместо
+    // понятного предупреждения. Кнопка отправки уже задизейблена в этом случае, так что сюда
+    // попасть можно только напрямую через Enter.
+    if (trimmed.length > MESSAGE_MAX_LENGTH) {
+      showError(t('messenger.messageTooLong', { max: MESSAGE_MAX_LENGTH }))
+      return
+    }
+    if (trimmed.split('\n').length > MESSAGE_MAX_LINES) {
+      showError(t('messenger.messageTooManyLines', { max: MESSAGE_MAX_LINES }))
+      return
+    }
 
     if (attachments.queuedFiles.length > 0) {
       if (attachments.fileUploading) return
@@ -324,6 +365,15 @@ export function ChatWindow({
         </div>
       ) : (
         <div className={s.chatHeader}>
+          <button
+            type="button"
+            className={s.chatHeaderBack}
+            onClick={onBack}
+            aria-label={t('common.back')}
+            title={t('common.back')}
+          >
+            ‹
+          </button>
           <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
             <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
               {meta.avatarUrl
@@ -394,7 +444,7 @@ export function ChatWindow({
             <div ref={bottomRef} />
           </div>
           {!isAtBottom && (
-            <button className={s.scrollToBottomBtn} onClick={scrollToBottom} title="Вниз">
+            <button className={s.scrollToBottomBtn} onClick={scrollToBottom} title={t('messenger.scrollToBottom')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
@@ -422,6 +472,14 @@ export function ChatWindow({
               <div className={s.replyingBarText}>{replyingTo.text}</div>
             </div>
             <button type="button" className={s.editingBarCancel} onClick={cancelReply}>✕</button>
+          </div>
+        )}
+
+        {isOverLimit && (
+          <div className={s.lengthWarningBar}>
+            {isOverLength
+              ? t('messenger.messageTooLongInline', { length: text.length, max: MESSAGE_MAX_LENGTH })
+              : t('messenger.messageTooManyLinesInline', { length: lineCount, max: MESSAGE_MAX_LINES })}
           </div>
         )}
 
@@ -515,7 +573,7 @@ export function ChatWindow({
 
           <button
             className={s.sendBtn}
-            disabled={(!text.trim() && attachments.queuedFiles.length === 0) || attachments.fileUploading}
+            disabled={(!text.trim() && attachments.queuedFiles.length === 0) || attachments.fileUploading || isOverLimit}
             onClick={send}
           >
             <svg className={s.sendIcon} viewBox="0 0 24 24">

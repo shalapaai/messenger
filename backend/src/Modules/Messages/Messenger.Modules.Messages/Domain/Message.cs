@@ -115,6 +115,9 @@ public sealed class Message : AggregateRoot<MessageId>
         if (string.IsNullOrWhiteSpace(newContent))
             return Result.Failure(Error.Validation("Content", "New content cannot be empty"));
 
+        if (newContent.Length > 4096)
+            return Result.Failure(Error.Validation("Content", "Message content exceeds 4096 characters"));
+
         Content = newContent.Trim();
         EditedAt = DateTime.UtcNow;
         RaiseDomainEvent(new MessageEditedDomainEvent(Id.Value, ChatId, newContent));

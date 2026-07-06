@@ -30,11 +30,39 @@
 .chatHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
+  /* Совпадает с padding — одинаковый отступ и от левого края до кнопки "назад", и от
+     кнопки до аватарки. У .chatHeaderTrigger padding-left и отрицательный margin-left
+     компенсируют друг друга (это просто увеличенная hover-зона), так что на позицию
+     аватарки они не влияют — gap тут действует "как есть". */
+  gap: 24px;
   padding: 16px 24px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
+}
+
+/* Кнопка "назад" из шапки чата — только на десктопе: список чатов там виден постоянно,
+   так что "назад" — это просто закрыть текущий чат. На мобильном для этого уже есть
+   своя стрелка в верхнем баре страницы (MessengerPage), тут она была бы дублем. */
+.chatHeaderBack {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chatHeaderBack:hover { background: var(--color-border); }
+
+@media (max-width: 819px) {
+  .chatHeaderBack { display: none; }
 }
 
 /* ── Панель множественного выделения сообщений ────────────────────────────── */
@@ -250,7 +278,7 @@
 .senderName { font-size: 12px; font-weight: 700; padding-left: 46px; margin-bottom: 3px; margin-top: 12px; }
 .senderNameClickable { cursor: pointer; }
 
-.bubble { padding: 11px 16px; border-radius: 18px; font-size: 15px; font-weight: 500; line-height: 1.5; word-break: break-word; }
+.bubble { padding: 11px 16px; border-radius: 18px; font-size: 15px; font-weight: 500; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
 .bubbleOwn { background: var(--color-primary); color: var(--color-on-primary); }
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
@@ -373,6 +401,7 @@
   min-height: 48px;
   max-height: 140px;
   line-height: 1.5;
+  overflow-y: auto;
 }
 
 .textInput::placeholder { color: var(--color-text-faint); }
@@ -695,6 +724,16 @@
   padding: 2px 6px;
 }
 .editingBarCancel:hover { color: var(--color-text); }
+
+/* ── Предупреждение о превышении лимита длины сообщения ───────────────────── */
+.lengthWarningBar {
+  padding: 8px 24px;
+  background: #fee2e2;
+  border-top: 1px solid #fca5a5;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+}
 
 /* ── Панель ответа на сообщение ───────────────────────────────────────────── */
 .replyingBar {

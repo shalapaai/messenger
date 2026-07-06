@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { register, verifyOtp } from '../api/authApi'
 import { saveAuthTokens } from '../../../shared/lib/auth/authTokens'
@@ -73,7 +73,7 @@ function RegisterForm() {
       saveAuthTokens(tokens)
       navigate('/profile/setup')
     } catch {
-      setOtpError('Неверный или устаревший код. Попробуйте ещё раз.')
+      setOtpError(t('auth.errors.invalidOrExpiredCode'))
     } finally {
       setOtpLoading(false)
     }
@@ -84,14 +84,14 @@ function RegisterForm() {
     return (
       <form className={styles.form} onSubmit={handleOtpSubmit} noValidate>
         <div className={styles.header}>
-          <h2 className={styles.title}>Подтверждение email</h2>
+          <h2 className={styles.title}>{t('auth.otpTitle')}</h2>
           <p className={styles.subtitle}>
-            Код отправлен на <strong>{otpEmail}</strong>. Введите его для завершения регистрации.
+            <Trans i18nKey="auth.otpSubtitle" values={{ email: otpEmail }} components={{ strong: <strong /> }} />
           </p>
         </div>
 
         <label className={styles.field}>
-          <span className={styles.label}>Код из письма</span>
+          <span className={styles.label}>{t('auth.codeFromEmailLabel')}</span>
           <input
             className={styles.input}
             type="text"
@@ -108,7 +108,7 @@ function RegisterForm() {
         {otpError && <p className={styles.error}>{otpError}</p>}
 
         <button className={styles.button} type="submit" disabled={otpLoading || otpCode.length !== 6}>
-          {otpLoading ? 'Проверяем…' : 'Подтвердить'}
+          {otpLoading ? t('auth.otpVerifying') : t('auth.otpConfirmButton')}
         </button>
 
         <button
@@ -117,7 +117,7 @@ function RegisterForm() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           onClick={() => { setOtpEmail(null); setOtpCode(''); setOtpError('') }}
         >
-          ← Вернуться
+          ← {t('common.back')}
         </button>
       </form>
     )

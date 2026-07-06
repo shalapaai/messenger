@@ -20,24 +20,44 @@ interface ChatsState {
   removeChat: (chatId: string) => void
 }
 
+// Вне store'а — общий на все компоненты, переживает конкурентные вызовы loadChats() из
+// разных мест (эффект в MessengerPage, ChatUpdated, новое сообщение в ещё не открытый чат
+// и т.п.), схлопывая их в один запрос, а не запуская параллельные fetchChats().
+let loadChatsInFlight: Promise<void> | null = null
+
 export const useChatsStore = create<ChatsState>((set, get) => ({
   chats: [],
   chatsLoaded: false,
   chatsError: false,
 
-  loadChats: async () => {
-    set({ chatsError: false })
-    try {
-      const chats = await fetchChats()
-      set({ chats, chatsLoaded: true })
-      // засеваем начальный онлайн-статус собеседников; дальше его обновляют live-события UserOnline
-      const { setOnline } = useOnlineStore.getState()
-      chats.forEach(chat => {
-        if (chat.otherUserId) setOnline(chat.otherUserId, chat.online)
-      })
-    } catch {
-      set({ chatsError: true })
-    }
+  loadChats: () => {
+    if (loadChatsInFlight) return loadChatsInFlight
+
+    loadChatsInFlight = (async () => {
+      set({ chatsError: false })
+      try {
+        const fetched = await fetchChats()
+        // Сервер не хранит unread — это чисто клиентский счётчик, накопленный live-событиями.
+        // fetchChats() всегда возвращает unread: 0, так что наивная замена всего chats затирала
+        // бы счётчики ВСЕХ чатов нулём при каждом loadChats() — а его вызывают в том числе по
+        // поводу, не связанному с конкретным чатом (переименование группы, аватар, ChatUpdated
+        // от чужого чата и т.п.). Переносим уже накопленное значение по каждому известному чату.
+        const prevUnreadById = new Map(get().chats.map(c => [c.id, c.unread]))
+        const chats = fetched.map(c => ({ ...c, unread: prevUnreadById.get(c.id) ?? c.unread }))
+        set({ chats, chatsLoaded: true })
+        // засеваем начальный онлайн-статус собеседников; дальше его обновляют live-события UserOnline
+        const { setOnline } = useOnlineStore.getState()
+        chats.forEach(chat => {
+          if (chat.otherUserId) setOnline(chat.otherUserId, chat.online)
+        })
+      } catch {
+        set({ chatsError: true })
+      } finally {
+        loadChatsInFlight = null
+      }
+    })()
+
+    return loadChatsInFlight
   },
 
   handleNewMessage: (msg, activeChatId) => {

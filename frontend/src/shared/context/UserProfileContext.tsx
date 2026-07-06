@@ -16,11 +16,9 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   async function fetchProfile(): Promise<UserProfile | null> {
     try {
       const data = await profileApi.getMe()
-      console.log('[UserProfileContext] profile fetched:', data)
       setProfile(data)
       return data
-    } catch (err) {
-      console.warn('[UserProfileContext] profile fetch failed:', err)
+    } catch {
       setProfile(null)
       return null
     } finally {

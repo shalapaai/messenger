@@ -33,7 +33,8 @@
     "online": "online",
     "recently": "last seen recently",
     "loading": "Loading",
-    "ok": "OK"
+    "ok": "OK",
+    "back": "Back"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -58,6 +59,21 @@
     "newPasswordPlaceholder": "Create password",
     "repeatPassword": "Repeat password",
     "repeatPasswordPlaceholder": "Repeat password",
+    "otpTitle": "Confirm your email",
+    "otpSubtitle": "A code was sent to <strong>{{email}}</strong>. Enter it to finish registration.",
+    "otpConfirmButton": "Confirm",
+    "otpVerifying": "Verifying…",
+    "codeFromEmailLabel": "Code from the email",
+    "forgotPasswordHeroTitle": "Reset password",
+    "forgotPasswordHeroDescription": "Enter your email and we'll send you a code to reset your password.",
+    "forgotPasswordSubtitle": "Enter your email — we'll send a code to reset your password.",
+    "forgotPasswordSubmit": "Send code",
+    "forgotPasswordSending": "Sending…",
+    "forgotPasswordFooter": "Remembered your password?",
+    "resetPasswordTitle": "New password",
+    "resetPasswordSubtitle": "A code was sent to <strong>{{email}}</strong>. Enter it and choose a new password.",
+    "resetPasswordNewPlaceholder": "At least 8 characters",
+    "resetPasswordSave": "Save password",
     "errors": {
       "requiredLogin": "Enter email and password",
       "requiredRegister": "Fill in all fields",
@@ -65,7 +81,9 @@
       "shortPassword": "Password must be at least 8 characters",
       "passwordMismatch": "Passwords do not match",
       "loginFailed": "Could not sign in. Check your email and password",
-      "registerFailed": "Could not register. This email may already be in use"
+      "registerFailed": "Could not register. This email may already be in use",
+      "invalidOrExpiredCode": "Invalid or expired code. Please try again.",
+      "forgotPasswordFailed": "Could not send the code. Please try again later."
     }
   },
   "profileSetup": {
@@ -147,6 +165,7 @@
     "startChat": "Start messaging",
     "firstMessage": "Write the first message to {{name}} 👋",
     "historyStart": "Start of conversation",
+    "scrollToBottom": "Scroll to bottom",
     "sendFailedRetry": "⚠ Not sent · Retry",
     "messagePlaceholder": "Write a message…",
     "deleteMessage": "Delete message",
@@ -166,6 +185,10 @@
     "confirmBulkDelete_one": "Delete {{count}} message?",
     "confirmBulkDelete_other": "Delete {{count}} messages?",
     "sendFailed": "Could not send the message. Please try again.",
+    "messageTooLong": "Message is too long. Maximum {{max}} characters.",
+    "messageTooLongInline": "Message is too long: {{length}} / {{max}}",
+    "messageTooManyLines": "Too many lines. Maximum {{max}}.",
+    "messageTooManyLinesInline": "Too many lines: {{length}} / {{max}}",
     "attachFile": "Attach file",
     "downloadFile": "Download file",
     "dropFilesTitle": "Drop files here",

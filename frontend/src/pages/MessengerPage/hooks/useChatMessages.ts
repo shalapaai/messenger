@@ -157,6 +157,15 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }))
   }, [])
 
+  // Сообщение без messageId (ещё не подтверждено сервером — pending/failed) никогда там не
+  // существовало, удалять его через API нечего: просто убираем локальный черновик из состояния
+  const removeLocalMessage = useCallback((chatId: string, msg: Message) => {
+    setChatMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] ?? []).filter(m => m.id !== msg.id),
+    }))
+  }, [])
+
   const deleteMessages = useCallback(async (chatId: string, msgs: Message[]) => {
     const messageIds = msgs.map(m => m.messageId).filter((mid): mid is string => !!mid)
     if (messageIds.length === 0) return
@@ -325,7 +334,11 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
 
   return {
     messages,
-    loadingInitial: id ? !!loadingInitial[id] : false,
+    // Пока для чата ещё ни разу не завершилась загрузка (chatMessages[id] не задан) и не было
+    // ошибки — считаем это состоянием загрузки, а не "сообщений нет". Иначе на первом рендере
+    // после смены id (до срабатывания эффекта ниже) messages=[] и loadingInitial[id]=false
+    // совпадают, и ChatWindow на миг показывает пустую заглушку вместо скелетона.
+    loadingInitial: id ? (chatMessages[id] === undefined ? !loadError[id] : !!loadingInitial[id]) : false,
     loadError:      id ? !!loadError[id] : false,
     retryLoadInitial: () => id && loadInitial(id),
     handleIncomingMessage,
@@ -338,6 +351,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     sendFiles,
     retry,
     deleteMessage,
+    removeLocalMessage,
     deleteMessages,
     editMessage,
   }

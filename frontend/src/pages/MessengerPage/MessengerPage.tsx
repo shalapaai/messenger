@@ -149,7 +149,7 @@ export function MessengerPage() {
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
-    send, sendFiles, retry, deleteMessage, deleteMessages, editMessage,
+    send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -284,6 +284,9 @@ export function MessengerPage() {
 
   async function handleDeleteMessage(msg: Message) {
     if (!id) return
+    // Сообщение без messageId (не отправилось / ещё отправляется) не существует на сервере —
+    // удаляем локально, без запроса
+    if (!msg.messageId) { removeLocalMessage(id, msg); return }
     try {
       await deleteMessage(id, msg)
     } catch {
@@ -387,7 +390,7 @@ export function MessengerPage() {
       await setMemberRole(id, userId, role)
       setGroupMembers(prev => prev.map(m => m.userId === userId ? { ...m, role } : m))
     } catch {
-      window.alert(t('messenger.setMemberRoleFailed'))
+      showError(t('messenger.setMemberRoleFailed'))
     }
   }
 
@@ -517,6 +520,7 @@ export function MessengerPage() {
               onBulkDelete={handleBulkDeleteMessages}
               onForward={msgs => { if (id) setForwardState({ sourceChatId: id, messages: msgs }) }}
               onTyping={typingIndicator.handleOwnTyping}
+              onBack={() => { discardInputHistoryLayer(); navigate('/chats') }}
               onHeaderClick={() => {
                 if (meta.group) { setGroupModalOpen(true); return }
                 if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }

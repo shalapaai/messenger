@@ -33,7 +33,8 @@
     "online": "в сети",
     "recently": "был(а) недавно",
     "loading": "Загрузка",
-    "ok": "Понятно"
+    "ok": "Понятно",
+    "back": "Назад"
   },
   "auth": {
     "loginTitle": "Вход",
@@ -58,6 +59,21 @@
     "newPasswordPlaceholder": "Придумайте пароль",
     "repeatPassword": "Повторите пароль",
     "repeatPasswordPlaceholder": "Повторите пароль",
+    "otpTitle": "Подтверждение email",
+    "otpSubtitle": "Код отправлен на <strong>{{email}}</strong>. Введите его для завершения регистрации.",
+    "otpConfirmButton": "Подтвердить",
+    "otpVerifying": "Проверяем…",
+    "codeFromEmailLabel": "Код из письма",
+    "forgotPasswordHeroTitle": "Сброс пароля",
+    "forgotPasswordHeroDescription": "Введите email, и мы пришлём код для сброса пароля.",
+    "forgotPasswordSubtitle": "Введите email — мы отправим код для сброса пароля.",
+    "forgotPasswordSubmit": "Отправить код",
+    "forgotPasswordSending": "Отправляем…",
+    "forgotPasswordFooter": "Вспомнили пароль?",
+    "resetPasswordTitle": "Новый пароль",
+    "resetPasswordSubtitle": "Код отправлен на <strong>{{email}}</strong>. Введите его и придумайте новый пароль.",
+    "resetPasswordNewPlaceholder": "Минимум 8 символов",
+    "resetPasswordSave": "Сохранить пароль",
     "errors": {
       "requiredLogin": "Заполните электронную почту и пароль",
       "requiredRegister": "Заполните все поля",
@@ -65,7 +81,9 @@
       "shortPassword": "Пароль должен быть не короче 8 символов",
       "passwordMismatch": "Пароли не совпадают",
       "loginFailed": "Не удалось войти. Проверьте почту и пароль",
-      "registerFailed": "Не удалось зарегистрироваться. Возможно, эта почта уже используется"
+      "registerFailed": "Не удалось зарегистрироваться. Возможно, эта почта уже используется",
+      "invalidOrExpiredCode": "Неверный или устаревший код. Попробуйте ещё раз.",
+      "forgotPasswordFailed": "Не удалось отправить код. Попробуйте позже."
     }
   },
   "profileSetup": {
@@ -149,6 +167,7 @@
     "startChat": "Начните общение",
     "firstMessage": "Напишите первое сообщение {{name}} 👋",
     "historyStart": "Начало переписки",
+    "scrollToBottom": "Вниз",
     "sendFailedRetry": "⚠ Не отправлено · Повторить",
     "messagePlaceholder": "Написать сообщение…",
     "deleteMessage": "Удалить сообщение",
@@ -170,6 +189,10 @@
     "confirmBulkDelete_many": "Удалить {{count}} сообщений?",
     "confirmBulkDelete_other": "Удалить {{count}} сообщения?",
     "sendFailed": "Не удалось отправить сообщение. Попробуйте ещё раз.",
+    "messageTooLong": "Сообщение слишком длинное. Максимум {{max}} символов.",
+    "messageTooLongInline": "Сообщение слишком длинное: {{length}} / {{max}}",
+    "messageTooManyLines": "Слишком много строк. Максимум {{max}}.",
+    "messageTooManyLinesInline": "Слишком много строк: {{length}} / {{max}}",
     "attachFile": "Прикрепить файл",
     "downloadFile": "Скачать файл",
     "dropFilesTitle": "Перетащите файлы сюда",

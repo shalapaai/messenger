@@ -79,9 +79,18 @@ public sealed class MessageSentEventHandler(
             .Group(MessengerHub.ChatGroup(notification.ChatId))
             .SendAsync("ReceiveMessage", payload, ct);
 
-        // Дополнительно рассылаем в личные группы участников-не-отправителей —
-        // нужно для случая, когда чат только что создан и получатель ещё не в группе
+        // Дополнительно рассылаем в личные группы ВСЕХ участников, включая отправителя (без
+        // excludeUserId) — нужно не только для случая, когда чат только что создан и получатель
+        // ещё не вступил в группу (обычный ChatFallback fallback), но и для самого отправителя:
+        // список чатов (chatsStore.handleNewMessage) обновляет preview/lastMessageId только по
+        // этому событию, отдельного optimistic-пути для него нет. Если отправитель ещё не успел
+        // вступить в group чата (гонка с JoinChat при первом сообщении в свежесозданном чате),
+        // рассылка в ChatGroup выше его не найдёт — тогда только этот fallback и донесёт событие
+        // до его собственного списка чатов. Дублей не будет, даже если оба канала всё же дойдут
+        // до одного и того же адресата: useChatMessages.handleIncomingMessage игнорирует свои же
+        // неопересланные сообщения по senderId, а chatsStore.handleNewMessage — по
+        // lastMessageId === msg.messageId.
         await ChatFallback.BroadcastToMembersAsync(
-            hubContext, membersTask, "ReceiveMessage", payload, ct, notification.SenderId);
+            hubContext, membersTask, "ReceiveMessage", payload, ct);
     }
 }
