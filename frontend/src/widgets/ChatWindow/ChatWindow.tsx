@@ -49,6 +49,9 @@ interface ChatWindowProps {
   onBulkDelete: (msgs: Message[]) => void
   onForward: (msgs: Message[]) => void
   onTyping: () => void
+  /** Закрыть текущий чат — на десктопе список чатов и так виден, поэтому кнопка просто
+   *  возвращает в начальное состояние страницы без открытого чата (аналог мобильной "назад") */
+  onBack: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
   onForwardedUserClick?: (userId: string, name: string) => void
@@ -60,7 +63,7 @@ export function ChatWindow({
   chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onSendFiles, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onHeaderClick, onAvatarClick,
+  onSend, onSendFiles, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
   onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
 }: ChatWindowProps) {
   const { t } = useTranslation()
@@ -340,6 +343,15 @@ export function ChatWindow({
         </div>
       ) : (
         <div className={s.chatHeader}>
+          <button
+            type="button"
+            className={s.chatHeaderBack}
+            onClick={onBack}
+            aria-label={t('common.back')}
+            title={t('common.back')}
+          >
+            ‹
+          </button>
           <button type="button" className={s.chatHeaderTrigger} onClick={onHeaderClick}>
             <div className={`${s.chatHeaderAvatar} ${meta.group ? s.chatHeaderAvatarGroup : ''}`} style={meta.avatarUrl ? undefined : { background: meta.color }}>
               {meta.avatarUrl

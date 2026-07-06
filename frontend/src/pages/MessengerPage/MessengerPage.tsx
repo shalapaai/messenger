@@ -504,6 +504,7 @@ export function MessengerPage() {
               onBulkDelete={handleBulkDeleteMessages}
               onForward={msgs => { if (id) setForwardState({ sourceChatId: id, messages: msgs }) }}
               onTyping={typingIndicator.handleOwnTyping}
+              onBack={() => { discardInputHistoryLayer(); navigate('/chats') }}
               onHeaderClick={() => {
                 if (meta.group) { setGroupModalOpen(true); return }
                 if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }

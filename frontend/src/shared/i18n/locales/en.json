@@ -33,7 +33,8 @@
     "online": "online",
     "recently": "last seen recently",
     "loading": "Loading",
-    "ok": "OK"
+    "ok": "OK",
+    "back": "Back"
   },
   "auth": {
     "loginTitle": "Sign in",

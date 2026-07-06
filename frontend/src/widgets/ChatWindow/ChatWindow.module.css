@@ -37,6 +37,30 @@
   flex-shrink: 0;
 }
 
+/* Кнопка "назад" из шапки чата — только на десктопе: список чатов там виден постоянно,
+   так что "назад" — это просто закрыть текущий чат. На мобильном для этого уже есть
+   своя стрелка в верхнем баре страницы (MessengerPage), тут она была бы дублем. */
+.chatHeaderBack {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chatHeaderBack:hover { background: var(--color-border); }
+
+@media (max-width: 819px) {
+  .chatHeaderBack { display: none; }
+}
+
 /* ── Панель множественного выделения сообщений ────────────────────────────── */
 .selectionBar {
   display: flex;
