@@ -32,9 +32,14 @@ public sealed class UserProfileRepository(UsersDbContext dbContext) : IUserProfi
             ? dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
                             p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))
+            // "%{q}%@%" — совпадение засчитывается только если q встречается ДО "@", то есть
+            // в локальной части адреса (vlad@gmail.com → "vlad"). Без этого "%{q}%" матчил бы
+            // и по домену (gmail.com/mail.ru и т.п.), и короткий запрос вроде одной буквы
+            // совпадал бы почти со всеми пользователями конкретного почтового провайдера,
+            // никак не отражая реальное намерение найти конкретного человека.
             : dbContext.UserProfiles
                 .Where(p => p.AuthUserId != excludeUserId &&
-                            (EF.Functions.ILike(p.Email, $"{q}@%") ||
+                            (EF.Functions.ILike(p.Email, $"%{q}%@%") ||
                              EF.Functions.ILike(p.DisplayName, $"%{q}%") ||
                              (p.Login != null && EF.Functions.ILike(p.Login, $"%{q}%"))));
 

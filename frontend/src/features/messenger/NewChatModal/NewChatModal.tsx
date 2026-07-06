@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { UserSearchResult } from '../../../shared/api/usersApi'
 import { useChatsStore } from '../../../shared/api/chatsStore'
-import { colorFromId, initials } from '../../../shared/api/chatsApi'
+import { colorFromId, initials, userSubtitle } from '../../../shared/api/chatsApi'
 import { useUserSearch } from '../../../shared/hooks/useUserSearch'
 import { AvatarImage } from '../../../shared/ui/AvatarImage'
 import { UserListSkeleton } from '../UserListSkeleton'
@@ -34,7 +34,7 @@ export function NewChatModal({ isOpen, onClose, onSelect }: NewChatModalProps) {
         }
         <div className={s.info}>
           <span className={s.name}>{user.displayName}</span>
-          <span className={s.sub}>{user.login ?? user.email}</span>
+          <span className={s.sub}>{userSubtitle(user)}</span>
         </div>
       </div>
     )

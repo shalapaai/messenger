@@ -31,6 +31,14 @@ export function colorFromId(id: string): string {
   return COLORS[Math.abs(h) % COLORS.length]
 }
 
+/** Подпись под именем в результатах поиска — показываем и login (если есть), и email, а не
+ *  одно "login ?? email": иначе при совпадении по email (поиск матчит email/имя/login разом)
+ *  у пользователя с заданным login email просто не виден нигде в строке, и непонятно,
+ *  почему этот человек вообще оказался в выдаче. */
+export function userSubtitle(user: { login: string | null; email: string }): string {
+  return user.login ? `${user.login} · ${user.email}` : user.email
+}
+
 /** Инициалы из displayName — общий хелпер для REST-истории и realtime-сообщений. */
 export function initials(name: string | null): string {
   if (!name) return '?'

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { Chat, Filter } from '../../shared/types/messenger'
 import { useOnlineStore } from '../../shared/api/onlineStore'
 import { searchUsers, type UserSearchResult } from '../../shared/api/usersApi'
-import { initials, colorFromId } from '../../shared/api/chatsApi'
+import { initials, colorFromId, userSubtitle } from '../../shared/api/chatsApi'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { useAuthedFileUrl } from '../../shared/hooks/useAuthedFileUrl'
 import { ChatListSkeleton } from './ChatListSkeleton'
@@ -295,7 +295,7 @@ export function ChatListPanel({
                             <span className={s.clName}>{user.displayName}</span>
                           </div>
                           <div className={s.clPreview}>
-                            {user.login ?? user.email}
+                            {userSubtitle(user)}
                           </div>
                         </div>
                       </div>
