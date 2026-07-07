@@ -41,28 +41,55 @@ services:
   api:
     restart: always
     deploy:
-      replicas: 2
       resources:
         limits:
           cpus: "2"
           memory: 1G
         reservations:
           memory: 256M
-      update_config:
-        parallelism: 1
-        delay: 10s
-        failure_action: rollback
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-    # healthcheck для load balancer
+    # healthcheck для load balancer — wget, не curl: в runtime-образе (aspnet:9.0,
+    # debian-slim) curl не установлен, только wget, см. базовый healthcheck в docker-compose.yml
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    # Наружу торчит только Caddy — API снаружи напрямую не нужен, всё идёт
+    # через frontend-nginx (/api, /hubs), который проксирует Caddy
+    ports: !reset []
+
+  frontend:
+    restart: always
+    # Наружу торчит только Caddy (терминирует TLS) — сам frontend доступен
+    # только по внутренней docker-сети
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: messenger-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    networks:
+      - messenger-network
 
   # pgAdmin полностью убран в prod
   pgadmin:
     deploy:
       replicas: 0
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
