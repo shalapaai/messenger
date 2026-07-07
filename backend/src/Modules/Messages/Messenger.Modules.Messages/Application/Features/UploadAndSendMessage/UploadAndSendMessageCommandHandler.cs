@@ -18,17 +18,13 @@ public sealed class UploadAndSendMessageCommandHandler(
         if (!await membershipChecker.IsMemberAsync(command.ChatId, command.SenderId, ct))
             return Result.Failure<UploadAndSendMessageResult>(Error.Forbidden("You are not a member of this chat"));
 
-        // Загружаем файлы последовательно, а не параллельно: Files-модуль сохраняет запись о
-        // каждом файле через тот же scoped DbContext, а EF Core не поддерживает параллельные
-        // операции на одном инстансе контекста (см. аналогичное замечание в ForwardMessages)
+        // Последовательно, не параллельно: Files-модуль пишет через тот же scoped DbContext (см. ForwardMessages).
         var attachments = new List<MessageAttachment>();
         var uploadedKeys = new List<string>();
         var sortOrder = 0;
 
-        // Если загрузка любого файла в батче или сохранение самого сообщения провалится —
-        // подчищаем уже загруженные до этого файлы, иначе они остаются в хранилище/БД без
-        // владельца (ни одно сообщение на них не ссылается, но занимают место и никогда
-        // не удалятся сами) — если файл первый в батче, а второй не проходит валидацию.
+        // Если загрузка любого файла или сохранение сообщения провалится — подчищаем уже
+        // загруженные файлы, иначе они остаются в хранилище/БД никем не удаляемым мусором.
         try
         {
             foreach (var file in command.Files)

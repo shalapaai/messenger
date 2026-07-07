@@ -17,9 +17,8 @@ public sealed class DeleteAvatarCommandHandler(
         if (existing is null)
             return Result.Success();
 
-        // Сначала коммитим удаление записи в БД и только потом удаляем физический файл —
-        // если бы порядок был обратным, а SaveChangesAsync упал, в БД осталась бы ссылка
-        // на уже несуществующий файл (битый аватар)
+        // Сначала коммитим удаление записи и только потом физический файл — иначе упавший
+        // SaveChangesAsync оставил бы в БД ссылку на уже стёртый файл.
         fileRepository.Remove(existing);
         await unitOfWork.SaveChangesAsync(ct);
         await fileStorage.DeleteAsync(existing.FileKey, ct);

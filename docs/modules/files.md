@@ -1,157 +1,76 @@
-# Модуль Files
+# Модуль Files — файлы
 
-Отвечает за **загрузку и хранение файлов**. Поддерживает два бэкенда: локальная файловая система и AWS S3. Выбор — через конфигурацию.
+## Что делает
 
-## Домен
+Единственное место в системе, которое работает с физическими файлами. Обрабатывает загрузку и выдачу аватарок и вложений к сообщениям.
 
-### FileUpload
+## Схема БД
 
-Сущность. Хранит метаданные о загруженном файле.
+Схема `files`.
 
-```csharp
-public sealed class FileUpload : Entity<Guid>
-{
-    public string FileKey { get; }      // ключ в хранилище (путь или S3 key)
-    public string OriginalName { get; } // оригинальное имя файла
-    public string ContentType { get; }  // MIME-тип
-    public long SizeBytes { get; }
-    public Guid UploadedBy { get; }     // ID пользователя (auth.users)
-    public DateTime UploadedAt { get; }
-    public FileCategory Category { get; }
+### Таблица `files.file_upload`
 
-    public static FileUpload Create(
-        Guid uploadedBy, string fileKey, string originalName,
-        string contentType, long sizeBytes, FileCategory category);
-}
-```
+| Колонка | Тип | Описание |
+|---|---|---|
+| id | uuid | Первичный ключ |
+| file_key | varchar(512) | Ключ в хранилище (уникальный) |
+| original_name | varchar(255) | Оригинальное имя файла |
+| content_type | varchar(100) | MIME-тип (image/jpeg, etc.) |
+| size_bytes | bigint | Размер в байтах |
+| uploaded_by | uuid | Кто загрузил (FK на auth.user) |
+| uploaded_at | timestamptz | Когда загружен |
+| category | varchar(30) | `"Avatar"`, `"ChatAttachment"`, `"Document"`, `"GroupAvatar"` |
+| chat_id | uuid | Заполнено для `ChatAttachment` (проверка членства при скачивании) и для `GroupAvatar` (поиск текущей аватарки группы при замене). Без FK на `chats.chats` — модули не должны зависеть друг от друга на уровне схемы |
 
-```csharp
-public enum FileCategory { Avatar, ChatAttachment, Document }
-```
+**Индексы:**
+- `ix_file_upload_file_key` (unique) — поиск при отдаче файла клиенту
+- `ix_file_upload_uploaded_by_category` — поиск аватара конкретного пользователя
+- `ux_file_upload_avatar_per_user` (unique, частичный — `WHERE category = 'Avatar'`) — не даёт двум одновременным загрузкам личного аватара создать вторую "текущую" запись
+- `ux_file_upload_group_avatar_per_chat` (unique, частичный — `WHERE category = 'GroupAvatar'`) — то же самое для аватарки группы
 
-## Команды
+## Хранилища (Storage backends)
 
-### UploadAvatarCommand
-
-Вызывается из модуля Users при загрузке аватара.
-
-```
-UploadAvatarCommand(UserId, FileContent, FileName, ContentType, FileSizeBytes)
-
-    → validates:
-        - size ≤ 5MB
-        - ContentType is image (image/jpeg, image/png, image/gif, image/webp)
-    → generates FileKey (userId + timestamp или UUID)
-    → IFileStorage.UploadAsync(fileKey, stream)
-    → creates FileUpload entity (Category = Avatar)
-    → repository.Add(fileUpload)
-    → unitOfWork.SaveChangesAsync()
-    → returns fileUrl ("/api/files/{fileKey}")
-```
-
-## Эндпоинты
-
-### `POST /api/files/avatar` 🔒
-
-Прямая загрузка аватара (HTTP endpoint). Обёртка над UploadAvatarCommand.
-
-```bash
-curl -X POST http://localhost:8080/api/files/avatar \
-  -H "Authorization: Bearer <token>" \
-  -F "file=@photo.jpg"
-```
-
-Ответ:
-```json
-{ "url": "/api/files/avatars/user_123_1719312000.jpg" }
-```
-
-### `GET /api/files/{fileKey}`
-
-Получить файл. Публичный доступ (без токена).
-
-```bash
-curl http://localhost:8080/api/files/avatars/user_123_1719312000.jpg
-```
-
-Возвращает содержимое файла с правильным `Content-Type`.
-
-## Хранилище
-
-### Локальное (по умолчанию)
-
-Конфигурация в `appsettings.json`:
-```json
-{
-  "FileStorage": {
-    "Type": "Local",
-    "Local": {
-      "BasePath": "/app/uploads"
-    }
-  }
-}
-```
-
-Файлы хранятся в директории `/app/uploads` внутри контейнера. В docker-compose смонтирован volume `uploads_data` для персистентности:
-
-```yaml
-volumes:
-  - uploads_data:/app/uploads
-```
-
-Структура файлов:
-```
-/app/uploads/
-└── avatars/
-    ├── user_abc123_1719312000.jpg
-    └── user_def456_1719315600.png
-```
-
-### AWS S3
-
-Конфигурация:
-```json
-{
-  "FileStorage": {
-    "Type": "S3",
-    "S3": {
-      "BucketName": "messenger-files",
-      "Region": "eu-central-1",
-      "AccessKey": "...",
-      "SecretKey": "..."
-    }
-  }
-}
-```
-
-Переключение между Local и S3 меняет только `FileStorage:Type`. Остальной код не меняется.
-
-## Абстракция IFileStorage
-
-```csharp
-public interface IFileStorage
-{
-    Task<string> UploadAsync(string key, Stream content, CancellationToken ct = default);
-    Task<Stream> DownloadAsync(string key, CancellationToken ct = default);
-    Task DeleteAsync(string key, CancellationToken ct = default);
-}
-```
-
-`LocalFileStorage` и `S3FileStorage` реализуют этот интерфейс. Регистрация в DI выбирается по конфигурации в `FilesModule.Install`.
-
-## Инфраструктура
-
-### IFileRepository
-
-```csharp
-void Add(FileUpload fileUpload)
-Task<FileUpload?> GetByFileKeyAsync(string fileKey, CancellationToken ct)
-```
-
-## Таблицы
-
-| Таблица | Описание |
+| Вариант | Когда используется |
 |---|---|
-| `files.file_uploads` | Метаданные загруженных файлов |
+| `LocalFileStorage` | Разработка — файлы сохраняются в папку на диске |
+| `S3FileStorage` | Продакшн — Amazon S3 (или любой S3-совместимый сервис) |
 
-Подробнее — [database.md](../database.md).
+Переключение через конфиг: `FileStorage:Type = Local` или `S3`.
+
+## API endpoints
+
+| Метод | URL | Описание |
+|---|---|---|
+| POST | `/api/files/avatar` | Загрузить аватарку (JPEG/PNG/WebP/GIF, до 5 МБ) |
+| GET | `/api/files/{fileKey}` | Скачать файл по ключу |
+
+## Приватность при скачивании
+
+Маршрут `GET /api/files/{fileKey}` помечен `AllowAnonymous` целиком (чтобы не ломать обычные `<img src>` для аватарок — браузер не прикладывает JWT к запросам картинок). Но внутри хендлера поведение различается по категории файла:
+
+- **`Avatar`** — отдаётся всем без проверки, аватарки задуманы публичными (как в любом мессенджере)
+- **`ChatAttachment`** — требует аутентификации **и** членства в чате, к которому привязан файл (`record.ChatId`, проверяется через тот же `IChatMembershipChecker`, Shared.Kernel). Без логина — `401`, не участник чата — `403`
+
+## Ограничения
+
+- Аватарки (личные и групповые): только изображения (JPEG/PNG/WebP/GIF), максимум **5 МБ**
+- Вложения в сообщения: не любой тип — белый список (`AllowedAttachmentMimeTypes`): изображения, документы (PDF/Word/Excel/PowerPoint/txt/csv), архивы (zip/rar/7z), аудио, видео; исполняемые/скриптовые типы (exe, sh, bat, js и т.п.) намеренно исключены. Максимум **25 МБ** на файл, максимум **10** файлов на сообщение (см. [Messages](messages.md))
+- Заявленный `Content-Type` дополнительно сверяется с реальным содержимым файла по сигнатуре первых байт (`FileSignatureValidator`) — просто переименовать `.exe` в `.pdf` и подделать заголовок запроса недостаточно
+- При загрузке новой аватарки старая автоматически удаляется
+
+## Как работает загрузка аватарки
+
+1. `POST /api/files/avatar` (личная) или `POST /api/chats/{id}/avatar` (групповая, см. [Chats](chats.md)) с файлом в `multipart/form-data`
+2. Проверка MIME-типа, размера и сигнатуры содержимого
+3. Сначала сохраняется **новый** файл в хранилище (получение `fileKey` и публичного URL) и создаётся новая запись в `files.file_upload` — и только при успехе удаляется старая (поиск по `uploaded_by + category=Avatar` для личной / `chat_id + category=GroupAvatar` для групповой). Порядок важен: если бы сначала удалялся старый файл, а загрузка нового потом падала (сеть, лимит хранилища) — пользователь/группа остались бы совсем без аватарки
+4. Если два запроса на замену аватарки от одного пользователя (или для одного чата) проскочат разом — второй упирается в уникальный индекс (`ux_file_upload_avatar_per_user`/`ux_file_upload_group_avatar_per_chat`, см. схему выше), уже загруженный им файл компенсирующе удаляется, и клиент получает `409 Conflict` вместо орфанного файла без ссылки в БД
+5. Возврат URL клиенту
+
+## Публичный API модуля
+
+Другие модули обращаются к Files только через интерфейс:
+```
+IFilesModule.UploadChatAttachmentAsync(...)  → загрузить вложение к сообщению, возвращает fileKey + URL (Messages)
+IFilesModule.DeleteChatAttachmentAsync(...)  → компенсирующее удаление вложения при откате (Messages)
+IFilesModule.UploadGroupAvatarAsync(...)     → загрузить/заменить аватарку группы (Chats)
+```

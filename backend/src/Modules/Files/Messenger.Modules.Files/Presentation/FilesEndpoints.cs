@@ -25,9 +25,7 @@ public static class FilesEndpoints
             .DisableAntiforgery()
             .RequireAuthorization();
 
-        // Скачивание файла. Аватары — публичные (как у любого мессенджера).
-        // Вложения чатов (ChatAttachment) — только авторизованный участник этого чата,
-        // проверяется внутри хендлера (маршрут анонимный, чтобы не ломать аватарки).
+        // Аватары публичные; вложения чатов проверяются внутри хендлера (маршрут анонимный, чтобы не ломать аватарки).
         group.MapGet("/{fileKey}", DownloadFile)
             .WithName("DownloadFile")
             .Produces(StatusCodes.Status200OK)

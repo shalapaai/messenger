@@ -30,9 +30,7 @@ public sealed class FileUpload : Entity<Guid>
     public DateTime UploadedAt { get; private set; }
     public FileCategory Category { get; private set; }
 
-    // Для ChatAttachment — проверка при скачивании, что скачивающий состоит в этом чате (см. DownloadFile).
-    // Для GroupAvatar — ключ поиска "текущая аватарка этого чата" при замене (см. GetGroupAvatarByChatIdAsync).
-    // В обоих случаях null для прочих категорий.
+    // ChatAttachment: чат для проверки членства при скачивании. GroupAvatar: ключ поиска текущей аватарки чата.
     public Guid? ChatId { get; private set; }
 
     public static FileUpload Create(

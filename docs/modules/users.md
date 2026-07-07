@@ -1,157 +1,49 @@
-# Модуль Users
+# Модуль Users — профили пользователей
 
-Управляет **профилями пользователей**: отображаемое имя, статус, аватар, поиск. Хранит `AuthUserId` как ссылку на модуль Auth (без прямого FK — модули изолированы).
+## Что делает
 
-## Домен
+Хранит профили пользователей (имя, логин, биография, аватарка). **Отдельно от Auth** — это намеренное разделение: Auth знает только "кто может войти", Users знает "как пользователь выглядит".
 
-### UserProfile
+## Схема БД
 
-Агрегат. Создаётся отдельно от регистрации — пользователь сначала регистрируется в Auth, затем создаёт профиль.
+Схема `users`.
 
-```csharp
-public sealed class UserProfile : AggregateRoot<Guid>
-{
-    public Guid AuthUserId { get; }      // ID из auth.users
-    public string Email { get; }         // дублируется для поиска
-    public string DisplayName { get; }
-    public string? Status { get; }
-    public string? AvatarUrl { get; }
-    public DateTime CreatedAt { get; }
-    public DateTime? UpdatedAt { get; }
+### Таблица `users.user_profile`
 
-    public static Result<UserProfile> Create(Guid authUserId, string email, string displayName);
-    public void Update(string? displayName, string? status);
-    public void SetAvatarUrl(string avatarUrl);
-}
-```
+| Колонка | Тип | Описание |
+|---|---|---|
+| id | uuid | Первичный ключ профиля (свой, НЕ совпадает с auth.user.id) |
+| auth_user_id | uuid | FK на `auth.user.id` — связь профиля с учётной записью |
+| email | varchar(255) | Email (дублируется из Auth для поиска без межмодульного вызова) |
+| display_name | varchar(100) | Отображаемое имя |
+| login | varchar(30) | Уникальный логин вида `@login` (nullable) |
+| status | varchar(200) | Статус-сообщение под именем (nullable) |
+| avatar_url | varchar(2048) | URL аватарки (nullable) |
+| avatar_color | varchar(7) | Цвет фона инициалов, если аватарки нет (`#RRGGBB`, дефолт `#2C5BF0`) |
+| phone | varchar(20) | Телефон (nullable) |
+| city | varchar(100) | Город (nullable) |
+| department | varchar(100) | Отдел (nullable) |
+| created_at | timestamptz | Дата создания профиля |
+| updated_at | timestamptz | Дата последнего обновления (nullable) |
 
-Email приводится к нижнему регистру при создании.
+**Индексы:** `ix_user_profile_auth_user_id` (unique), `ix_user_profile_email` (unique), `ix_user_profile_login` (unique, частичный — только где `login IS NOT NULL`).
 
-## Команды
+## API endpoints
 
-### CreateUserProfileCommand
+| Метод | URL | Описание |
+|---|---|---|
+| POST | `/api/users` | Создать профиль после регистрации (`login` необязателен) |
+| GET | `/api/users/me` | Получить свой полный профиль |
+| PATCH | `/api/users/me` | Частичное обновление профиля (только переданные поля) |
+| POST | `/api/users/me/avatar` | Загрузить аватарку (JPEG/PNG/WebP, до 5 МБ) |
+| DELETE | `/api/users/me/avatar` | Удалить аватарку |
+| GET | `/api/users/{userId}` | Публичный профиль пользователя по id |
+| GET | `/api/users/search?q=...` | Поиск пользователей по email/displayName/login, с пагинацией (`page`, `pageSize`, max 50) |
 
-```
-POST /api/users
-Body: { displayName }
-JWT: → authUserId, email
+## Логин пользователя
 
-    → checks: profile for this authUserId already exists?
-    → checks: email unique in users schema?
-    → creates UserProfile
-    → saves to users.user_profiles
-    → returns UserProfileDto
-```
+Каждый пользователь может задать уникальный логин (как @username в Telegram). Используется для поиска: `q` без `"@"` ищет по email/displayName/login разом, `"@login"` — только по login.
 
-**Валидация:**
-- DisplayName: обязательный, ≥2 символа, ≤100 символов
+## Аватарка
 
-Вызывать после регистрации — как второй шаг онбординга.
-
-### UpdateUserProfileCommand
-
-```
-PATCH /api/users/me
-Body: { displayName?, status? }
-JWT: → authUserId
-
-    → finds profile by authUserId
-    → updates non-null fields
-    → saves
-    → returns UpdatedProfileDto
-```
-
-Оба поля опциональны: можно обновить только статус или только имя.
-
-### UploadUserAvatarCommand
-
-```
-POST /api/users/me/avatar
-Body: multipart/form-data (file)
-JWT: → authUserId
-
-    → finds profile
-    → delegates to Files module via ISender:
-        UploadAvatarCommand(authUserId, stream, fileName, contentType, size)
-        → validates file (≤5MB, image MIME)
-        → stores file
-        → returns fileUrl
-    → profile.SetAvatarUrl(fileUrl)
-    → saves
-    → returns AvatarUrlDto
-```
-
-Модуль Users зависит от модуля Files через `ProjectReference`. Взаимодействие через MediatR ISender — не прямой вызов, а отправка команды.
-
-## Запросы
-
-### GetMeQuery
-
-```
-GET /api/users/me
-JWT: → authUserId
-
-    → finds profile by authUserId
-    → returns MeDto
-```
-
-### SearchUsersQuery
-
-```
-GET /api/users/search?q=text&page=1&pageSize=20
-JWT: → currentUserId
-
-    → ILIKE search on Email and DisplayName
-    → excludes currentUser from results
-    → paginates
-    → returns PagedList<UserSearchResultDto>
-```
-
-Использует `EF.Functions.ILike` — регистронезависимый поиск в PostgreSQL.
-
-## Инфраструктура
-
-### IUserProfileRepository
-
-```csharp
-Task<UserProfile?> GetByAuthUserIdAsync(Guid authUserId, CancellationToken ct)
-Task<bool> ExistsByAuthUserIdAsync(Guid authUserId, CancellationToken ct)
-Task<bool> ExistsByEmailAsync(string email, CancellationToken ct)
-Task<PagedList<UserProfile>> SearchAsync(
-    string query, Guid excludeUserId, int page, int pageSize, CancellationToken ct)
-void Add(UserProfile profile)
-void Update(UserProfile profile)
-```
-
-## Потоки использования
-
-### Онбординг нового пользователя
-
-```
-1. POST /api/auth/register       → accessToken, refreshToken
-2. POST /api/users               → профиль создан
-   (displayName в теле, email из токена)
-```
-
-### Обновление профиля
-
-```
-PATCH /api/users/me
-{ "displayName": "Новое имя", "status": "Занят" }
-```
-
-### Смена аватара
-
-```
-POST /api/users/me/avatar
-Content-Type: multipart/form-data
-file: <binary>
-```
-
-## Таблицы
-
-| Таблица | Описание |
-|---|---|
-| `users.user_profiles` | Профили пользователей |
-
-Подробнее — [database.md](../database.md).
+Загрузка/удаление аватарки делегируется модулю [Files](files.md) через `IFilesModule` — Users не работает с хранилищем напрямую.
