@@ -274,7 +274,10 @@ app.UseSerilogRequestLogging(opts =>
 app.UseLocalizationModule();     // культура из Accept-Language / ?lang=
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
+// В "Testing" все запросы идут через один и тот же in-process TestServer с одним "IP" —
+// лимиты по IP/пользователю иначе душили бы параллельные тестовые сценарии ложным 429.
+if (!app.Environment.IsEnvironment("Testing"))
+    app.UseRateLimiter();
 app.UseExceptionHandler();
 
 // ── Endpoints ─────────────────────────────────────────────────────────────────

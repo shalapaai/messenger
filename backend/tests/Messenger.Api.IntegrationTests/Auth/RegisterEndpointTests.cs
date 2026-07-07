@@ -28,7 +28,8 @@ public sealed class RegisterEndpointTests(AuthApiFactory factory)
         // иначе он читаем из JS/девтулс несмотря на HttpOnly
         body.RefreshToken.Should().BeNullOrEmpty();
         body.AccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
-        GetRefreshCookie(response).Should().Contain("HttpOnly");
+        // Cookie-атрибуты регистронезависимы (RFC 6265) — сервер отдаёт "httponly" в нижнем регистре
+        GetRefreshCookie(response).Should().ContainEquivalentOf("httponly");
     }
 
     [Fact]

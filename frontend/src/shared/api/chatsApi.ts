@@ -73,6 +73,7 @@ export async function fetchChats(): Promise<Chat[]> {
     previewAttachmentContentType: dto.lastMessage?.firstAttachmentContentType ?? undefined,
     previewAttachmentFileName:    dto.lastMessage?.firstAttachmentFileName ?? undefined,
     time:        dto.lastMessage ? formatChatListTime(dto.lastMessage.sentAt) : '',
+    lastMessageId: dto.lastMessage?.messageId,
     unread:      dto.unreadCount,
     online:      dto.isOnline,
     group:       dto.type === 'group',

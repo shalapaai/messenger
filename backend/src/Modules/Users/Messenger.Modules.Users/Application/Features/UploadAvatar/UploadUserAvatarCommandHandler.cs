@@ -32,6 +32,7 @@ public sealed class UploadUserAvatarCommandHandler(
             return Result.Failure<string>(uploadResult.Error);
 
         profile.SetAvatarUrl(uploadResult.Value!);
+        profile.NotifyProfileUpdated();
         repository.Update(profile);
         await unitOfWork.SaveChangesAsync(ct);
 

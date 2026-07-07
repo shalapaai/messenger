@@ -1,166 +1,153 @@
-# Модуль Messages
+# Модуль Messages — сообщения
 
-Управляет **сообщениями**: отправка, редактирование, получение истории. При каждой операции публикует доменные события, которые перехватывает модуль Realtime и рассылает через SignalR.
+## Что делает
 
-## Домен
+Хранит все сообщения, управляет их жизненным циклом. При сохранении нового/изменённого сообщения — публикует **доменное событие**, которое подхватывает Realtime-модуль и рассылает по WebSocket (см. [Realtime](realtime.md)).
 
-### Message
+## Схема БД
 
-Агрегат. Идентификатор — value object `MessageId`, а не `Guid`.
+Схема `messages`.
 
-```csharp
-public sealed class Message : AggregateRoot<MessageId>
-{
-    public Guid ChatId { get; }
-    public Guid SenderId { get; }
-    public string Content { get; }          // ≤ 4096 символов
-    public MessageStatus Status { get; }
-    public DateTime SentAt { get; }
-    public DateTime? EditedAt { get; }
-    public DateTime? DeletedAt { get; }
-    public Guid? ReplyToMessageId { get; }
+### Таблица `messages.message`
 
-    public static Result<Message> Create(
-        Guid chatId, Guid senderId, string content, Guid? replyToMessageId = null);
+| Колонка | Тип | Описание |
+|---|---|---|
+| id | uuid | Первичный ключ |
+| sequence | bigint | Автоинкрементный identity — монотонный тай-брейкер к `sent_at` для курсорной пагинации (см. ниже); сам по себе клиенту не отдаётся |
+| chat_id | uuid | Какой чат (FK на chats.chats) |
+| sender_id | uuid | Кто отправил (FK на auth.user) |
+| content | varchar(4096) | Текст сообщения |
+| status | varchar(20) | `"Sent"`, `"Delivered"`, `"Read"`, `"Deleted"` |
+| sent_at | timestamptz | Когда отправлено |
+| edited_at | timestamptz | Когда отредактировано (null если нет) |
+| deleted_at | timestamptz | Когда удалено (null если нет) |
+| reply_to_message_id | uuid | Ответ на какое сообщение (FK на messages.message, SET NULL при удалении оригинала) |
+| forwarded_from_message_id | uuid | Если сообщение — пересланная копия: id исходного сообщения (FK на messages.message, SET NULL если оригинал удалён) |
+| forwarded_from_user_id | uuid | Автор исходного (пересылаемого) сообщения — для подписи «Переслано от», не совпадает с `sender_id` (FK на auth.user, SET NULL) |
 
-    public Result Edit(Guid requesterId, string newContent);
-    public Result Delete(Guid requesterId);
-    public void MarkAsDelivered();
-    public void MarkAsRead();
-}
-```
+Вложений на `message` нет отдельной колонкой — одно сообщение может нести несколько файлов сразу, они живут в отдельной таблице `messages.message_attachment` (ниже).
 
-```csharp
-public enum MessageStatus { Sent, Delivered, Read, Deleted }
-```
+**Индексы:**
+- `ix_message_chat_id_sent_at` — пагинация истории чата (самый частый запрос)
+- `ix_message_chat_id_sequence` — курсорная пагинация (см. «Cursor-пагинация» ниже)
+- `ix_message_sender_id` — поиск сообщений по отправителю
+- `uq_message_sequence` (unique) — гарантия, что `sequence` действительно уникален и монотонен
 
-### MessageId
+**Concurrency:** редактирование/удаление защищено optimistic concurrency через системную колонку Postgres `xmin` (не требует отдельной миграции — есть у каждой строки "из коробки"). Если сообщение успели изменить/удалить параллельно между чтением и записью — `EditMessageCommandHandler`/`DeleteMessageCommandHandler` ловят `DbUpdateConcurrencyException` и возвращают `409 Conflict` вместо тихой перезаписи.
 
-Value object — обёртка над Guid:
+### Таблица `messages.message_attachment`
 
-```csharp
-public record MessageId(Guid Value)
-{
-    public static MessageId New() => new(Guid.NewGuid());
-    public static MessageId From(Guid value) => new(value);
-}
-```
+| Колонка | Тип | Описание |
+|---|---|---|
+| id | uuid | Первичный ключ |
+| message_id | uuid | Владеющее сообщение (FK на messages.message, CASCADE) |
+| file_url | varchar(2048) | URL файла в хранилище |
+| file_name | varchar(255) | Оригинальное имя файла |
+| content_type | varchar(100) | MIME-тип |
+| file_size_bytes | bigint | Размер в байтах |
+| sort_order | int | Порядок, в котором пользователь выбрал файлы |
 
-В БД хранится как `UUID` (`ValueGeneratedNever` — генерирует приложение, не PostgreSQL).
+**Индекс:** `ix_message_attachment_message_id`. **Ограничение:** максимум 10 вложений на сообщение (`Message.MaxAttachmentsPerMessage`).
 
-### Доменные события
-
-```csharp
-// Возникает при создании сообщения
-record MessageSentDomainEvent(Guid MessageId, Guid ChatId, Guid SenderId, string Content)
-    : IDomainEvent;
-
-// Возникает при редактировании
-record MessageEditedDomainEvent(Guid MessageId, Guid ChatId, string NewContent)
-    : IDomainEvent;
-```
-
-## Команды
-
-### SendMessageCommand
+## Статусы сообщений
 
 ```
-POST /api/chats/{chatId}/messages
-Body: { content, replyToMessageId? }
-JWT: → senderId
-
-    → validates content (not empty, ≤ 4096 chars)
-    → Message.Create(chatId, senderId, content, replyToMessageId)
-         → raises MessageSentDomainEvent
-    → repository.Add(message)
-    → unitOfWork.SaveChangesAsync()
-         → MessagesDbContext публикует MessageSentDomainEvent через MediatR
-    → MessageSentEventHandler:
-         → ChatHub.Clients.Group("chat:{chatId}").ReceiveMessage(payload)
-    → returns messageId
+Sent (0) → Delivered (1) → Read (2)
+                         → Deleted (3)  (из любого состояния)
 ```
 
-### EditMessageCommand
+## API endpoints
+
+| Метод | URL | Описание |
+|---|---|---|
+| POST | `/api/chats/{chatId}/messages` | Отправить текстовое сообщение |
+| GET | `/api/chats/{chatId}/messages` | История сообщений (cursor-пагинация) |
+| POST | `/api/chats/{chatId}/messages/upload` | Загрузить файл и отправить как сообщение |
+| PATCH | `/api/chats/{chatId}/messages/{id}` | Редактировать своё сообщение |
+| DELETE | `/api/chats/{chatId}/messages/{id}` | Удалить сообщение — любым участником чата (мягко, см. ниже) |
+| POST | `/api/chats/{chatId}/messages/delete-bulk` | Удалить несколько сообщений одним запросом (та же семантика, что и одиночное удаление) |
+| POST | `/api/chats/{chatId}/messages/forward` | Переслать одно или несколько сообщений в этот чат (см. «Пересылка» ниже) |
+
+## Авторизация по членству в чате
+
+Все эндпоинты (включая чтение истории) проверяют, что текущий пользователь **состоит в чате** — через `IChatMembershipChecker` (Shared.Kernel, реализация в [Chats](chats.md)). Если нет — `403 Forbidden`. Без этой проверки любой залогиненный пользователь, узнав GUID чужого чата, мог бы читать и писать в него; кикнутый из группы участник продолжал бы иметь доступ по старому `chatId`. У `forward` проверка двойная — и на чат-источник, и на чат-получатель (см. «Пересылка сообщений» ниже).
+
+Каждое сообщение в ответе `GetMessages` дополнено `senderName`/`senderAvatarUrl` — резолвятся через `IUsersModule`, чтобы клиенту не приходилось показывать «обрезок UUID» вместо имени отправителя.
+
+## Cursor-пагинация
+
+Вместо постраничной загрузки используется **cursor** — ID последнего полученного сообщения:
 
 ```
-PATCH /api/chats/{chatId}/messages/{messageId}
-Body: { newContent }
-JWT: → requesterId
+Первый запрос: GET /messages?limit=50
+  → возвращает 50 сообщений + nextCursor (ID 50-го)
 
-    → finds message
-    → message.Edit(requesterId, newContent)
-         → проверяет, что SenderId == requesterId
-         → проверяет, что статус != Deleted
-         → raises MessageEditedDomainEvent
-    → unitOfWork.SaveChangesAsync()
-         → публикует MessageEditedDomainEvent
-    → MessageEditedEventHandler:
-         → ChatHub.Clients.Group("chat:{chatId}").MessageEdited(payload)
+Следующий запрос: GET /messages?before={nextCursor}&limit=50
+  → возвращает следующие 50 сообщений
 ```
 
-## Запросы
+Это эффективнее страниц: не нужно считать OFFSET в БД.
 
-### GetMessagesQuery
+Внутри курсор резолвится не по `sent_at`, а по монотонному `sequence` — несколько сообщений могут получить одинаковый `sent_at` (например, при пересылке пачки сообщений подряд), и сортировка по одному только времени могла бы пропустить или задвоить сообщение на границе страницы. Курсор (`before`) также ищется **строго внутри текущего чата** — раньше id сообщения-курсора резолвился без проверки `chatId`, и участник чата A мог передать id чужого сообщения из чата B (в котором не состоит) как курсор и по ответу узнать, что оно существует, и его точный `sent_at`.
 
-```
-GET /api/chats/{chatId}/messages?page=1&pageSize=50
+## Удаление сообщения (мягкое)
 
-    → repository.GetByChatIdAsync(chatId, page, pageSize)
-    → ORDER BY SentAt DESC (от новых к старым)
-    → returns PagedList<MessageDto>
-```
+`DELETE /api/chats/{chatId}/messages/{id}` → `DeleteMessageCommand` → `Message.Delete()`. Сообщения не удаляются физически. При удалении:
+- `status = "Deleted"`
+- `content = ""` (контент стирается)
+- `deleted_at = NOW()`
 
-## Как работает публикация событий
+Запись остаётся в БД для сохранения целостности истории (ответы и пересылки на удалённые сообщения продолжают на них ссылаться).
 
-`MessagesDbContext` переопределяет `SaveChangesAsync`:
+Удалить может **любой участник чата**, не только автор — авторизация через `IChatMembershipChecker.IsMemberAsync`, `403` если не состоишь в чате. Повторное удаление уже удалённого — доменная ошибка `Message.AlreadyDeleted`.
 
-```csharp
-public override async Task<int> SaveChangesAsync(CancellationToken ct)
-{
-    // Собираем агрегаты с событиями
-    var aggregates = ChangeTracker.Entries<AggregateRoot<MessageId>>()
-        .Where(e => e.Entity.DomainEvents.Any())
-        .Select(e => e.Entity).ToList();
+> Изначально было наоборот: удалять мог только автор (`SenderId != requesterId` → `403`). Решение расширить право на всех участников чата — сознательный выбор в рамках задачи «удалить сообщение (любое)», а не случайная дыра в авторизации.
 
-    var domainEvents = aggregates.SelectMany(a => a.DomainEvents).ToList();
-    aggregates.ForEach(a => a.ClearDomainEvents());
+Редактирование и удаление (одиночное и пакетное) защищены optimistic concurrency через системную колонку Postgres `xmin` (см. схему выше) — если сообщение успели изменить/удалить параллельно между чтением и записью (например, два участника одновременно жмут "удалить" на одном сообщении), проигравший запрос получает `409 Conflict` вместо тихой перезаписи чужого изменения.
 
-    var result = await base.SaveChangesAsync(ct);
+При успешном удалении поднимается `MessageDeletedDomainEvent` → Realtime-модуль рассылает `MessageDeleted` всем в группе `chat:{chatId}`, включая инициатора — это не проблема, так как у клиента пометка "удалено" идемпотентна.
 
-    // ПОСЛЕ записи в БД — публикуем события
-    foreach (var @event in domainEvents)
-        await mediator.Publish(@event, ct);
+**Фронтенд:** удаление вызывается из контекстного меню сообщения (правый клик), доступного для любого сообщения — не только своего. Отдельной кнопки-иконки у сообщения больше нет (раньше была видна по hover). Удалённое сообщение **полностью убирается** из списка, а не заменяется плашкой "Сообщение удалено" — и по live-событию `MessageDeleted` (`useChatMessages.ts → handleDeletedMessage`, `filter`, а не пометка), и при обычной загрузке истории (`chatsApi.ts → fetchMessages` отфильтровывает `dto.status === 'deleted'` ещё на этапе маппинга).
 
-    return result;
-}
-```
+## Пересылка сообщений (Forward)
 
-Это гарантирует: событие публикуется только если транзакция прошла успешно. Если `SaveChanges` бросит исключение — Realtime уведомление не отправится.
+`POST /api/chats/{targetChatId}/messages/forward`, тело — `{ sourceChatId, messageIds: [...] }`. Можно переслать сразу несколько сообщений (мультивыделение на фронтенде) в один целевой чат.
 
-## Инфраструктура
+`ForwardMessagesCommandHandler`:
+1. Проверяет членство инициатора **в обоих** чатах — и в `sourceChatId` (откуда берём сообщения), и в `targetChatId` (куда пересылаем), через `IChatMembershipChecker`
+2. Грузит исходные сообщения одним запросом (`IMessageRepository.GetByIdsAsync`), отбрасывает те, что не из `sourceChatId` или уже удалены
+3. Сортирует по `SentAt` — чтобы порядок пересланных сообщений в целевом чате совпадал с их хронологией в исходном, а не с порядком id в запросе
+4. Для каждого создаёт **новую независимую копию** через `Message.CreateForwarded(...)`: автор копии (`SenderId`) — тот, кто переслал, а не оригинальный автор; `ForwardedFromMessageId`/`ForwardedFromUserId` — только для подписи «Переслано от N» на клиенте
+5. Копия доставляется как обычное сообщение через `MessageSentDomainEvent` → `ReceiveMessage`, просто с двумя дополнительными полями в payload
 
-### IMessageRepository
+Копия ведёт себя как обычное сообщение: пересылающий может её отредактировать или удалить, это не связано с правами на оригинал.
 
-```csharp
-void Add(Message message)
-Task<Message?> GetByIdAsync(MessageId id, CancellationToken ct)
-Task<PagedList<Message>> GetByChatIdAsync(
-    Guid chatId, int page, int pageSize, CancellationToken ct)
-```
+**Фронтенд:** модалка выбора чата (`frontend/src/features/messenger/ForwardModal/`) со списком чатов пользователя; кнопка «Переслать» есть и в контекстном меню одного сообщения, и в панели мультивыделения. Пересланное сообщение показывает плашку «Переслано от {имя}» над текстом.
 
-## Таблицы
+## Ответ на сообщение (Reply)
 
-| Таблица | Описание |
-|---|---|
-| `messages.messages` | Сообщения |
+1. `MessageSentDomainEvent` несёт `ReplyToMessageId`
+2. В реальном времени (`MessageSentEventHandler`) и в истории (`GetMessagesQueryHandler`) сервер одним батч-запросом резолвит **превью** цитируемого сообщения — имя автора и текст, обрезанный до 120 символов (`IMessagesModule.GetMessagePreviewsByIdsAsync`) — и кладёт их прямо в payload/DTO (`replyToSenderName`, `replyToContent`), чтобы клиенту не нужно было делать отдельный запрос или держать историю в памяти
+3. Если исходное сообщение к этому моменту удалено — `replyToContent` приходит `null`, клиент показывает «Исходное сообщение удалено» вместо пустой цитаты
 
-Подробнее — [database.md](../database.md).
+**Фронтенд:** «Ответить» в контекстном меню сообщения (доступно для любого — своего и чужого) открывает панель над полем ввода с именем автора и текстом цитируемого сообщения; при отправке ответ рендерится с цитатой над текстом.
 
-## Связь с модулями
+## Прикреплённые файлы
 
-```
-Messages → публикует доменные события
-Realtime → слушает события, рассылает через SignalR
-```
+Когда пользователь отправляет файл(ы):
+1. `POST /api/chats/{id}/messages/upload` — один или несколько файлов (`multipart/form-data`) + опциональный `caption`
+2. `UploadAndSendMessageCommandHandler` грузит файлы **последовательно** (не параллельно — Files-модуль пишет через тот же scoped `DbContext`, EF Core не поддерживает параллельные операции на одном инстансе), для каждого вызывая `IFilesModule.UploadChatAttachmentAsync()` (см. [Files](files.md))
+3. Создаётся **одно** сообщение с несколькими `MessageAttachment` (см. схему выше) — максимум **10** вложений (`Message.MaxAttachmentsPerMessage`), `caption` относится ко всему сообщению целиком, а не к отдельному файлу
+4. Если загрузка любого файла в батче или итоговое сохранение сообщения проваливается — уже загруженные до этого файлы этого же запроса удаляются компенсирующим вызовом `IFilesModule.DeleteChatAttachmentAsync()` (`try/finally`), чтобы не оставались в хранилище без владельца
 
-Прямых зависимостей на уровне кода между Messages и Realtime нет — только через MediatR (слабая связь).
+Файл валидируется трижды: белый список MIME-типов (`AllowedAttachmentMimeTypes`, см. [Files](files.md)), лимит размера, и сверка по сигнатуре первых байт файла с заявленным `Content-Type` (`FileSignatureValidator`) — не даёт выдать, например, исполняемый файл за картинку простой подменой заголовка запроса.
+
+## Доменные события (Domain Events)
+
+Когда сообщение создаётся, редактируется или удаляется, в объекте `Message` поднимается доменное событие:
+
+- `MessageSentDomainEvent` — при создании (обычном, файловом или пересылке). Несёт `ForwardedFromMessageId`/`ForwardedFromUserId` (заполнены только для пересланных копий) и `ReplyToMessageId` (заполнен для ответов) — Realtime-модуль резолвит по ним имена/превью перед рассылкой (см. «Пересылка», «Ответ на сообщение» выше и [Realtime](realtime.md))
+- `MessageEditedDomainEvent` — при редактировании
+- `MessageDeletedDomainEvent` — при удалении (несёт только `messageId`/`chatId` — содержимое и так уже стёрто, рассылать в WebSocket нечего)
+
+После `SaveChanges()` в `MessagesDbContext` они автоматически публикуются через MediatR — и их подхватывает Realtime-модуль.

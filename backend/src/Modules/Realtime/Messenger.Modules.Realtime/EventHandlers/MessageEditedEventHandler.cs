@@ -21,12 +21,15 @@ public sealed class MessageEditedEventHandler(
             editedAt   = notification.OccurredOn
         };
 
-        await hubContext.Clients
+        // Fallback-рассылка не зависит от группового send — запускаем параллельно, а не после.
+        var membersTask = chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
+
+        var groupSendTask = hubContext.Clients
             .Group(MessengerHub.ChatGroup(notification.ChatId))
             .SendAsync("MessageEdited", payload, ct);
 
-        // Дополнительно личные группы участников — тот же fallback, что и в
-        // MessageSentEventHandler, для клиента, который ещё не вступил в группу этого чата.
-        await ChatFallback.BroadcastToMembersAsync(hubContext, chatsModule, notification.ChatId, "MessageEdited", payload, ct);
+        await Task.WhenAll(
+            groupSendTask,
+            ChatFallback.BroadcastToMembersAsync(hubContext, membersTask, "MessageEdited", payload, ct));
     }
 }

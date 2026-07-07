@@ -5,10 +5,8 @@ using Messenger.Modules.Files.Domain;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-// Общая логика замены текущей аватарки (личной или группы): загрузка нового файла уже
-// сделана вызывающим кодом, здесь — персист новой записи, удаление старой после коммита
-// и обработка гонки. UploadAvatarCommandHandler и FilesModuleApi.UploadGroupAvatarAsync
-// делали это почти идентично, отличаясь только тем, что и для кого ищут/удаляют.
+// Общая логика замены текущей аватарки (личной или группы): персист новой записи, удаление
+// старой после коммита и обработка гонки — вынесено из UploadAvatarCommandHandler и UploadGroupAvatarAsync.
 internal static class AvatarReplace
 {
     public static readonly HashSet<string> AllowedMimeTypes =
@@ -40,10 +38,8 @@ internal static class AvatarReplace
         }
         catch (DbUpdateException)
         {
-            // TOCTOU: два одновременных аплоада на одну и ту же "текущую" аватарку — второй
-            // падает на уникальном индексе (ux_file_upload_avatar_per_user /
-            // ux_file_upload_group_avatar_per_chat) или на конфликте удаления уже удалённой
-            // "existing". Подчищаем только что загруженный (но не закоммиченный) файл.
+            // TOCTOU: параллельный аплоад той же аватарки падает на уникальном индексе —
+            // подчищаем только что загруженный (но не закоммиченный) файл.
             await fileStorage.DeleteAsync(newFileKey, ct);
             return Result.Failure<string>(Error.Conflict(conflictEntity));
         }

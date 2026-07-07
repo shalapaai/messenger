@@ -24,6 +24,7 @@ public sealed class RemoveUserAvatarCommandHandler(
         await sender.Send(new DeleteAvatarCommand(command.AuthUserId), ct);
 
         profile.ClearAvatarUrl();
+        profile.NotifyProfileUpdated();
         repository.Update(profile);
         await unitOfWork.SaveChangesAsync(ct);
 

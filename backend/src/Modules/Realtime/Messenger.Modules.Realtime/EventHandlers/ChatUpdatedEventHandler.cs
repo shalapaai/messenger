@@ -30,10 +30,8 @@ public sealed class ChatUpdatedEventHandler(
 
         await Task.WhenAll(tasks);
 
-        // Кого из затронутых пользователей исключили из чата (а не просто обновили ростер
-        // для оставшихся) — принудительно выводим их живые соединения из SignalR-группы
-        // chat:{id}, иначе они продолжают получать ReceiveMessage/MessageEdited/... для
-        // чата, из которого их только что удалили, пока сами не переподключатся.
+        // Исключённых из чата принудительно выводим из группы chat:{id}, иначе они продолжат
+        // получать события чата, из которого их только что удалили.
         await EvictRemovedMembersAsync(notification.ChatId, notification.AffectedUserIds, ct);
     }
 

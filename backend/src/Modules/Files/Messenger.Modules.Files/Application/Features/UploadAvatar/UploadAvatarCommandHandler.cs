@@ -25,9 +25,8 @@ public sealed class UploadAvatarCommandHandler(
             return Result.Failure<string>(
                 Error.Validation("ContentType", "File content does not match declared type"));
 
-        // Сначала грузим новый файл и только при успехе удаляем старый — если бы порядок был
-        // обратным, а загрузка нового упала (сеть/лимит хранилища), пользователь остался бы
-        // без аватарки: старый файл уже стёрт, а новый так и не появился
+        // Сначала грузим новый файл и только при успехе удаляем старый — иначе неудачная загрузка
+        // оставила бы пользователя без аватарки вовсе.
         var existing = await fileRepository.GetAvatarByUserIdAsync(command.UserId, ct);
 
         var uploadResult = await fileStorage.UploadAsync(

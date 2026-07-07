@@ -34,5 +34,9 @@
   <Folder Name="/tests/">
     <Project Path="tests/Messenger.Api.IntegrationTests/Messenger.Api.IntegrationTests.csproj" />
     <Project Path="tests/Messenger.Modules.Auth.UnitTests/Messenger.Modules.Auth.UnitTests.csproj" />
+    <Project Path="tests/Messenger.Modules.Chats.UnitTests/Messenger.Modules.Chats.UnitTests.csproj" />
+    <Project Path="tests/Messenger.Modules.Files.UnitTests/Messenger.Modules.Files.UnitTests.csproj" />
+    <Project Path="tests/Messenger.Modules.Messages.UnitTests/Messenger.Modules.Messages.UnitTests.csproj" />
+    <Project Path="tests/Messenger.Modules.Realtime.UnitTests/Messenger.Modules.Realtime.UnitTests.csproj" />
   </Folder>
 </Solution>

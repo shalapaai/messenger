@@ -23,7 +23,8 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
         newTokens!.AccessToken.Should().NotBeNullOrEmpty();
         // RefreshToken не должен попадать в тело ответа — только в httpOnly-куку ниже
         newTokens.RefreshToken.Should().BeNullOrEmpty();
-        GetRefreshCookie(response).Should().Contain("HttpOnly");
+        // Cookie-атрибуты регистронезависимы (RFC 6265) — сервер отдаёт "httponly" в нижнем регистре
+        GetRefreshCookie(response).Should().ContainEquivalentOf("httponly");
     }
 
     [Fact]
