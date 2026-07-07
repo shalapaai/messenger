@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import type { Filter, ModalUser, Message, GroupMember } from '../../shared/types/messenger'
-import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead, createGroupChat, addChatMember, updateChat, fetchChatDetail, uploadChatAvatar, setMemberRole } from '../../shared/api/chatsApi'
+import type { Filter, Message } from '../../shared/types/messenger'
+import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead, createGroupChat, addChatMember, updateChat, uploadChatAvatar, setMemberRole } from '../../shared/api/chatsApi'
 import { forwardMessages as forwardMessagesApi } from '../../shared/api/messagesApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
@@ -12,6 +12,8 @@ import type { UserSearchResult } from '../../shared/api/usersApi'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
 import { useChatMessages } from './hooks/useChatMessages'
+import { useGroupMembers } from './hooks/useGroupMembers'
+import { useMessengerModals } from './hooks/useMessengerModals'
 import { IconNav }          from '../../widgets/IconNav'
 import { ChatListPanel }    from '../../widgets/ChatListPanel'
 import { ChatWindow }       from '../../widgets/ChatWindow'
@@ -44,20 +46,17 @@ export function MessengerPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const [query,  setQuery]  = useState('')
 
-  const [profileOpen,    setProfileOpen]    = useState(false)
-  const [editOpen,       setEditOpen]       = useState(false)
-  const [modalUser,      setModalUser]      = useState<ModalUser | null>(null)
-  const [modalUserIsChatPartner, setModalUserIsChatPartner] = useState(false)
-  const [groupModalOpen, setGroupModalOpen] = useState(false)
-  const [newGroupModalOpen,  setNewGroupModalOpen]  = useState(false)
-  const [editGroupModalOpen, setEditGroupModalOpen] = useState(false)
-  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false)
-  const [groupMembers,        setGroupMembers]        = useState<GroupMember[]>([])
-  const [groupMembersLoading, setGroupMembersLoading] = useState(false)
-  // sourceChatId фиксируется вместе с сообщениями в момент выбора — если пользователь уйдёт в
-  // другой чат, пока модалка открыта (например, кнопкой "назад" в браузере), пересылка всё равно
-  // уйдёт из правильного исходного чата, а не из того, что случайно стал активным сейчас
-  const [forwardState,   setForwardState]   = useState<{ sourceChatId: string; messages: Message[] } | null>(null)
+  const {
+    profileOpen, setProfileOpen,
+    editOpen, setEditOpen,
+    modalUser, setModalUser,
+    modalUserIsChatPartner, setModalUserIsChatPartner,
+    groupModalOpen, setGroupModalOpen,
+    newGroupModalOpen, setNewGroupModalOpen,
+    editGroupModalOpen, setEditGroupModalOpen,
+    addMemberModalOpen, setAddMemberModalOpen,
+    forwardState, setForwardState,
+  } = useMessengerModals()
   const startTypingRef = useRef<() => void>(() => undefined)
   const stopTypingRef = useRef<() => void>(() => undefined)
 
@@ -66,7 +65,6 @@ export function MessengerPage() {
   const draftUser    = newUserId ? (location.state as DraftUserState | null) : null
   const focusInput   = !!(location.state as { focusInput?: boolean } | null)?.focusInput
 
-  // ── Реальный профиль (вместо мок-"Анны Соколовой") ─────────────────────────
   const profileInitials = profile
     ? (() => {
         const parts = profile.displayName.trim().split(/\s+/)
@@ -85,7 +83,6 @@ export function MessengerPage() {
     senderAvatarUrl: profile?.avatarUrl ?? null,
   }
 
-  // ── Zustand чаты ─────────────────────────────────────────────────────────
   const chats       = useChatsStore((s) => s.chats)
   const chatsLoaded = useChatsStore((s) => s.chatsLoaded)
   const chatsError  = useChatsStore((s) => s.chatsError)
@@ -97,53 +94,15 @@ export function MessengerPage() {
   useEffect(() => { loadChats() }, [loadChats])
   useEffect(() => { if (id) resetUnread(id) }, [id, resetUnread])
 
-  // ── Участники группового чата — резолвятся отдельно (имя/аватар/онлайн), т.к.
-  // список чатов их не содержит; подгружаем при открытии карточки группы ─────────
-  // requestedGroupChatIdRef защищает от гонки ответов: если открыть карточку группы A,
-  // сразу закрыть и открыть карточку группы B, а ответ по A придёт позже ответа по B,
-  // устаревший ответ по A не должен затереть уже показанных участников группы B
-  const requestedGroupChatIdRef = useRef<string | null>(null)
-
-  async function loadGroupMembers(chatId: string) {
-    requestedGroupChatIdRef.current = chatId
-    setGroupMembersLoading(true)
-    try {
-      const fresh = await fetchChatDetail(chatId)
-      if (requestedGroupChatIdRef.current !== chatId) return
-      setGroupMembers(prev => {
-        if (prev.length === 0) return fresh
-        // Preserve existing display order: update data in-place, then append new members,
-        // drop removed ones — so a role change never moves anyone in the list
-        const freshMap = new Map(fresh.map(m => [m.userId, m]))
-        const merged = prev
-          .filter(m => freshMap.has(m.userId))
-          .map(m => ({ ...freshMap.get(m.userId)! }))
-        const existingIds = new Set(prev.map(m => m.userId))
-        for (const m of fresh) {
-          if (!existingIds.has(m.userId)) merged.push(m)
-        }
-        return merged
-      })
-    } catch {
-      if (requestedGroupChatIdRef.current === chatId) setGroupMembers([])
-    } finally {
-      if (requestedGroupChatIdRef.current === chatId) setGroupMembersLoading(false)
-    }
-  }
-
   const isGroupChat = id ? (chats.find(c => c.id === id)?.group ?? false) : false
+  const {
+    groupMembers,
+    groupMembersLoading,
+    loadGroupMembers,
+    updateMemberRoleLocally,
+    canDeleteMessages,
+  } = useGroupMembers(id, isGroupChat, profile?.userId)
 
-  useEffect(() => {
-    let cancelled = false
-    queueMicrotask(() => {
-      if (cancelled) return
-      if (id && isGroupChat) loadGroupMembers(id)
-      else { requestedGroupChatIdRef.current = null; setGroupMembers([]) }
-    })
-    return () => { cancelled = true }
-  }, [id, isGroupChat])
-
-  // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
@@ -174,7 +133,6 @@ export function MessengerPage() {
     scrollToBottomNow(false)
   }, [chatId, loadingInitial, hasLoadedMessages, scrollToBottomNow])
 
-  // ── SignalR: чужая печать, своя печать (дебаунс), отправка ─────────────────
   const typingIndicator = useTypingIndicator(
     () => startTypingRef.current(),
     () => stopTypingRef.current(),
@@ -199,7 +157,6 @@ export function MessengerPage() {
     stopTypingRef.current = stopTyping
   }, [startTyping, stopTyping])
 
-  // ── Подгрузка истории вверх по скроллу ──────────────────────────────────────
   // Ref нужен, чтобы IntersectionObserver всегда вызывал актуальную версию
   // loadMoreHistory. Без него колбэк захватывает устаревший экземпляр функции,
   // где loadingHistory === true, и повторные скроллы вверх молча игнорируются.
@@ -224,20 +181,6 @@ export function MessengerPage() {
     return () => observer.disconnect()
   }, [id, messages.length, historyLoaded, messagesRef, prepareRestoreBeforePrepend, topSentinelRef, triggerRestore])
 
-  useEffect(() => {
-    const anyOpen = !!modalUser || groupModalOpen || editOpen || profileOpen || !!forwardState
-      || newGroupModalOpen || editGroupModalOpen || addMemberModalOpen
-    if (!anyOpen) return
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setModalUser(null); setGroupModalOpen(false); setEditOpen(false); setProfileOpen(false); setForwardState(null)
-        setNewGroupModalOpen(false); setEditGroupModalOpen(false); setAddMemberModalOpen(false)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [modalUser, groupModalOpen, editOpen, profileOpen, forwardState, newGroupModalOpen, editGroupModalOpen, addMemberModalOpen])
-
   async function handleSend(text: string, replyTo?: Message) {
     typingIndicator.stopOwnTyping()
 
@@ -251,7 +194,7 @@ export function MessengerPage() {
         navigate(`/chats/${newChatId}`, { replace: true, state: { focusInput: true } })
       } catch {
       // ignored
-    }
+      }
       return
     }
 
@@ -397,7 +340,7 @@ export function MessengerPage() {
     if (!id) return
     try {
       await setMemberRole(id, userId, role)
-      setGroupMembers(prev => prev.map(m => m.userId === userId ? { ...m, role } : m))
+      updateMemberRoleLocally(userId, role)
     } catch {
       // ignored
     }
@@ -441,10 +384,6 @@ export function MessengerPage() {
           otherUserId: newUserId,
         }
       : null
-  const myGroupRole = isGroupChat && profile
-    ? (groupMembers.find(m => m.userId === profile.userId)?.role ?? null)
-    : null
-  const canDeleteMessages = isGroupChat ? (myGroupRole === 'owner' || myGroupRole === 'admin') : true
 
   function openUserModal(userId: string, name: string, online: boolean) {
     setModalUser({ userId, name, initials: getInitials(name), color: colorFromId(userId), online })

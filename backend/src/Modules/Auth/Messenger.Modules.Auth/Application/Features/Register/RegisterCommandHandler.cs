@@ -41,13 +41,11 @@ public sealed class RegisterCommandHandler(
 
         if (!twoFactorEnabled)
         {
-            // Email verification skipped — mark verified immediately and issue tokens
             user.VerifyEmail();
             var tokens = await IssueTokensAsync(user, ct);
             return Result.Success(LoginResultDto.WithTokens(tokens));
         }
 
-        // Send OTP for email confirmation
         var code = GenerateCode();
         cache.Set(
             CacheKeyPrefix + user.Email,

@@ -28,12 +28,10 @@ public sealed class RequestCultureMiddleware(RequestDelegate next)
 
     private static string DetectCulture(HttpContext context)
     {
-        // 1. Query string
         var query = context.Request.Query["lang"].ToString();
         if (!string.IsNullOrEmpty(query) && SupportedCultures.Contains(query))
             return query;
 
-        // 2. Accept-Language header
         var acceptLanguage = context.Request.Headers.AcceptLanguage.ToString();
         if (!string.IsNullOrEmpty(acceptLanguage))
         {

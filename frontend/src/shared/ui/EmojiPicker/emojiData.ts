@@ -1,0 +1,133 @@
+export type EmojiCategoryId = 'smiles' | 'gestures' | 'hearts' | 'objects' | 'symbols'
+
+export interface EmojiItem {
+  emoji: string
+  keywords: string[]
+}
+
+export interface EmojiCategory {
+  id: EmojiCategoryId
+  labelKey: string
+  items: EmojiItem[]
+}
+
+export const EMOJI_CATEGORIES: EmojiCategory[] = [
+  {
+    id: 'smiles',
+    labelKey: 'emoji.categories.smiles',
+    items: [
+      { emoji: '😂', keywords: ['laugh', 'funny', 'lol', 'смех', 'смешно'] },
+      { emoji: '😅', keywords: ['sweat', 'laugh', 'нервно', 'смех'] },
+      { emoji: '😊', keywords: ['smile', 'happy', 'улыбка', 'радость'] },
+      { emoji: '😍', keywords: ['love', 'eyes', 'любовь', 'нравится'] },
+      { emoji: '😘', keywords: ['kiss', 'love', 'поцелуй'] },
+      { emoji: '😉', keywords: ['wink', 'подмигнуть'] },
+      { emoji: '😁', keywords: ['grin', 'smile', 'улыбка'] },
+      { emoji: '😎', keywords: ['cool', 'glasses', 'круто'] },
+      { emoji: '😭', keywords: ['cry', 'sad', 'плакать', 'грусть'] },
+      { emoji: '😢', keywords: ['tear', 'sad', 'слеза', 'грусть'] },
+      { emoji: '😡', keywords: ['angry', 'mad', 'злость'] },
+      { emoji: '😱', keywords: ['shock', 'scared', 'страх', 'шок'] },
+      { emoji: '😋', keywords: ['tasty', 'yum', 'вкусно'] },
+      { emoji: '🙈', keywords: ['monkey', 'shy', 'стыдно'] },
+      { emoji: '🤔', keywords: ['think', 'thinking', 'думаю'] },
+      { emoji: '😴', keywords: ['sleep', 'tired', 'сон'] },
+      { emoji: '🤯', keywords: ['mind blown', 'shock', 'вау'] },
+      { emoji: '🥳', keywords: ['party', 'celebrate', 'праздник'] },
+      { emoji: '😇', keywords: ['angel', 'good', 'ангел'] },
+      { emoji: '🤗', keywords: ['hug', 'обнять'] },
+      { emoji: '😐', keywords: ['neutral', 'ok', 'нейтрально'] },
+      { emoji: '🙃', keywords: ['upside', 'irony', 'ирония'] },
+      { emoji: '😬', keywords: ['awkward', 'неловко'] },
+      { emoji: '🤩', keywords: ['star', 'wow', 'восторг'] },
+    ],
+  },
+  {
+    id: 'gestures',
+    labelKey: 'emoji.categories.gestures',
+    items: [
+      { emoji: '👍', keywords: ['like', 'thumbs up', 'класс', 'лайк'] },
+      { emoji: '👎', keywords: ['dislike', 'thumbs down', 'дизлайк'] },
+      { emoji: '👏', keywords: ['clap', 'applause', 'аплодисменты'] },
+      { emoji: '🙏', keywords: ['please', 'thanks', 'спасибо', 'пожалуйста'] },
+      { emoji: '💪', keywords: ['strong', 'power', 'сила'] },
+      { emoji: '🤝', keywords: ['deal', 'handshake', 'договорились'] },
+      { emoji: '👌', keywords: ['ok', 'perfect', 'хорошо'] },
+      { emoji: '✌️', keywords: ['peace', 'victory', 'мир'] },
+      { emoji: '🤞', keywords: ['luck', 'hope', 'удача'] },
+      { emoji: '👋', keywords: ['hello', 'bye', 'привет', 'пока'] },
+      { emoji: '🙌', keywords: ['hands', 'hooray', 'ура'] },
+      { emoji: '🤌', keywords: ['chef kiss', 'perfect', 'идеально'] },
+      { emoji: '🫶', keywords: ['heart hands', 'care', 'любовь'] },
+      { emoji: '👀', keywords: ['eyes', 'look', 'смотрю'] },
+      { emoji: '💅', keywords: ['nails', 'style', 'стиль'] },
+      { emoji: '🫡', keywords: ['salute', 'respect', 'понял'] },
+    ],
+  },
+  {
+    id: 'hearts',
+    labelKey: 'emoji.categories.hearts',
+    items: [
+      { emoji: '❤️', keywords: ['heart', 'love', 'сердце', 'любовь'] },
+      { emoji: '🧡', keywords: ['orange heart', 'love', 'сердце'] },
+      { emoji: '💛', keywords: ['yellow heart', 'love', 'сердце'] },
+      { emoji: '💚', keywords: ['green heart', 'love', 'сердце'] },
+      { emoji: '💙', keywords: ['blue heart', 'love', 'сердце'] },
+      { emoji: '💜', keywords: ['purple heart', 'love', 'сердце'] },
+      { emoji: '🖤', keywords: ['black heart', 'love', 'сердце'] },
+      { emoji: '🤍', keywords: ['white heart', 'love', 'сердце'] },
+      { emoji: '💔', keywords: ['broken heart', 'sad', 'разбитое сердце'] },
+      { emoji: '💕', keywords: ['hearts', 'love', 'сердца'] },
+      { emoji: '💞', keywords: ['hearts', 'love', 'сердца'] },
+      { emoji: '💘', keywords: ['cupid', 'love', 'любовь'] },
+      { emoji: '💖', keywords: ['sparkle heart', 'love', 'сердце'] },
+      { emoji: '💯', keywords: ['hundred', 'perfect', 'сто'] },
+      { emoji: '✨', keywords: ['sparkles', 'magic', 'искры'] },
+      { emoji: '🔥', keywords: ['fire', 'hot', 'огонь'] },
+    ],
+  },
+  {
+    id: 'objects',
+    labelKey: 'emoji.categories.objects',
+    items: [
+      { emoji: '🎉', keywords: ['party', 'celebrate', 'праздник'] },
+      { emoji: '🎂', keywords: ['cake', 'birthday', 'торт'] },
+      { emoji: '🎁', keywords: ['gift', 'present', 'подарок'] },
+      { emoji: '☕', keywords: ['coffee', 'drink', 'кофе'] },
+      { emoji: '🍕', keywords: ['pizza', 'food', 'пицца'] },
+      { emoji: '🍫', keywords: ['chocolate', 'sweet', 'шоколад'] },
+      { emoji: '🌟', keywords: ['star', 'favorite', 'звезда'] },
+      { emoji: '⭐', keywords: ['star', 'rating', 'звезда'] },
+      { emoji: '⚡', keywords: ['fast', 'lightning', 'молния'] },
+      { emoji: '💡', keywords: ['idea', 'lamp', 'идея'] },
+      { emoji: '📌', keywords: ['pin', 'important', 'важно'] },
+      { emoji: '✅', keywords: ['done', 'check', 'готово'] },
+      { emoji: '❌', keywords: ['no', 'cancel', 'нет'] },
+      { emoji: '🚀', keywords: ['rocket', 'launch', 'ракета'] },
+      { emoji: '🏆', keywords: ['winner', 'trophy', 'кубок'] },
+      { emoji: '📎', keywords: ['attach', 'file', 'скрепка'] },
+    ],
+  },
+  {
+    id: 'symbols',
+    labelKey: 'emoji.categories.symbols',
+    items: [
+      { emoji: '❗', keywords: ['important', 'exclamation', 'важно'] },
+      { emoji: '❓', keywords: ['question', 'вопрос'] },
+      { emoji: '⁉️', keywords: ['question', 'surprise', 'вопрос'] },
+      { emoji: '‼️', keywords: ['important', 'важно'] },
+      { emoji: '➕', keywords: ['plus', 'add', 'плюс'] },
+      { emoji: '➖', keywords: ['minus', 'remove', 'минус'] },
+      { emoji: '🔴', keywords: ['red', 'circle', 'красный'] },
+      { emoji: '🟠', keywords: ['orange', 'circle', 'оранжевый'] },
+      { emoji: '🟡', keywords: ['yellow', 'circle', 'желтый'] },
+      { emoji: '🟢', keywords: ['green', 'circle', 'зеленый'] },
+      { emoji: '🔵', keywords: ['blue', 'circle', 'синий'] },
+      { emoji: '🟣', keywords: ['purple', 'circle', 'фиолетовый'] },
+      { emoji: '⬆️', keywords: ['up', 'верх'] },
+      { emoji: '⬇️', keywords: ['down', 'низ'] },
+      { emoji: '➡️', keywords: ['right', 'право'] },
+      { emoji: '⬅️', keywords: ['left', 'лево'] },
+    ],
+  },
+]

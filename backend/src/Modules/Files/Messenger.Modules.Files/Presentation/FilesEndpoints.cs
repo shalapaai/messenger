@@ -17,7 +17,6 @@ public static class FilesEndpoints
     {
         var group = app.MapGroup("/api/files").WithTags("Files");
 
-        // Загрузка аватара
         group.MapPost("/avatar", UploadAvatar)
             .WithName("UploadAvatar")
             .Accepts<IFormFile>("multipart/form-data")
