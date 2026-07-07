@@ -6,8 +6,6 @@ import {
 } from '@microsoft/signalr'
 import { getAccessToken } from '../lib/auth/authTokens'
 
-// ── Типы событий от сервера ───────────────────────────────────────────────────
-
 export interface IncomingAttachment {
   fileUrl: string
   fileName: string
@@ -111,8 +109,6 @@ export class SignalRClient {
     this.connection.onclose(() => this._onDisconnected?.())
   }
 
-  // ── Подключение ───────────────────────────────────────────────────────────
-
   async connect(): Promise<void> {
     if (this.connection.state === HubConnectionState.Disconnected) {
       await this.connection.start()
@@ -126,8 +122,6 @@ export class SignalRClient {
   get isConnected(): boolean {
     return this.connection.state === HubConnectionState.Connected
   }
-
-  // ── Действия клиента → сервер ─────────────────────────────────────────────
 
   joinChat(chatId: string): Promise<void> {
     return this.connection.invoke('JoinChat', chatId)
@@ -148,8 +142,6 @@ export class SignalRClient {
   stopTyping(chatId: string): Promise<void> {
     return this.connection.invoke('StopTyping', chatId)
   }
-
-  // ── Подписки на события сервера ───────────────────────────────────────────
 
   onReceiveMessage(handler: (msg: IncomingMessage) => void): () => void {
     this.connection.on('ReceiveMessage', handler)

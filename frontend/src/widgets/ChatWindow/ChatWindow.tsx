@@ -18,6 +18,7 @@ import { ContextMenu, type ContextMenuState } from './ContextMenu'
 import { AttachIcon, ForwardIcon, TrashIcon } from './icons'
 import { useAttachmentQueue } from './hooks/useAttachmentQueue'
 import { useMobileInputLayer } from './hooks/useMobileInputLayer'
+import { useMessageSelection } from './hooks/useMessageSelection'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -75,8 +76,7 @@ export function ChatWindow({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [editingMsg, setEditingMsg] = useState<Message | null>(null)
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
-  const [selectMode, setSelectMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const selection = useMessageSelection()
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null)
   const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null)
@@ -143,13 +143,6 @@ export function ChatWindow({
   // переключении на другой чат
 
   useEffect(() => {
-    if (!selectMode) return
-    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') exitSelectMode() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [selectMode])
-
-  useEffect(() => {
     if (!contextMenu) return
     const close = () => setContextMenu(null)
     const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') close() }
@@ -164,28 +157,19 @@ export function ChatWindow({
     }
   }, [contextMenu, messagesRef])
 
-  const toggleSelect = useCallback((msg: Message) => {
-    if (!msg.messageId) return
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(msg.id)) next.delete(msg.id); else next.add(msg.id)
-      return next
-    })
-  }, [])
-
   const openContextMenu = useCallback((e: MouseEvent, msg: Message) => {
     // Сообщение без messageId — ещё отправляется или не отправилось; меню для него имеет смысл
     // только чтобы удалить черновик (см. ContextMenu: остальные пункты требуют messageId)
     if (!msg.messageId && msg.status !== 'failed') return
     e.preventDefault()
-    if (selectMode) {
+    if (selection.selectMode) {
       if (!msg.messageId) return
-      if (!selectedIds.has(msg.id)) toggleSelect(msg)
+      if (!selection.selectedIds.has(msg.id)) selection.toggleSelect(msg)
       setContextMenu({ x: e.clientX, y: e.clientY, msg, selection: true })
       return
     }
     setContextMenu({ x: e.clientX, y: e.clientY, msg })
-  }, [selectMode, selectedIds, toggleSelect])
+  }, [selection])
 
   function startEdit(msg: Message) {
     cancelReply()
@@ -220,30 +204,22 @@ export function ChatWindow({
   }
 
   function enterSelectMode(msg: Message) {
-    if (!msg.messageId) return
     cancelEdit()
     cancelReply()
     setContextMenu(null)
-    setSelectMode(true)
-    setSelectedIds(new Set([msg.id]))
+    selection.enterSelectMode(msg)
   }
-
-  function exitSelectMode() {
-    setSelectMode(false)
-    setSelectedIds(new Set())
-  }
-
 
   function requestBulkDelete() {
-    if (selectedIds.size === 0) return
+    if (selection.selectedIds.size === 0) return
     setConfirmBulkDelete(true)
   }
 
   function requestBulkForward() {
-    const selected = messages.filter(m => selectedIds.has(m.id))
+    const selected = messages.filter(m => selection.selectedIds.has(m.id))
     if (selected.length === 0) return
     onForward(selected)
-    exitSelectMode()
+    selection.exitSelectMode()
   }
 
   async function send() {
@@ -330,15 +306,15 @@ export function ChatWindow({
         </div>
       )}
 
-      {selectMode ? (
+      {selection.selectMode ? (
         <div className={s.selectionBar}>
-          <button type="button" className={s.selectionBarCancel} onClick={exitSelectMode}>✕</button>
-          <span className={s.selectionBarCount}>{t('messenger.selectedCount', { count: selectedIds.size })}</span>
+          <button type="button" className={s.selectionBarCancel} onClick={selection.exitSelectMode}>✕</button>
+          <span className={s.selectionBarCount}>{t('messenger.selectedCount', { count: selection.selectedIds.size })}</span>
           <div className={s.selectionBarActions}>
             <button
               type="button"
               className={s.selectionBarBtn}
-              disabled={selectedIds.size === 0}
+              disabled={selection.selectedIds.size === 0}
               title={t('messenger.forwardMessage')}
               onClick={requestBulkForward}
             >
@@ -348,7 +324,7 @@ export function ChatWindow({
               <button
                 type="button"
                 className={`${s.selectionBarBtn} ${s.selectionBarBtnDanger}`}
-                disabled={selectedIds.size === 0}
+                disabled={selection.selectedIds.size === 0}
                 title={t('messenger.deleteMessage')}
                 onClick={requestBulkDelete}
               >
@@ -424,10 +400,10 @@ export function ChatWindow({
               meta={meta}
               meSender={meSender}
               otherReadAt={otherReadAt}
-              selectMode={selectMode}
-              selectedIds={selectedIds}
+              selectMode={selection.selectMode}
+              selectedIds={selection.selectedIds}
               highlightedMsgId={highlightedMsgId}
-              onToggleSelect={toggleSelect}
+              onToggleSelect={selection.toggleSelect}
               onAvatarClick={onAvatarClick}
               onContextMenu={openContextMenu}
               onRetry={onRetry}
@@ -622,15 +598,15 @@ export function ChatWindow({
       {confirmBulkDelete && (
         <div className={s.confirmOverlay} onClick={() => setConfirmBulkDelete(false)}>
           <div className={s.confirmPanel} onClick={e => e.stopPropagation()}>
-            <div className={s.confirmTitle}>{t('messenger.confirmBulkDelete', { count: selectedIds.size })}</div>
+            <div className={s.confirmTitle}>{t('messenger.confirmBulkDelete', { count: selection.selectedIds.size })}</div>
             <div className={s.confirmActions}>
               <button type="button" className={s.confirmCancel} onClick={() => setConfirmBulkDelete(false)}>
                 {t('common.cancel')}
               </button>
               <button type="button" className={s.confirmDeleteBtn} onClick={() => {
-                const selected = messages.filter(m => selectedIds.has(m.id))
+                const selected = messages.filter(m => selection.selectedIds.has(m.id))
                 onBulkDelete(selected)
-                exitSelectMode()
+                selection.exitSelectMode()
                 setConfirmBulkDelete(false)
               }}>
                 {t('messenger.deleteMessage')}

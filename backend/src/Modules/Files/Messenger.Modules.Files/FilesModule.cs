@@ -28,7 +28,6 @@ public sealed class FilesModule : IModuleInstaller
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<FilesDbContext>());
         services.AddScoped<IFileRepository, FileRepository>();
 
-        // Выбор реализации хранилища по конфигурации
         var storageType = configuration["FileStorage:Type"] ?? "Local";
 
         if (storageType.Equals("S3", StringComparison.OrdinalIgnoreCase))

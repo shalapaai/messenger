@@ -5,7 +5,6 @@ using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-// Реализация публичного API модуля — вызывается другими модулями через IMessagesModule
 internal sealed class MessagesModuleApi(
     Infrastructure.MessagesDbContext dbContext,
     IMessageRepository messageRepository)

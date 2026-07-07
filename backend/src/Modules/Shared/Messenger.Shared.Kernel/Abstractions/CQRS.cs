@@ -10,7 +10,6 @@ public interface ICommand<TResponse> : IRequest<Result<TResponse>>;
 // Queries — только чтение, без побочных эффектов
 public interface IQuery<TResponse> : IRequest<Result<TResponse>>;
 
-// Handlers
 public interface ICommandHandler<TCommand> : IRequestHandler<TCommand, Result>
     where TCommand : ICommand;
 

@@ -22,7 +22,6 @@ export function useSignalR(options: UseSignalROptions = {}) {
   const optionsRef = useRef(options)
   useLayoutEffect(() => { optionsRef.current = options })
 
-  // ── Подписка на чат при смене chatId ─────────────────────────────────────
   // Группу НЕ покидаем при смене/размонтировании: ConnectedLayout держит
   // соединение во всех чатах пользователя постоянно (фоновые realtime-обновления
   // списка и кэша сообщений). joinChat здесь — подстраховка для чата, которого
@@ -34,7 +33,6 @@ export function useSignalR(options: UseSignalROptions = {}) {
     signalR.joinChat(chatId).catch(() => {})
   }, [options.chatId, status])
 
-  // ── Подписки на события ───────────────────────────────────────────────────
   // Подписываемся ОДИН раз (пустой deps) через стабильные trampoline-колбэки, которые на
   // каждый вызов читают actuals из optionsRef — иначе, поскольку вызывающий код (MessengerPage)
   // передаёт options как новый объект с новыми инлайн-функциями на каждый рендер, эффект
