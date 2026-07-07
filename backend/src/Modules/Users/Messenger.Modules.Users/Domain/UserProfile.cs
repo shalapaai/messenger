@@ -12,13 +12,19 @@ public sealed class UserProfile : AggregateRoot<Guid>
 
     private UserProfile() { } // EF Core
 
-    private UserProfile(Guid id, Guid authUserId, string email, string displayName, string? login, string? avatarColor) : base(id)
+    private UserProfile(
+        Guid id, Guid authUserId, string email, string displayName, string? login, string? avatarColor,
+        string? status, string? phone, string? city, string? department) : base(id)
     {
         AuthUserId  = authUserId;
         Email       = email.ToLowerInvariant();
         DisplayName = displayName;
         Login       = login?.ToLowerInvariant();
         AvatarColor = avatarColor ?? Palette[Random.Shared.Next(Palette.Length)];
+        Status      = string.IsNullOrEmpty(status)     ? null : status;
+        Phone       = string.IsNullOrEmpty(phone)      ? null : phone;
+        City        = string.IsNullOrEmpty(city)       ? null : city;
+        Department  = string.IsNullOrEmpty(department) ? null : department;
         CreatedAt   = DateTime.UtcNow;
     }
 
@@ -35,8 +41,10 @@ public sealed class UserProfile : AggregateRoot<Guid>
     public DateTime  CreatedAt   { get; private set; }
     public DateTime? UpdatedAt   { get; private set; }
 
-    public static Result<UserProfile> Create(Guid authUserId, string email, string displayName, string? login = null, string? avatarColor = null) =>
-        Result.Success(new UserProfile(Guid.NewGuid(), authUserId, email, displayName, login, avatarColor));
+    public static Result<UserProfile> Create(
+        Guid authUserId, string email, string displayName, string? login = null, string? avatarColor = null,
+        string? status = null, string? phone = null, string? city = null, string? department = null) =>
+        Result.Success(new UserProfile(Guid.NewGuid(), authUserId, email, displayName, login, avatarColor, status, phone, city, department));
 
     public void Update(string? displayName, string? status, string? phone, string? city, string? department)
     {

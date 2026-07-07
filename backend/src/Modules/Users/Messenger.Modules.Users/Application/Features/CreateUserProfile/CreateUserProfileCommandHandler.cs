@@ -22,7 +22,9 @@ public sealed class CreateUserProfileCommandHandler(
             await repository.ExistsByLoginAsync(command.Login.ToLowerInvariant(), ct: ct))
             return Result.Failure<UserProfileDto>(Error.Conflict("Users.LoginAlreadyTaken"));
 
-        var profileResult = UserProfile.Create(command.AuthUserId, command.Email, command.DisplayName, command.Login, command.AvatarColor);
+        var profileResult = UserProfile.Create(
+            command.AuthUserId, command.Email, command.DisplayName, command.Login, command.AvatarColor,
+            command.Status, command.Phone, command.City, command.Department);
         if (profileResult.IsFailure)
             return Result.Failure<UserProfileDto>(profileResult.Error);
 
@@ -36,5 +38,6 @@ public sealed class CreateUserProfileCommandHandler(
     private static UserProfileDto ToDto(UserProfile p) =>
         new(p.AuthUserId, p.Email, p.DisplayName,
             p.Login is not null ? $"@{p.Login}" : null,
-            p.Status, p.AvatarUrl, p.AvatarColor, p.CreatedAt);
+            p.Status, p.AvatarUrl, p.AvatarColor,
+            p.Phone, p.City, p.Department, p.CreatedAt);
 }
