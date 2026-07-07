@@ -25,7 +25,8 @@ public sealed class LoginEndpointTests(AuthApiFactory factory)
 
         var body = await response.Content.ReadFromJsonAsync<TokenPairDto>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
-        body.RefreshToken.Should().NotBeNullOrEmpty();
+        // RefreshToken не должен попадать в тело ответа — только в httpOnly-куку ниже
+        body.RefreshToken.Should().BeNullOrEmpty();
         body.AccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
         GetRefreshCookie(response).Should().Contain("HttpOnly");
     }

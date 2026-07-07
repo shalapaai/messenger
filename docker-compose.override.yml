@@ -33,6 +33,10 @@ services:
       Jwt__SecretKey:                     "dev-secret-key-minimum-256-bits-long-replace-in-prod"
       FileStorage__Type:                  Local
       FileStorage__Local__BasePath:       /app/uploads
+      # Реальные значения — из .env (не коммитится), пусто по умолчанию:
+      # appsettings.Development.json больше не хранит боевой ключ Resend
+      Resend__ApiKey:                     ${RESEND_API_KEY:-}
+      Resend__FromEmail:                  ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
     ports:
       - "${API_PORT:-8080}:8080"
 

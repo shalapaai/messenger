@@ -115,6 +115,7 @@ public static class ChatsEndpoints
             .Accepts<IFormFile>("multipart/form-data")
             .Produces<UploadChatAvatarResponse>(StatusCodes.Status200OK)
             .DisableAntiforgery()
+            .RequireRateLimiting("uploads")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);

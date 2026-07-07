@@ -21,8 +21,11 @@ public sealed class UserAuthRepository(AuthDbContext dbContext) : IUserAuthRepos
 
 public sealed class RefreshTokenRepository(AuthDbContext dbContext) : IRefreshTokenRepository
 {
-    public async Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken ct = default) =>
-        await dbContext.RefreshTokens.FirstOrDefaultAsync(t => t.Token == token, ct);
+    public async Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken ct = default)
+    {
+        var tokenHash = RefreshToken.Hash(token);
+        return await dbContext.RefreshTokens.FirstOrDefaultAsync(t => t.Token == tokenHash, ct);
+    }
 
     public void Add(RefreshToken token) => dbContext.RefreshTokens.Add(token);
 }

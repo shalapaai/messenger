@@ -79,7 +79,7 @@ public sealed class LoginCommandHandlerTests
 
         _refreshTokenRepo.Received(1).Add(Arg.Is<RefreshToken>(t =>
             t.UserId == user.Id &&
-            t.Token  == "refresh" &&
+            t.Token  == RefreshToken.Hash("refresh") &&
             t.IsActive));
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

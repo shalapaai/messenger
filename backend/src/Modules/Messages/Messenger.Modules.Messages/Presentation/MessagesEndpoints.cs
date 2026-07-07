@@ -25,7 +25,8 @@ public static class MessagesEndpoints
         group.MapPost("/", SendMessage)
             .WithName("SendMessage")
             .Produces<Guid>(StatusCodes.Status201Created)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireRateLimiting("messaging");
 
         group.MapGet("/", GetMessages)
             .WithName("GetMessages")
@@ -40,7 +41,8 @@ public static class MessagesEndpoints
             .Accepts<IFormFileCollection>("multipart/form-data")
             .Produces<UploadAndSendMessageResult>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .RequireRateLimiting("uploads");
 
         group.MapPatch("/{messageId:guid}", EditMessage)
             .WithName("EditMessage")
@@ -59,7 +61,8 @@ public static class MessagesEndpoints
             .WithSummary("Переслать сообщения в другой чат")
             .WithDescription("{chatId} в маршруте — целевой чат, куда пересылаем. sourceChatId в теле — чат-источник, откуда взяты messageIds.")
             .Produces<List<Guid>>(StatusCodes.Status201Created)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .RequireRateLimiting("messaging");
 
         group.MapPost("/delete-bulk", DeleteMessages)
             .WithName("DeleteMessages")

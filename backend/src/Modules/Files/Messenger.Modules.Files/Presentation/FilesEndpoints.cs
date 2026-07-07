@@ -23,12 +23,15 @@ public static class FilesEndpoints
             .Accepts<IFormFile>("multipart/form-data")
             .Produces<AvatarUploadResponse>(StatusCodes.Status200OK)
             .DisableAntiforgery()
+            .RequireRateLimiting("uploads")
             .RequireAuthorization();
 
         // Скачивание файла. Аватары — публичные (как у любого мессенджера).
         // Вложения чатов (ChatAttachment) — только авторизованный участник этого чата,
         // проверяется внутри хендлера (маршрут анонимный, чтобы не ломать аватарки).
-        group.MapGet("/{fileKey}", DownloadFile)
+        // Catch-all (не просто {fileKey}) — у S3-ключей есть слэши (date-префикс папок,
+        // см. S3FileStorage.UploadAsync), обычный сегмент их бы не заматчил.
+        group.MapGet("/{*fileKey}", DownloadFile)
             .WithName("DownloadFile")
             .Produces(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)

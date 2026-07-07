@@ -4,6 +4,7 @@ using FluentAssertions;
 using Messenger.Modules.Auth.Application.Abstractions;
 using Messenger.Modules.Auth.Application.Features.Register;
 using Messenger.Modules.Auth.Domain;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using NSubstitute;
 
@@ -14,6 +15,8 @@ public sealed class RegisterCommandHandlerTests
     private readonly IJwtTokenService        _jwtService       = Substitute.For<IJwtTokenService>();
     private readonly IRefreshTokenRepository _refreshTokenRepo = Substitute.For<IRefreshTokenRepository>();
     private readonly IUnitOfWork             _uow              = Substitute.For<IUnitOfWork>();
+    private readonly IEmailService           _emailService     = Substitute.For<IEmailService>();
+    private readonly IMemoryCache            _cache            = Substitute.For<IMemoryCache>();
     private readonly IConfiguration          _config           = BuildConfig();
     private readonly RegisterCommandHandler _sut;
 
@@ -23,12 +26,16 @@ public sealed class RegisterCommandHandlerTests
                    .Returns(new AccessTokenResult("access-token", DateTime.UtcNow.AddMinutes(15)));
         _jwtService.GenerateRefreshToken().Returns("refresh-token");
 
+        // TwoFactor:Enabled отсутствует в BuildConfig() => false — во всех тестах ниже путь
+        // с OTP-письмом (emailService/cache) не задействуется, моки нужны только для сборки
         _sut = new RegisterCommandHandler(
             _userRepo,
             _hasher,
             _jwtService,
             _refreshTokenRepo,
             _uow,
+            _emailService,
+            _cache,
             _config);
     }
 
@@ -126,7 +133,7 @@ public sealed class RegisterCommandHandlerTests
         await _sut.Handle(new RegisterCommand("u@e.com", "Secret123!"), CancellationToken.None);
 
         _refreshTokenRepo.Received(1).Add(Arg.Is<RefreshToken>(t =>
-            t.Token == "refresh" &&
+            t.Token == RefreshToken.Hash("refresh") &&
             t.IsActive));
     }
 

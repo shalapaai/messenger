@@ -21,7 +21,8 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
 
         var newTokens = await response.Content.ReadFromJsonAsync<TokenPairDto>();
         newTokens!.AccessToken.Should().NotBeNullOrEmpty();
-        newTokens.RefreshToken.Should().NotBeNullOrEmpty();
+        // RefreshToken не должен попадать в тело ответа — только в httpOnly-куку ниже
+        newTokens.RefreshToken.Should().BeNullOrEmpty();
         GetRefreshCookie(response).Should().Contain("HttpOnly");
     }
 
@@ -33,7 +34,9 @@ public sealed class TokenRotationTests(AuthApiFactory factory)
         var newTokens = await response.Content.ReadFromJsonAsync<TokenPairDto>();
 
         newTokens!.AccessToken.Should().NotBe(login.Tokens.AccessToken);
-        newTokens.RefreshToken.Should().NotBe(login.Tokens.RefreshToken);
+        // Сам refresh-токен теперь виден только в куке (не в теле ответа) — сравниваем
+        // значение куки целиком, чтобы убедиться, что ротация действительно выдала новый токен
+        GetCookieHeader(response).Should().NotBe(login.Cookie);
     }
 
     [Fact]

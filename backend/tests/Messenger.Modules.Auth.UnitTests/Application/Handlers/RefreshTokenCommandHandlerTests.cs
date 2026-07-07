@@ -69,7 +69,7 @@ public sealed class RefreshTokenCommandHandlerTests
 
         await _sut.Handle(new RefreshTokenCommand("old-token"), default);
 
-        _tokenRepo.Received(1).Add(Arg.Is<RefreshToken>(t => t.Token == "new-refresh" && t.IsActive));
+        _tokenRepo.Received(1).Add(Arg.Is<RefreshToken>(t => t.Token == RefreshToken.Hash("new-refresh") && t.IsActive));
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -56,13 +56,20 @@ public sealed class RefreshTokenTests
     }
 
     [Fact]
-    public void Create_AssignsTokenValue()
+    public void Create_StoresHashedTokenValue_NotThePlainTextToken()
     {
         const string rawToken = "my-secure-token-value";
         var token = Auth.Domain.RefreshToken.Create(UserId, rawToken, expirationDays: 7);
 
-        token.Token.Should().Be(rawToken);
+        token.Token.Should().Be(Auth.Domain.RefreshToken.Hash(rawToken));
+        token.Token.Should().NotBe(rawToken);
         token.UserId.Should().Be(UserId);
+    }
+
+    [Fact]
+    public void Hash_IsDeterministic()
+    {
+        Auth.Domain.RefreshToken.Hash("same-input").Should().Be(Auth.Domain.RefreshToken.Hash("same-input"));
     }
 
     [Fact]

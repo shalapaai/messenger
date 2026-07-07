@@ -36,6 +36,7 @@ public static class AuthEndpoints
             .Produces<TokenPairDto>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .RequireRateLimiting("auth")
             .AllowAnonymous();
 
         group.MapPost("/login", Login)
@@ -45,14 +46,18 @@ public static class AuthEndpoints
             .Produces<LoginResultDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .RequireRateLimiting("auth")
             .AllowAnonymous();
 
+        // "auth-strict" — узкое окно: и OTP, и код сброса пароля — короткие цифровые
+        // секреты, которые иначе можно перебрать за разумное время без троттлинга
         group.MapPost("/verify-otp", VerifyOtp)
             .WithName("VerifyOtp")
             .WithSummary("Подтверждение кода из письма")
             .WithDescription("Принимает email + 6-значный код, при успехе выдаёт токены.")
             .Produces<TokenPairDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .RequireRateLimiting("auth-strict")
             .AllowAnonymous();
 
         group.MapPost("/refresh", RefreshToken)
@@ -60,6 +65,7 @@ public static class AuthEndpoints
             .WithSummary("Обновление access токена")
             .Produces<TokenPairDto>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .RequireRateLimiting("auth")
             .AllowAnonymous();
 
         group.MapPost("/logout", Logout)
@@ -73,6 +79,7 @@ public static class AuthEndpoints
             .WithSummary("Запрос кода сброса пароля")
             .WithDescription("Отправляет код на email. Всегда возвращает 200, даже если email не найден.")
             .Produces(StatusCodes.Status200OK)
+            .RequireRateLimiting("auth-strict")
             .AllowAnonymous();
 
         group.MapPost("/reset-password", ResetPassword)
@@ -80,6 +87,7 @@ public static class AuthEndpoints
             .WithSummary("Сброс пароля по коду")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .RequireRateLimiting("auth-strict")
             .AllowAnonymous();
 
         return app;
