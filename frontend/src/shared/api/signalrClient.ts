@@ -46,6 +46,16 @@ export interface MessageDeleted {
   chatId: string
 }
 
+export interface MessageReactionChanged {
+  messageId: string
+  chatId: string
+  userId: string
+  userName: string
+  userAvatarUrl: string | null
+  userAvatarColor: string
+  emoji: string | null
+}
+
 export interface MessagesReadEvent {
   chatId: string
   readerId: string
@@ -146,6 +156,11 @@ export class SignalRClient {
   onMessageDeleted(handler: (event: MessageDeleted) => void): () => void {
     this.connection.on('MessageDeleted', handler)
     return () => this.connection.off('MessageDeleted', handler)
+  }
+
+  onMessageReactionChanged(handler: (event: MessageReactionChanged) => void): () => void {
+    this.connection.on('MessageReactionChanged', handler)
+    return () => this.connection.off('MessageReactionChanged', handler)
   }
 
   onMessagesRead(handler: (event: MessagesReadEvent) => void): () => void {

@@ -68,6 +68,14 @@
     "newMessage": "Новое сообщение",
     "attachmentMessage": "Вложение"
   },
+  "reactions": {
+    "quick": "Быстрые реакции",
+    "set": "Поставить реакцию {{emoji}}",
+    "remove": "Убрать реакцию {{emoji}}",
+    "details": "Посмотреть реакции",
+    "count": "{{count}} реакций",
+    "title": "Реакции"
+  },
   "auth": {
     "loginTitle": "Вход",
     "loginSubtitle": "Введите данные, чтобы продолжить общение.",
