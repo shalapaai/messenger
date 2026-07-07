@@ -86,6 +86,14 @@ public static class FilesEndpoints
                 return Results.StatusCode(StatusCodes.Status403Forbidden);
         }
 
+        // FileKey — GUID, генерируется заново на каждую загрузку и никогда не переиспользуется
+        // на другой контент (см. UploadAvatarCommandHandler/AvatarReplace — при замене аватара
+        // старый файл удаляется, а не перезаписывается по тому же ключу), поэтому ответ можно
+        // считать иммутабельным и кэшировать надолго. Вложения чатов — private (доступ проверяется
+        // по членству в чате), аватары — public (см. комментарий у MapGet выше).
+        var cacheScope = record.Category == FileCategory.ChatAttachment ? "private" : "public";
+        ctx.Response.Headers.CacheControl = $"{cacheScope}, max-age=31536000, immutable";
+
         var stream = await fileStorage.DownloadAsync(fileKey, ct);
         return Results.Stream(stream, record.ContentType, record.OriginalName);
     }

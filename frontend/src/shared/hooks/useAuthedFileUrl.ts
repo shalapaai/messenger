@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '../lib/auth/authTokens'
+import { acquireFileBlobUrl, releaseFileBlobUrl } from '../lib/fileBlobCache'
 
 // Вложения чатов (в отличие от аватарок) отдаются НЕ анонимно — бэкенд проверяет,
 // что скачивающий состоит в этом чате (см. DownloadFile в FilesEndpoints.cs). Обычный
@@ -14,7 +15,10 @@ async function fetchProtectedFileBlob(url: string): Promise<Blob> {
   return res.data
 }
 
-/** Резолвит защищённый fileUrl вложения в локальный blob-URL. Лениво: пока не понадобится
+/** Резолвит защищённый fileUrl вложения в локальный blob-URL, переиспользуя уже
+ *  скачанный blob из fileBlobCache — ChatWindow пересоздаётся при переключении
+ *  чата (key={chatId}), и без кэша это означало повторное скачивание тех же
+ *  картинок при каждом возврате в чат. Лениво: пока не понадобится
  *  (см. useLazyAuthedFileDownload) — просто передайте enabled=false. */
 export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = true) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
@@ -23,20 +27,18 @@ export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = t
   useEffect(() => {
     if (!fileUrl || !enabled) return
     let cancelled = false
-    let localUrl: string | null = null
+    setBlobUrl(null)
+    setError(false)
 
-    fetchProtectedFileBlob(fileUrl)
-      .then(blob => {
-        if (cancelled) return
-        localUrl = URL.createObjectURL(blob)
-        setBlobUrl(localUrl)
-        setError(false)
+    acquireFileBlobUrl(fileUrl)
+      .then(url => {
+        if (!cancelled) setBlobUrl(url)
       })
       .catch(() => { if (!cancelled) setError(true) })
 
     return () => {
       cancelled = true
-      if (localUrl) URL.revokeObjectURL(localUrl)
+      releaseFileBlobUrl(fileUrl)
     }
   }, [fileUrl, enabled])
 
