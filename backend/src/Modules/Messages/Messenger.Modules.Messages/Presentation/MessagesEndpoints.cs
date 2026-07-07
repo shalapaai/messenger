@@ -7,6 +7,7 @@ using Messenger.Modules.Messages.Application.Features.EditMessage;
 using Messenger.Modules.Messages.Application.Features.ForwardMessages;
 using Messenger.Modules.Messages.Application.Features.GetMessages;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
+using Messenger.Modules.Messages.Application.Features.SetMessageReaction;
 using Messenger.Modules.Messages.Application.Features.UploadAndSendMessage;
 using Messenger.Shared.Kernel.Extensions;
 using Microsoft.AspNetCore.Builder;
@@ -46,6 +47,13 @@ public static class MessagesEndpoints
 
         group.MapPatch("/{messageId:guid}", EditMessage)
             .WithName("EditMessage")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem();
+
+        group.MapPut("/{messageId:guid}/reaction", SetMessageReaction)
+            .WithName("SetMessageReaction")
+            .WithSummary("Поставить, заменить или убрать реакцию на сообщение")
+            .WithDescription("Один пользователь может иметь только одну реакцию на сообщение. Передай emoji = null/empty, чтобы убрать реакцию.")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem();
 
@@ -150,6 +158,23 @@ public static class MessagesEndpoints
     {
         var userId = httpContext.GetUserId();
         var command = new EditMessageCommand(messageId, userId, request.NewContent);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Results.NoContent()
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> SetMessageReaction(
+        Guid chatId,
+        Guid messageId,
+        SetMessageReactionRequest request,
+        HttpContext httpContext,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var userId = httpContext.GetUserId();
+        var command = new SetMessageReactionCommand(chatId, messageId, userId, request.Emoji);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
-import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
+import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, setMessageReaction as setMessageReactionApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted, MessageEdited, MessageReactionChanged } from '../../../shared/api/signalrClient'
 import { formatMessageTime } from '../../../shared/lib/formatDateTime'
 
 type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
@@ -125,6 +125,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           systemEventType: msg.systemEventType ?? undefined,
           targetUserId:    msg.targetUserId ?? undefined,
           targetUserName:  msg.targetUserName ?? undefined,
+          reactions:       [],
         }],
       }
     })
@@ -197,6 +198,44 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
         }),
       }
     })
+  }, [])
+
+  const handleReactionChanged = useCallback((event: MessageReactionChanged) => {
+    setChatMessages(prev => {
+      const chatMsgs = prev[event.chatId]
+      if (!chatMsgs) return prev
+
+      return {
+        ...prev,
+        [event.chatId]: chatMsgs.map(m => {
+          if (m.messageId !== event.messageId) return m
+
+          const currentReactions = m.reactions ?? []
+          const withoutUserReaction = currentReactions.filter(r => r.userId !== event.userId)
+
+          return {
+            ...m,
+            reactions: event.emoji
+              ? [
+                  ...withoutUserReaction,
+                  {
+                    userId: event.userId,
+                    userName: event.userName,
+                    userAvatarUrl: event.userAvatarUrl,
+                    userAvatarColor: event.userAvatarColor,
+                    emoji: event.emoji,
+                  },
+                ]
+              : withoutUserReaction,
+          }
+        }),
+      }
+    })
+  }, [])
+
+  const setMessageReaction = useCallback(async (chatId: string, msg: Message, emoji: string | null) => {
+    if (!msg.messageId) return
+    await setMessageReactionApi(chatId, msg.messageId, emoji)
   }, [])
 
   const editMessage = useCallback(async (chatId: string, msg: Message, newText: string) => {
@@ -274,6 +313,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       replyToMessageId:  replyTo?.messageId,
       replyToSenderName: replyTo?.senderName,
       replyToContent:    replyTo?.text,
+      reactions: [],
     }
     setChatMessages(prev => ({ ...prev, [chatId]: [...(prev[chatId] ?? []), newMsg] }))
     opts.onAppend?.(true)
@@ -307,6 +347,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
         fileContentType: a.contentType,
         fileSizeBytes:   a.fileSizeBytes,
       })),
+      reactions: [],
     }
     setChatMessages(prev => {
       const chatMsgs = prev[chatId] ?? []
@@ -344,6 +385,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     handleIncomingMessage,
     handleDeletedMessage,
     handleEditedMessage,
+    handleReactionChanged,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
@@ -354,5 +396,6 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     removeLocalMessage,
     deleteMessages,
     editMessage,
+    setMessageReaction,
   }
 }

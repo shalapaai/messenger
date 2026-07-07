@@ -13,6 +13,10 @@ export async function editMessage(chatId: string, messageId: string, newContent:
   await apiClient.patch(`/chats/${chatId}/messages/${messageId}`, { newContent })
 }
 
+export async function setMessageReaction(chatId: string, messageId: string, emoji: string | null): Promise<void> {
+  await apiClient.put(`/chats/${chatId}/messages/${messageId}/reaction`, { emoji })
+}
+
 /** Пересылает сообщения из sourceChatId в targetChatId — копии создаются от имени
  *  текущего пользователя с пометкой "переслано от" оригинального автора. */
 export async function forwardMessages(targetChatId: string, sourceChatId: string, messageIds: string[]): Promise<void> {

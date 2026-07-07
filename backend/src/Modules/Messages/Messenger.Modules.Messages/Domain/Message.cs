@@ -7,8 +7,10 @@ using Messenger.Shared.Kernel.Results;
 public sealed class Message : AggregateRoot<MessageId>
 {
     public const int MaxAttachmentsPerMessage = 10;
+    public const int MaxReactionLength = 16;
 
     private readonly List<MessageAttachment> _attachments = [];
+    private readonly List<MessageReaction> _reactions = [];
 
     private Message() { } // EF Core
 
@@ -34,6 +36,7 @@ public sealed class Message : AggregateRoot<MessageId>
     public Guid SenderId { get; private set; }
     public string Content { get; private set; } = string.Empty;
     public IReadOnlyList<MessageAttachment> Attachments => _attachments;
+    public IReadOnlyList<MessageReaction> Reactions => _reactions;
     public MessageStatus Status { get; private set; }
     public DateTime SentAt { get; private set; }
     public DateTime? EditedAt { get; private set; }
@@ -157,6 +160,35 @@ public sealed class Message : AggregateRoot<MessageId>
         Content = string.Empty;
         DeletedAt = DateTime.UtcNow;
         RaiseDomainEvent(new MessageDeletedDomainEvent(Id.Value, ChatId));
+        return Result.Success();
+    }
+
+    public Result SetReaction(Guid userId, string? emoji)
+    {
+        if (Status == MessageStatus.Deleted)
+            return Result.Failure(new Error("Message.Deleted", "Cannot react to a deleted message"));
+
+        var existing = _reactions.FirstOrDefault(r => r.UserId == userId);
+        var normalizedEmoji = emoji?.Trim();
+
+        if (string.IsNullOrWhiteSpace(normalizedEmoji))
+        {
+            if (existing is not null)
+                _reactions.Remove(existing);
+
+            RaiseDomainEvent(new MessageReactionChangedDomainEvent(Id.Value, ChatId, userId, null));
+            return Result.Success();
+        }
+
+        if (normalizedEmoji.Length > MaxReactionLength)
+            return Result.Failure(Error.Validation("Emoji", $"Reaction cannot exceed {MaxReactionLength} characters"));
+
+        if (existing is null)
+            _reactions.Add(MessageReaction.Create(userId, normalizedEmoji));
+        else
+            existing.Update(normalizedEmoji);
+
+        RaiseDomainEvent(new MessageReactionChangedDomainEvent(Id.Value, ChatId, userId, normalizedEmoji));
         return Result.Success();
     }
 

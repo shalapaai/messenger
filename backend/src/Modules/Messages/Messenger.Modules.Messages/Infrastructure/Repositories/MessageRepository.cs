@@ -7,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 public sealed class MessageRepository(MessagesDbContext dbContext) : IMessageRepository
 {
     public async Task<Message?> GetByIdAsync(MessageId id, CancellationToken ct = default) =>
-        await dbContext.Messages.FirstOrDefaultAsync(m => m.Id == id, ct);
+        await dbContext.Messages
+            .Include(m => m.Reactions)
+            .FirstOrDefaultAsync(m => m.Id == id, ct);
 
     public async Task<List<Message>> GetByIdsAsync(IEnumerable<MessageId> ids, CancellationToken ct = default) =>
         await dbContext.Messages.Where(m => ids.Contains(m.Id)).ToListAsync(ct);
@@ -36,6 +38,7 @@ public sealed class MessageRepository(MessagesDbContext dbContext) : IMessageRep
         Guid chatId, Guid? before, int limit, CancellationToken ct = default)
     {
         var query = dbContext.Messages
+            .Include(m => m.Reactions)
             .Where(m => m.ChatId == chatId && m.Status != MessageStatus.Deleted);
 
         if (before is not null)

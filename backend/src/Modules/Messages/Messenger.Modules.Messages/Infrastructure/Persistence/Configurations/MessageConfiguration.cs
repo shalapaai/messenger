@@ -80,6 +80,27 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
             a.HasIndex("message_id").HasDatabaseName("ix_message_attachment_message_id");
         });
 
+        builder.Navigation(m => m.Reactions).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.OwnsMany(m => m.Reactions, r =>
+        {
+            r.ToTable("message_reaction");
+            r.WithOwner().HasForeignKey("message_id");
+
+            r.HasKey(x => x.Id);
+            r.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            r.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            r.Property(x => x.Emoji).HasColumnName("emoji").HasMaxLength(Message.MaxReactionLength).IsRequired();
+            r.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+            r.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            r.HasIndex("message_id", nameof(MessageReaction.UserId))
+                .IsUnique()
+                .HasDatabaseName("ux_message_reaction_message_id_user_id");
+
+            r.HasIndex(nameof(MessageReaction.UserId))
+                .HasDatabaseName("ix_message_reaction_user_id");
+        });
+
         builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_message_chat_id_sent_at");
         builder.HasIndex(m => new { m.ChatId, m.Sequence }).HasDatabaseName("ix_message_chat_id_sequence");
         builder.HasIndex(m => m.SenderId).HasDatabaseName("ix_message_sender_id");

@@ -50,6 +50,14 @@ export interface Attachment {
   fileSizeBytes: number
 }
 
+export interface MessageReaction {
+  userId: string
+  userName: string
+  userAvatarUrl: string | null
+  userAvatarColor: string
+  emoji: string
+}
+
 export interface Message {
   id: number
   messageId?: string
@@ -69,6 +77,7 @@ export interface Message {
   edited?: boolean
   /** несколько файлов, отправленных одним сообщением — пусто/undefined, если сообщение без вложений */
   attachments?: Attachment[]
+  reactions?: MessageReaction[]
   forwardedFromUserId?: string
   forwardedFromUserName?: string
   replyToMessageId?: string
