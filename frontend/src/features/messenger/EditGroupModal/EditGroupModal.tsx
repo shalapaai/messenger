@@ -5,9 +5,8 @@ import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { useAvatarCrop } from '../../../shared/hooks/useAvatarCrop'
 import { uploadChatAvatar, removeChatAvatar } from '../../../shared/api/chatsApi'
 import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
+import { MAX_AVATAR_SIZE_BYTES } from '../../../shared/lib/fileType'
 import s from './EditGroupModal.module.css'
-
-const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
 interface EditGroupModalProps {
   isOpen: boolean
@@ -97,7 +96,8 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
               color={avatarColor}
               shape="square"
               onChange={(file) => {
-                if (!avatarCrop.handleAvatarChange(file)) { setError('type'); return }
+                const result = avatarCrop.handleAvatarChange(file)
+                if (result !== 'ok') { setError(result); return }
                 setAvatarRemoved(false)
                 setError(null)
               }}

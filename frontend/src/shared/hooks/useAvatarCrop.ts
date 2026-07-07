@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getCroppedImage, type CroppedAreaPixels } from '../lib/image'
-import { isAllowedAvatarImage } from '../lib/fileType'
+import { isAllowedAvatarImage, MAX_AVATAR_SIZE_BYTES } from '../lib/fileType'
 
 /** Выбор + обрезка аватарки (общий поток для EditGroupModal и EditProfileModal) —
  *  сама загрузка на сервер остаётся на вызывающей стороне, здесь только локальный черновик. */
@@ -24,13 +24,16 @@ export function useAvatarCrop() {
     if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
   }, [])
 
-  /** Возвращает false, если файл отклонён (не картинка) — черновик не открывается,
-   *  вызывающая сторона сама решает, как показать ошибку. */
-  function handleAvatarChange(file: File): boolean {
-    if (!isAllowedAvatarImage(file)) return false
+  /** Возвращает причину отказа, если файл отклонён — черновик тогда не открывается,
+   *  вызывающая сторона сама решает, как показать ошибку. Размер исходного файла проверяем
+   *  здесь же, не дожидаясь обрезки: она пересжимает и обычно уменьшает размер, так что
+   *  проверка только итогового файла легко пропустила бы изначально огромный файл. */
+  function handleAvatarChange(file: File): 'ok' | 'type' | 'size' {
+    if (!isAllowedAvatarImage(file)) return 'type'
+    if (file.size > MAX_AVATAR_SIZE_BYTES) return 'size'
     setSelectedAvatarFile(file)
     setCropImageSrc(URL.createObjectURL(file))
-    return true
+    return 'ok'
   }
 
   function handleCropCancel() {

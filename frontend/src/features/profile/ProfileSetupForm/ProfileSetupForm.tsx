@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getCroppedImage } from '../../../shared/lib/image'
 import type { CroppedAreaPixels } from '../../../shared/lib/image'
-import { isAllowedAvatarImage } from '../../../shared/lib/fileType'
+import { isAllowedAvatarImage, MAX_AVATAR_SIZE_BYTES } from '../../../shared/lib/fileType'
 import { profileApi } from '../../../shared/api/profileApi'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
 import { AvatarCropModal } from '../AvatarCropModal'
@@ -14,7 +14,6 @@ import { randomAvatarColor } from '../../../shared/lib/avatarColors'
 import styles from './ProfileSetupForm.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
-const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 // должно совпадать с лимитами на бэкенде (CreateUserProfileCommandValidator)
 const DISPLAY_NAME_MAX_LENGTH = 100
 const STATUS_MAX_LENGTH = 200
@@ -67,6 +66,13 @@ function ProfileSetupForm() {
   function handleAvatarChange(file: File) {
     if (!isAllowedAvatarImage(file)) {
       setError(t('profileSetup.errors.avatarInvalidType'))
+      return
+    }
+    // Проверяем исходный файл, не дожидаясь обрезки: сама обрезка пересжимает и обычно
+    // уменьшает размер (canvas.toBlob), так что проверка только итогового файла легко
+    // пропустила бы изначально огромный файл, если кроп-область оказалась небольшой.
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      setError(t('profileSetup.errors.avatarTooLarge'))
       return
     }
     setError('')

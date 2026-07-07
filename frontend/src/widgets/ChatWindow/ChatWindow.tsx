@@ -453,6 +453,10 @@ export function ChatWindow({
           </div>
         )}
 
+        {attachments.attachmentError && (
+          <div className={s.lengthWarningBar}>{attachments.attachmentError}</div>
+        )}
+
         <FilePreviewBar
           queuedFiles={attachments.queuedFiles}
           fileUploading={attachments.fileUploading}

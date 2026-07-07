@@ -23,6 +23,7 @@ import {
   syncPushSubscription,
 } from '../../shared/lib/notifications'
 import { ConnectionBanner } from '../../shared/ui/ConnectionBanner/ConnectionBanner'
+import { Toast } from '../../shared/ui/Toast'
 import type { IncomingMessage, MessageDeleted, UserOnlineEvent, UserProfileUpdatedEvent } from '../../shared/api/signalrClient'
 import { AppLoadingSkeleton } from './AppLoadingSkeleton'
 
@@ -124,6 +125,7 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
     <>
       {children}
       <ConnectionBanner />
+      <Toast />
     </>
   )
 }

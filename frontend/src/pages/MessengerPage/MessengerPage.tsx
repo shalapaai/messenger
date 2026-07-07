@@ -8,6 +8,7 @@ import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
 import { useIsOnline, useOnlineStore } from '../../shared/api/onlineStore'
+import { showToast } from '../../shared/api/toastStore'
 import type { UserSearchResult } from '../../shared/api/usersApi'
 import { useScrollRestore } from './hooks/useScrollRestore'
 import { useTypingIndicator } from './hooks/useTypingIndicator'
@@ -206,7 +207,7 @@ export function MessengerPage() {
         await loadChats()
         navigate(`/chats/${newChatId}`, { replace: true, state: { focusInput: true } })
       } catch {
-      // ignored
+        showToast(t('messenger.sendFailed'))
       }
       return
     }
@@ -244,7 +245,7 @@ export function MessengerPage() {
     try {
       await deleteMessage(id, msg)
     } catch {
-      // ignored
+      showToast(t('messenger.deleteMessageFailed'))
     }
   }
 
@@ -253,7 +254,7 @@ export function MessengerPage() {
     try {
       await editMessage(id, msg, newText)
     } catch {
-      // ignored
+      showToast(t('messenger.editMessageFailed'))
     }
   }
 
@@ -262,7 +263,7 @@ export function MessengerPage() {
     try {
       await deleteMessages(id, msgs)
     } catch {
-      // ignored
+      showToast(t('messenger.deleteMessageFailed'))
     }
   }
 
@@ -274,7 +275,7 @@ export function MessengerPage() {
     try {
       await forwardMessagesApi(targetChatId, sourceChatId, messageIds)
     } catch {
-      // ignored
+      showToast(t('messenger.forwardMessageFailed'))
     }
   }
 
@@ -285,7 +286,7 @@ export function MessengerPage() {
       removeChat(id)
       navigate('/chats')
     } catch {
-      // ignored
+      showToast(t('messenger.deleteChatFailed'))
     }
   }
 
@@ -297,7 +298,7 @@ export function MessengerPage() {
       await loadChats()
       navigate(`/chats/${chatId}`)
     } catch {
-      // ignored
+      showToast(t('messenger.openChatFailed'))
     }
   }
 
@@ -309,7 +310,7 @@ export function MessengerPage() {
       setGroupModalOpen(false)
       navigate('/chats')
     } catch {
-      // ignored
+      showToast(t('messenger.leaveGroupFailed'))
     }
   }
 
@@ -328,7 +329,7 @@ export function MessengerPage() {
       setAddMemberModalOpen(false)
       await loadGroupMembers(id)
     } catch {
-      // ignored
+      showToast(t('messenger.addMemberFailed'))
     }
   }
 
@@ -345,7 +346,7 @@ export function MessengerPage() {
       await leaveGroupChat(id, userId)
       await loadGroupMembers(id)
     } catch {
-      // ignored
+      showToast(t('messenger.removeMemberFailed'))
     }
   }
 
@@ -355,7 +356,7 @@ export function MessengerPage() {
       await setMemberRole(id, userId, role)
       updateMemberRoleLocally(userId, role)
     } catch {
-      // ignored
+      showToast(t('messenger.setMemberRoleFailed'))
     }
   }
 

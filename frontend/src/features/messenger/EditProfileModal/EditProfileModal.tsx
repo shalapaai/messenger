@@ -4,14 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { getCroppedImage, type CroppedAreaPixels } from '../../../shared/lib/image'
-import { isAllowedAvatarImage } from '../../../shared/lib/fileType'
+import { isAllowedAvatarImage, MAX_AVATAR_SIZE_BYTES } from '../../../shared/lib/fileType'
 import { profileApi } from '../../../shared/api/profileApi'
 import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
 import type { UserProfile } from '../../../shared/types/user'
 import s from './EditProfileModal.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
-const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 // должно совпадать с лимитами на бэкенде (UpdateUserProfileCommandValidator)
 const DISPLAY_NAME_MAX_LENGTH = 100
 const STATUS_MAX_LENGTH = 200
@@ -67,6 +66,13 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   function handleAvatarChange(file: File) {
     if (!isAllowedAvatarImage(file)) {
       setFormError(t('profileSetup.errors.avatarInvalidType'))
+      return
+    }
+    // Проверяем исходный файл, не дожидаясь обрезки — она пересжимает и обычно уменьшает
+    // размер, так что проверка только итогового файла легко пропустила бы изначально
+    // огромный файл, если кроп-область оказалась небольшой.
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      setFormError(t('profileSetup.errors.avatarTooLarge'))
       return
     }
     setFormError('')

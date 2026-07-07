@@ -174,6 +174,7 @@
     "addMemberFailed": "Не удалось добавить участника.",
     "removeMemberFailed": "Не удалось удалить участника.",
     "updateGroupFailed": "Не удалось обновить группу.",
+    "openChatFailed": "Не удалось открыть чат.",
     "search": "Поиск",
     "searchOrNewChat": "Поиск или новый чат",
     "newUsers": "Новые пользователи",

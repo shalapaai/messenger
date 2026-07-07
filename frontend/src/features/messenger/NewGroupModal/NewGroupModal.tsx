@@ -18,13 +18,15 @@ interface NewGroupModalProps {
   onCreate: (name: string, memberIds: string[], avatarColor: string, avatarFile?: File) => Promise<void>
 }
 
+type ModalError = 'create' | 'type' | 'size' | null
+
 export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps) {
   const { t } = useTranslation()
   const [name,     setName]     = useState('')
   const [avatarColor, setAvatarColor] = useState(() => randomAvatarColor())
   const [selected, setSelected] = useState<Map<string, UserSearchResult>>(new Map())
   const [creating, setCreating] = useState(false)
-  const [createError, setCreateError] = useState(false)
+  const [modalError, setModalError] = useState<ModalError>(null)
   const { query, setQuery, results, loading, error } = useUserSearch(isOpen)
   const avatarCrop = useAvatarCrop()
 
@@ -35,7 +37,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
       setAvatarColor(randomAvatarColor())
       setSelected(new Map())
       setCreating(false)
-      setCreateError(false)
+      setModalError(null)
       avatarCrop.removeAvatar()
     }, 0)
     return () => clearTimeout(timer)
@@ -57,11 +59,11 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
     const trimmed = name.trim()
     if (!trimmed || selected.size === 0 || creating) return
     setCreating(true)
-    setCreateError(false)
+    setModalError(null)
     try {
       await onCreate(trimmed, [...selected.keys()], avatarColor, avatarCrop.croppedAvatarFile ?? undefined)
     } catch {
-      setCreateError(true)
+      setModalError('create')
       setCreating(false)
     }
   }
@@ -84,7 +86,10 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
               avatarPreview={avatarCrop.avatarPreview}
               color={avatarColor}
               shape="square"
-              onChange={avatarCrop.handleAvatarChange}
+              onChange={(file) => {
+                const result = avatarCrop.handleAvatarChange(file)
+                setModalError(result !== 'ok' ? result : null)
+              }}
               onRemove={avatarCrop.removeAvatar}
             />
             <div className={s.colorPickerWrap}>
@@ -154,7 +159,9 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
             )}
           </div>
 
-          {createError && <p className={s.error}>{t('messenger.createGroupFailed')}</p>}
+          {modalError === 'create' && <p className={s.error}>{t('messenger.createGroupFailed')}</p>}
+          {modalError === 'type' && <p className={s.error}>{t('profileSetup.errors.avatarInvalidType')}</p>}
+          {modalError === 'size' && <p className={s.error}>{t('profileSetup.errors.avatarTooLarge')}</p>}
 
           <button type="button" className={s.createBtn} disabled={!canCreate} onClick={handleCreate}>
             {creating ? t('common.saving') : t('messenger.createGroup')}

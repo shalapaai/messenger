@@ -78,6 +78,8 @@ export function isAllowedAttachment(file: File): boolean {
 // и безопаснее, чем разрешать SVG с потенциальным script/onload внутри.
 const ALLOWED_AVATAR_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif'])
 
+export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
+
 export function isAllowedAvatarImage(file: File): boolean {
   const ext = file.name.split('.').pop()?.toLowerCase()
   if (ext && ALLOWED_AVATAR_EXTENSIONS.has(ext)) return true
