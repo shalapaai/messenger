@@ -1,0 +1,27 @@
+# Полностью отдельная локальная копия для разработки — свои контейнеры/порты/БД,
+# не пересекается с уже запущенным стеком (docker-compose.tunnel.yml).
+#
+# Запуск одной командой (поднимает и собирает всё, включая frontend):
+#   make up-local        # без пересборки образов
+#   make up-build-local   # с пересборкой образов
+#
+# Фронтенд здесь — production-сборка (nginx), без hot reload.
+# Для разработки с hot reload используй: make frontend-local (npm run dev отдельно)
+
+services:
+  postgres:
+    container_name: messenger-local-postgres
+
+  redis:
+    container_name: messenger-local-redis
+
+  pgadmin:
+    container_name: messenger-local-pgadmin
+
+  api:
+    container_name: messenger-local-api
+
+  frontend:
+    container_name: messenger-local-frontend
+    ports:
+      - "${FRONTEND_PORT:-5174}:80"

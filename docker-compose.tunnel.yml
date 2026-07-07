@@ -1,0 +1,26 @@
+# docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d
+# Развёртывание без своего публичного IP/VPS — через Cloudflare Tunnel.
+# Альтернатива docker-compose.prod.yml (VPS + Caddy) — не комбинировать оба сразу.
+#
+# Требует CLOUDFLARE_TUNNEL_TOKEN в .env — токен коннектора туннеля из
+# Cloudflare Zero Trust → Networks → Tunnels → (ваш туннель) → Overview.
+
+services:
+
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    # Наружу не торчит — cloudflared достаёт до frontend по внутренней
+    # docker-сети, публичный доступ идёт только через туннель Cloudflare
+    ports: !reset []
+
+  frontend:
+    ports: !reset []
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: messenger-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - messenger-network
