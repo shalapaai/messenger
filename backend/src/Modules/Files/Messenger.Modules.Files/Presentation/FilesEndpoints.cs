@@ -94,6 +94,11 @@ public static class FilesEndpoints
         var cacheScope = record.Category == FileCategory.ChatAttachment ? "private" : "public";
         ctx.Response.Headers.CacheControl = $"{cacheScope}, max-age=31536000, immutable";
 
+        // Content-Length выставляем явно из записи в БД, а не полагаемся на Stream.Length —
+        // у S3-потока (в отличие от локального FileStream) он не всегда доступен, а фронтенду
+        // он нужен, чтобы показать процент загрузки вложения (см. onDownloadProgress в fileBlobCache.ts).
+        ctx.Response.ContentLength = record.SizeBytes;
+
         var stream = await fileStorage.DownloadAsync(fileKey, ct);
         return Results.Stream(stream, record.ContentType, record.OriginalName);
     }

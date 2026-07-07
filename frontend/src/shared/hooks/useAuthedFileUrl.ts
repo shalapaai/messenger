@@ -23,14 +23,19 @@ async function fetchProtectedFileBlob(url: string): Promise<Blob> {
 export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = true) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [error,   setError]   = useState(false)
+  // null — процент неизвестен (сервер не прислал Content-Length) или загрузка ещё не началась.
+  const [progress, setProgress] = useState<number | null>(null)
 
   useEffect(() => {
     if (!fileUrl || !enabled) return
     let cancelled = false
     setBlobUrl(null)
     setError(false)
+    setProgress(null)
 
-    acquireFileBlobUrl(fileUrl)
+    const onProgress = (percent: number | null) => { if (!cancelled) setProgress(percent) }
+
+    acquireFileBlobUrl(fileUrl, onProgress)
       .then(url => {
         if (!cancelled) setBlobUrl(url)
       })
@@ -38,11 +43,11 @@ export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = t
 
     return () => {
       cancelled = true
-      releaseFileBlobUrl(fileUrl)
+      releaseFileBlobUrl(fileUrl, onProgress)
     }
   }, [fileUrl, enabled])
 
-  return { blobUrl, error }
+  return { blobUrl, error, progress }
 }
 
 /** Скачивание "по клику" без предзагрузки на рендере — для карточек не-картиночных файлов,

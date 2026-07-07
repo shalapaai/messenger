@@ -16,7 +16,7 @@ function formatFileSize(bytes: number): string {
 function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }: Attachment) {
   const { t } = useTranslation()
   const isImage = fileContentType.startsWith('image/')
-  const { blobUrl, error } = useAuthedFileUrl(fileUrl, isImage)
+  const { blobUrl, error, progress } = useAuthedFileUrl(fileUrl, isImage)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
@@ -41,7 +41,17 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
         <div className={s.attachmentImageWrap} onClick={() => blobUrl && setLightboxOpen(true)}>
           {blobUrl
             ? <img src={blobUrl} alt={fileName} className={s.attachmentImage} />
-            : <div className={s.attachmentImageLoading} />
+            : (
+              <div className={s.attachmentImageLoading}>
+                <div className={s.attachmentProgress}>
+                  <div
+                    className={progress === null ? `${s.attachmentProgressBar} ${s.attachmentProgressIndeterminate}` : s.attachmentProgressBar}
+                    style={progress === null ? undefined : { width: `${progress}%` }}
+                  />
+                </div>
+                {progress !== null && <span className={s.attachmentProgressLabel}>{progress}%</span>}
+              </div>
+            )
           }
         </div>
         {lightboxOpen && blobUrl && (
