@@ -11,9 +11,7 @@ public sealed class RealtimeModule : IModuleInstaller
 {
     public void Install(IServiceCollection services, IConfiguration configuration)
     {
-        // SignalR + Redis backplane регистрируется в Program.cs после всех модулей
-        // потому что требует AddSignalR().AddStackExchangeRedis() в одной цепочке.
-        // Здесь регистрируем только MediatR-хэндлеры доменных событий.
+        // SignalR + Redis backplane регистрируется в Program.cs (нужна единая цепочка AddSignalR().AddStackExchangeRedis()).
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(RealtimeModule).Assembly));
     }
 }

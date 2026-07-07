@@ -47,14 +47,18 @@ public sealed class GetChatsQueryHandler(
             .Distinct()
             .ToList();
 
-        var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(otherUserIds, ct);
+        // Независимые вызовы в разные хранилища (UsersDbContext и Redis) — безопасно параллелить,
+        // как и в GetChatByIdQueryHandler.
+        var summariesTask = usersModule.GetSummariesByAuthUserIdsAsync(otherUserIds, ct);
+        var onlineTask     = presence.GetOnlineAsync(otherUserIds, ct);
+        await Task.WhenAll(summariesTask, onlineTask);
+
+        var summariesResult = summariesTask.Result;
         if (summariesResult.IsFailure)
             return Result.Failure<List<ChatSummaryDto>>(summariesResult.Error);
 
         var userSummaries = summariesResult.Value!;
-
-        // Текущий онлайн-статус собеседников — presence пишет MessengerHub при подключении
-        var onlineUserIds = await presence.GetOnlineAsync(otherUserIds, ct);
+        var onlineUserIds = onlineTask.Result;
 
         var result = chats
             .Select(c =>
@@ -82,12 +86,8 @@ public sealed class GetChatsQueryHandler(
                 }
                 else if (c.Type == ChatType.Group)
                 {
-                    // "прочитано хотя бы одним из остальных участников" — та же приблизительная
-                    // семантика, что уже применяется live через SignalR-событие MessagesRead
-                    // (chatsStore.handleMessagesRead просто запоминает последнее чтение любого
-                    // не-себя). Без этого чекмарки "прочитано" в группах после перезагрузки
-                    // страницы откатывались на "отправлено", хотя во время сессии уже стояли
-                    // двойной галочкой.
+                    // "Прочитано хотя бы одним из остальных" — та же семантика, что и в live-событии
+                    // MessagesRead, иначе чекмарки откатывались бы на "отправлено" после перезагрузки.
                     otherMemberLastReadAt = c.Members
                         .Where(m => m.UserId != query.CurrentUserId)
                         .Select(m => m.LastReadAt)

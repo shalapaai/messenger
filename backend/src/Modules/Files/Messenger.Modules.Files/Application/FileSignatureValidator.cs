@@ -1,8 +1,6 @@
 namespace Messenger.Modules.Files.Application;
 
-// Проверка "magic bytes" — защита от подмены Content-Type: клиент может объявить
-// произвольный заголовок (например, "application/pdf" для файла "invoice.pdf.exe"),
-// а этот класс сверяет заявленный тип с реальным содержимым файла.
+// Проверка "magic bytes" — защита от подмены Content-Type (например, exe с заголовком application/pdf).
 internal static class FileSignatureValidator
 {
     private static readonly Dictionary<string, Func<byte[], bool>> Signatures =

@@ -140,9 +140,7 @@ export function ChatListPanel({
     <aside
       className={`${s.chatListPanel} ${activeId ? s.chatListPanelHidden : ''}`}
     >
-      <div className={s.clHeader}>
-        {/* <h2 className={s.clTitle}>{t('messenger.messages')}</h2> */}
-      </div>
+      <div className={s.clHeader} />
 
       <div className={s.clSearch}>
         <span className={s.clSearchIcon}>🔍</span>

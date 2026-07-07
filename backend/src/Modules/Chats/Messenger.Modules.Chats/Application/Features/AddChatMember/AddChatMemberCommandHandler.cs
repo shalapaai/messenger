@@ -43,9 +43,8 @@ public sealed class AddChatMemberCommandHandler(
         }
         catch (DbUpdateException)
         {
-            // TOCTOU: два одновременных add-member на одного userId оба проходят проверку выше —
-            // второй SaveChangesAsync падает на составном PK (chat_id, user_id). Превращаем в ту же
-            // дружелюбную ошибку валидации, а не 500.
+            // TOCTOU: параллельный add-member падает на составном PK (chat_id, user_id) —
+            // превращаем в ту же дружелюбную ошибку валидации, а не 500.
             return Result.Failure(Error.Validation("UserId", "User is already a member of this chat"));
         }
 

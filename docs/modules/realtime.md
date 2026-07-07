@@ -1,188 +1,96 @@
-# Модуль Realtime
+# Модуль Realtime — WebSocket / SignalR
 
-Обеспечивает **общение в реальном времени** через SignalR WebSocket. Получает доменные события от модуля Messages и рассылает их подключённым клиентам.
+## Что делает
+
+Обеспечивает работу в реальном времени: мгновенная доставка новых сообщений, индикатор набора текста, онлайн-статус.
 
 ## Подключение
 
 ```
-ws://localhost:8080/hubs/messenger?access_token=<jwt>
+WebSocket URL: ws://host/hubs/messenger
+Требует: Authorization: Bearer <jwt_token>
 ```
 
-JWT передаётся в query string — браузеры не могут задать заголовок `Authorization` при WebSocket-upgrade. Сервер извлекает токен из `context.Request.Query["access_token"]`.
+## События от сервера к клиенту
 
-### Пример (JavaScript)
+| Событие | Данные | Когда |
+|---|---|---|
+| `ReceiveMessage` | messageId, chatId, senderId, senderName, senderAvatarUrl, content, sentAt, forwardedFromUserId, forwardedFromUserName, replyToMessageId, replyToSenderName, replyToContent | Новое сообщение в чате (обычное, пересланное или ответ — форвард/reply-поля `null`, если неприменимо) |
+| `MessageEdited` | messageId, chatId, newContent, editedAt | Сообщение отредактировано |
+| `MessageDeleted` | messageId, chatId | Сообщение удалено |
+| `MessagesRead` | chatId, readerId, readAt | Участник прочитал чат до момента `readAt` (см. [Chats — Прочитано](chats.md#прочитано-read-receipts-реальное-время)) |
+| `UserTyping` | userId, chatId | Пользователь начал печатать |
+| `UserStoppedTyping` | userId, chatId | Пользователь перестал печатать |
+| `UserOnline` | userId, isOnline | Пользователь подключился/отключился (рассылается во все ЧАТЫ пользователя, см. ниже) |
 
-```javascript
-import * as signalR from "@microsoft/signalr";
+## Методы от клиента к серверу
 
-const connection = new signalR.HubConnectionBuilder()
-  .withUrl("http://localhost:8080/hubs/messenger", {
-    accessTokenFactory: () => localStorage.getItem("accessToken")
-  })
-  .withAutomaticReconnect()
-  .build();
+| Метод | Параметры | Описание |
+|---|---|---|
+| `JoinChat` | chatId | Подписаться на сообщения чата (только если состоишь в нём — иначе `HubException`) |
+| `LeaveChat` | chatId | Отписаться от чата |
+| `SendMessage` | chatId, content, replyToMessageId | Отправить сообщение (альтернатива HTTP, та же проверка членства) |
+| `StartTyping` | chatId | Начать показывать "печатает..." (требует членства) |
+| `StopTyping` | chatId | Убрать "печатает..." (требует членства) |
 
-await connection.start();
-```
+`JoinChat`/`StartTyping`/`StopTyping` проверяют членство через `IChatMembershipChecker` напрямую в хабе (они не идут через MediatR-команды Messages-модуля, поэтому проверка здесь не наследуется автоматически).
 
-## ChatHub
+## Фронтенд: клиент SignalR
 
-Основной хаб. Требует авторизации.
+- `frontend/src/shared/api/signalrClient.ts` — синглтон-обёртка над `@microsoft/signalr`; каждое серверное событие — отдельный метод `on<Event>(handler) → () => void` (отписка), включая `onMessageEdited`, `onMessageDeleted`, `onMessagesRead`
+- `frontend/src/shared/api/useSignalR.ts` — React-хук поверх клиента; принимает набор `on...`-колбэков через `options`, подписывает/отписывает их в `useEffect`. `sendMessage`/`startTyping`/`stopTyping`, которые он отдаёт компоненту, мемоизированы через `useCallback` с пустым списком зависимостей (читают актуальный `chatId` из `useRef`, а не из замыкания) — без этого они пересоздавались бы на каждый рендер и тянули за собой лишние пересоздания всего, что от них зависит ниже по дереву
+- `frontend/src/pages/MessengerPage/hooks/useChatMessages.ts` — `handleDeletedMessage` убирает сообщение из локального состояния чата по `messageId` целиком (`filter`, не пометка — см. [Messages — Удаление сообщения](messages.md#удаление-сообщения-мягкое)); `handleEditedMessage` обновляет текст и ставит флажок `edited`; `handleIncomingMessage` перед добавлением сообщения проверяет `messageId` на дубликат (см. «Важно — двойная доставка» ниже) и обычно игнорирует собственные же сообщения — кроме пересланных копий, у которых нет локального оптимистичного добавления и которые поэтому должны появиться именно по этому realtime-событию
+- `frontend/src/shared/api/chatsStore.ts` — `handleMessagesRead` обновляет `chat.otherReadAt` при получении `MessagesRead` от **другого** участника (событие о собственном прочтении с другого устройства игнорируется — оно не про статус "прочитано собеседником")
 
-### Методы, вызываемые клиентом
+## Группы (Groups)
 
-#### `JoinChat(chatId: string)`
+SignalR использует группы для адресной рассылки:
 
-Подписаться на обновления чата. Добавляет подключение в SignalR-группу `chat:{chatId}`.
+- `chat:{chatId}` — все подключённые участники конкретного чата, вступившие через `JoinChat`
+- `user:{userId}` — личная группа только своих подключений (вкладок/устройств) пользователя. В основном используется как счётчик подключений для presence (см. ниже), но `MessageSentEventHandler`, `MessageEditedEventHandler`, `MessageDeletedEventHandler` и `ChatReadEventHandler` **дополнительно** шлют туда же своё событие (`ReceiveMessage`/`MessageEdited`/`MessageDeleted`/`MessagesRead`) всем участникам чата — на случай если чат только что создан и получатель ещё не успел вступить в `chat:{chatId}` через `JoinChat` (общая логика вынесена в `ChatFallback.BroadcastToMembersAsync`). Групповая рассылка и получение списка участников для fallback-рассылки запускаются параллельно (`Task.WhenAll`), а не последовательно — это независимые операции
 
-```javascript
-await connection.invoke("JoinChat", "3fa85f64-5717-4562-b3fc-2c963f66afa6");
-```
+**Принудительный выход из группы при исключении.** Когда участника удаляют из группового чата (`RemoveChatMember`) или он выходит сам, `ChatUpdatedEventHandler` проверяет через `IChatMembershipChecker`, кто из затронутых пользователей больше не состоит в чате, и принудительно выводит их **живые** SignalR-соединения из группы `chat:{chatId}` (`Groups.RemoveFromGroupAsync`). Для этого `IPresenceTracker.GetConnectionsAsync` (Shared.Kernel, Redis-реализация — набор connectionId пользователя, обновляемый в `OnConnectedAsync`/`OnDisconnectedAsync`) отдаёт все текущие connectionId пользователя. Без этого исключённый участник продолжал бы получать `ReceiveMessage`/`MessageEdited`/... для чата, из которого его только что удалили, пока сам не переподключится.
 
-Вызывать при открытии чата. Только после этого клиент будет получать новые сообщения.
+> **Важно — двойная доставка.** `ConnectedLayout` на фронтенде вступает в SignalR-группы **всех** чатов пользователя сразу при подключении (см. ниже). Значит для уже существующих (не только что созданных) чатов получатель почти всегда состоит **и** в `chat:{chatId}`, **и** в своей `user:{userId}` — и получает одно и то же `ReceiveMessage` **дважды**: один раз через рассылку в группу чата, второй раз через персональную рассылку. Серверная логика это не фильтрует (не отслеживает, кто в какой SignalR-группе уже состоит — это недёшево сделать надёжно). Решение — дедупликация на клиенте по `messageId`: и `useChatMessages.ts → handleIncomingMessage`, и `chatsStore.ts → handleNewMessage` перед добавлением сообщения проверяют, не обработали ли уже такой `messageId` (в сторе чатов — сравнением с `chat.lastMessageId`), и тихо игнорируют повтор. Без этой проверки в каждом чате задваивались бы все входящие сообщения.
 
-#### `LeaveChat(chatId: string)`
+## Presence и жизненный цикл подключения
 
-Отписаться от обновлений чата. Вызывать при закрытии чата.
-
-```javascript
-await connection.invoke("LeaveChat", "3fa85f64-5717-4562-b3fc-2c963f66afa6");
-```
-
-#### `SendMessage(request)`
-
-Отправить сообщение через WebSocket (альтернатива REST `POST /api/chats/{id}/messages`).
-
-```javascript
-const result = await connection.invoke("SendMessage", {
-  chatId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  content: "Привет!",
-  replyToMessageId: null
-});
-// result: { messageId: "uuid" }
-```
-
-Используется тот же `SendMessageCommand` — через MediatR `ISender`.
-
-#### `StartTyping(chatId: string)`
-
-Уведомить других участников чата, что пользователь печатает.
-
-```javascript
-// Вызывать при вводе текста (с debounce ~500ms)
-await connection.invoke("StartTyping", chatId);
-```
-
-#### `StopTyping(chatId: string)`
-
-Убрать индикатор печати.
-
-```javascript
-await connection.invoke("StopTyping", chatId);
-```
-
-### События от сервера
-
-#### `ReceiveMessage`
-
-Новое сообщение в чате. Приходит всем участникам группы `chat:{chatId}`.
-
-```javascript
-connection.on("ReceiveMessage", (payload) => {
-  // payload:
-  // {
-  //   messageId: "uuid",
-  //   chatId: "uuid",
-  //   senderId: "uuid",
-  //   content: "Привет!",
-  //   sentAt: "2026-06-25T10:00:00Z"
-  // }
-  addMessageToChat(payload);
-});
-```
-
-**Источник**: `MessageSentEventHandler` перехватывает `MessageSentDomainEvent` → рассылает группе.
-
-#### `MessageEdited`
-
-Сообщение отредактировано.
-
-```javascript
-connection.on("MessageEdited", (payload) => {
-  // { messageId, chatId, newContent }
-  updateMessageInChat(payload);
-});
-```
-
-#### `UserTyping`
-
-Другой пользователь начал печатать.
-
-```javascript
-connection.on("UserTyping", ({ userId, chatId }) => {
-  showTypingIndicator(userId, chatId);
-});
-```
-
-#### `UserStoppedTyping`
-
-```javascript
-connection.on("UserStoppedTyping", ({ userId, chatId }) => {
-  hideTypingIndicator(userId, chatId);
-});
-```
-
-#### `UserOnline`
-
-Пользователь подключился или отключился.
-
-```javascript
-connection.on("UserOnline", ({ userId, isOnline }) => {
-  updateUserStatus(userId, isOnline);
-});
-```
-
-Отправляется в личную группу `user:{userId}` при `OnConnectedAsync` и `OnDisconnectedAsync`.
-
-## Поток сообщений
+Статус "онлайн" — это не просто факт одного соединения, а счётчик активных подключений пользователя (вкладки/устройства), который хранит `IPresenceTracker` (Shared.Kernel, Redis-реализация). Онлайн/оффлайн объявляется только когда счётчик переходит **0 ↔ 1**, а не на каждое открытие вкладки.
 
 ```
-Клиент A → SendMessage (REST или WS)
-    ↓
-Messages модуль → SaveChangesAsync
-    ↓
-MessagesDbContext публикует MessageSentDomainEvent
-    ↓
-MessageSentEventHandler (MediatR handler)
-    ↓
-ChatHub.Clients.Group("chat:{chatId}").ReceiveMessage(payload)
-    ↓
-Клиент B (в той же группе) получает ReceiveMessage
+OnConnected:
+  → пользователь добавляется в группу user:{userId} (только свои подключения)
+  → IPresenceTracker.ConnectAsync(userId, connectionId) — добавляет connectionId в Redis SET
+  → если счётчик стал 1 (было 0 подключений) — BroadcastOnlineStatus(true):
+      запросить у IChatsModule все chatId пользователя →
+      разослать UserOnline(isOnline: true) в группы chat:{id} каждого из них
+
+OnDisconnected:
+  → пользователь удаляется из группы user:{userId}
+  → IPresenceTracker.DisconnectAsync(userId, connectionId) — убирает connectionId из SET
+  → если счётчик дошёл до 0 — BroadcastOnlineStatus(false) аналогично выше
 ```
 
-## Конфигурация
+`UserOnline` рассылается в группы ЧАТОВ пользователя (`chat:{id}`), куда его собеседники уже вступили через `JoinChat` — не в группу `user:{userId}`, в которую кроме самого пользователя никто не входит и куда событие физически не могло бы дойти до собеседников.
 
-```csharp
-// Program.cs
-builder.Services.AddSignalR(opts =>
-{
-    opts.MaximumReceiveMessageSize = 32 * 1024; // 32 KB
-    opts.ClientTimeoutInterval    = TimeSpan.FromSeconds(60);
-    opts.KeepAliveInterval        = TimeSpan.FromSeconds(15);
-})
-.AddStackExchangeRedis(redisConnectionString, opts =>
-{
-    opts.Configuration.ChannelPrefix = RedisChannel.Literal("messenger");
-});
+**Отказоустойчивость счётчика.** `RedisPresenceTracker` ставит защитный TTL (24 часа) на ключ множества при каждом подключении — если инстанс упадёт/передеплоится и `OnDisconnectedAsync` для зависших соединений так и не выполнится, множество не останется в Redis навсегда, а самоисцелится по истечении TTL. Дополнительно `OnDisconnectedAsync` оборачивает удаление connectionId в `try/finally` вокруг удаления из SignalR-группы — чтобы кратковременный сбой связи с Redis-backplane не пропустил сам декремент и не завысил счётчик онлайна навсегда.
+
+Дополнительно: `GetChatsQueryHandler` (см. [Chats](chats.md)) читает текущее состояние `IPresenceTracker` напрямую при отдаче списка чатов — иначе клиент не узнал бы, что собеседник уже онлайн, до первого изменения его статуса после открытия приложения.
+
+## Цепочка доставки сообщения
+
 ```
-
-Redis backplane: все инстансы API видят broadcast-сообщения друг друга → горизонтальное масштабирование работает без изменений в коде.
-
-## Группы SignalR
-
-| Группа | Назначение |
-|---|---|
-| `chat:{chatId}` | Рассылка сообщений конкретного чата |
-| `user:{userId}` | Личные уведомления пользователя |
-
-Пользователь входит в группы явно через `JoinChat`. При разрыве соединения SignalR автоматически удаляет его из всех групп.
+Клиент отправляет сообщение (HTTP или WebSocket)
+  ↓
+SendMessageCommandHandler проверяет членство (IChatMembershipChecker) → сохраняет в БД
+  ↓
+MessagesDbContext.SaveChanges публикует MessageSentDomainEvent через MediatR
+  ↓
+MessageSentEventHandler (Realtime модуль) получает событие
+  ↓
+Резолвит имя/аватар отправителя через IUsersModule.GetSummariesByAuthUserIdsAsync()
+  ↓
+Отправляет "ReceiveMessage" (с senderName/senderAvatarUrl) всем в группе chat:{chatId} через SignalR
+  ↓
+Все подключённые участники получают сообщение мгновенно
+```

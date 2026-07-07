@@ -27,6 +27,7 @@ public sealed class UpdateUserProfileCommandHandler(
             profile.SetAvatarColor(command.AvatarColor);
 
         profile.Update(command.DisplayName, command.Status, command.Phone, command.City, command.Department);
+        profile.NotifyProfileUpdated();
         repository.Update(profile);
         await unitOfWork.SaveChangesAsync(ct);
 

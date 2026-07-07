@@ -19,10 +19,14 @@ public sealed class MessageDeletedEventHandler(
             chatId    = notification.ChatId
         };
 
-        await hubContext.Clients
+        var membersTask = chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
+
+        var groupSendTask = hubContext.Clients
             .Group(MessengerHub.ChatGroup(notification.ChatId))
             .SendAsync("MessageDeleted", payload, ct);
 
-        await ChatFallback.BroadcastToMembersAsync(hubContext, chatsModule, notification.ChatId, "MessageDeleted", payload, ct);
+        await Task.WhenAll(
+            groupSendTask,
+            ChatFallback.BroadcastToMembersAsync(hubContext, membersTask, "MessageDeleted", payload, ct));
     }
 }

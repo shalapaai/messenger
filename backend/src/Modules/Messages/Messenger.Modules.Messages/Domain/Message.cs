@@ -23,11 +23,8 @@ public sealed class Message : AggregateRoot<MessageId>
         SentAt = DateTime.UtcNow;
     }
 
-    // Монотонно возрастающий идентификатор вставки (DB identity) — используется ТОЛЬКО для
-    // курсорной пагинации как тай-брейкер к SentAt. Несколько сообщений могут получить
-    // одинаковый SentAt (например, быстрый цикл вставок при пересылке нескольких сообщений
-    // сразу — см. ForwardMessagesCommandHandler), и сортировка по одному только SentAt в
-    // таком случае может пропустить или задвоить сообщение на границе страницы.
+    // DB identity, монотонно возрастающий — тай-брейкер к SentAt для курсорной пагинации
+    // (несколько сообщений могут получить один SentAt при пересылке пачкой).
     public long Sequence { get; private set; }
 
     public Guid ChatId { get; private set; }
@@ -61,9 +58,8 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    // Одно сообщение может нести несколько вложений — отправлены ли они одним выбором файлов
-    // в чате или это единственный файл, путь один и тот же: без вложений отправить нельзя,
-    // подпись (caption) необязательна и относится ко всему сообщению целиком, а не к файлу
+    // Один и тот же путь для одного файла и для батча: без вложений отправить нельзя,
+    // caption необязателен и относится ко всему сообщению, а не к конкретному файлу.
     public static Result<Message> CreateWithAttachments(
         Guid chatId, Guid senderId, IReadOnlyList<MessageAttachment> attachments, string? caption = null)
     {
@@ -80,12 +76,8 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    // Пересланное сообщение — новая независимая копия в целевом чате, автор которой (SenderId) —
-    // тот, кто переслал, а не оригинальный отправитель. ForwardedFrom* только для подписи "Переслано от"
-    // на клиенте: редактирование/удаление копии подчиняется тем же правилам, что у обычного сообщения.
-    // Вложения копируются целиком (новые MessageAttachment с новыми Id — owned-сущность нельзя
-    // разделить между двумя родителями), иначе пересылка файла без подписи теряла бы вложение
-    // (пустой Content без вложений не проходил бы валидацию и копия молча дропалась).
+    // Независимая копия в целевом чате; SenderId — тот, кто переслал, ForwardedFrom* — только для
+    // подписи "Переслано от". Вложения копируются с новыми Id — owned-сущность нельзя делить между родителями.
     public static Result<Message> CreateForwarded(
         Guid targetChatId, Guid forwarderId, string content, IReadOnlyList<MessageAttachment> attachments,
         Guid originalMessageId, Guid originalSenderId)

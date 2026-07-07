@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useState,
@@ -126,13 +127,15 @@ export function ChatWindow({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  function scrollToMessage(msgId: string) {
+  // Стабильные ссылки (useCallback) — передаются в мемоизированный MessageList, чтобы
+  // ввод текста в поле сообщения не пересоздавал их и не перерисовывал весь список.
+  const scrollToMessage = useCallback((msgId: string) => {
     const el = messagesRef.current?.querySelector(`[data-message-id="${CSS.escape(msgId)}"]`) as HTMLElement | null
     if (!el) return
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setHighlightedMsgId(msgId)
     setTimeout(() => setHighlightedMsgId(null), 1200)
-  }
+  }, [messagesRef])
 
   // per-chat состояние (выделение/редактирование/ответ/мобильная раскладка ввода/очередь файлов)
   // не нужно сбрасывать вручную при смене чата — MessengerPage.tsx монтирует ChatWindow с
@@ -161,7 +164,16 @@ export function ChatWindow({
     }
   }, [contextMenu, messagesRef])
 
-  function openContextMenu(e: MouseEvent, msg: Message) {
+  const toggleSelect = useCallback((msg: Message) => {
+    if (!msg.messageId) return
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(msg.id)) next.delete(msg.id); else next.add(msg.id)
+      return next
+    })
+  }, [])
+
+  const openContextMenu = useCallback((e: MouseEvent, msg: Message) => {
     // Сообщение без messageId — ещё отправляется или не отправилось; меню для него имеет смысл
     // только чтобы удалить черновик (см. ContextMenu: остальные пункты требуют messageId)
     if (!msg.messageId && msg.status !== 'failed') return
@@ -173,7 +185,7 @@ export function ChatWindow({
       return
     }
     setContextMenu({ x: e.clientX, y: e.clientY, msg })
-  }
+  }, [selectMode, selectedIds, toggleSelect])
 
   function startEdit(msg: Message) {
     cancelReply()
@@ -221,14 +233,6 @@ export function ChatWindow({
     setSelectedIds(new Set())
   }
 
-  function toggleSelect(msg: Message) {
-    if (!msg.messageId) return
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(msg.id)) next.delete(msg.id); else next.add(msg.id)
-      return next
-    })
-  }
 
   function requestBulkDelete() {
     if (selectedIds.size === 0) return

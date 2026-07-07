@@ -94,9 +94,8 @@ internal sealed class FilesModuleApi(
             return Result.Failure<string>(
                 Error.Validation("ContentType", "File content does not match declared type"));
 
-        // Сначала грузим новый файл и только при успехе удаляем старый — если бы порядок был
-        // обратным, а загрузка нового упала (сеть/лимит хранилища), группа осталась бы без
-        // аватарки: старый файл уже стёрт, а новый так и не появился
+        // Сначала грузим новый файл и только при успехе удаляем старый — иначе неудачная загрузка
+        // оставила бы группу без аватарки вовсе.
         var existing = await fileRepository.GetGroupAvatarByChatIdAsync(chatId, ct);
 
         var uploadResult = await fileStorage.UploadAsync(content, fileName, contentType, ct);
