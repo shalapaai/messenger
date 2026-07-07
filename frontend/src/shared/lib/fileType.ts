@@ -72,3 +72,14 @@ export function isAllowedAttachment(file: File): boolean {
   // файл без расширения (или с незнакомым) — доверяем MIME-типу, если браузер его распознал
   return file.type.startsWith('image/') || file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf'
 }
+
+// Должно соответствовать AvatarReplace.AllowedMimeTypes на бэкенде — уже без SVG (в отличие от
+// вложений чата): аватарки рендерятся как <img src>, а неанимированный растровый набор проще
+// и безопаснее, чем разрешать SVG с потенциальным script/onload внутри.
+const ALLOWED_AVATAR_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif'])
+
+export function isAllowedAvatarImage(file: File): boolean {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (ext && ALLOWED_AVATAR_EXTENSIONS.has(ext)) return true
+  return file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/gif'
+}

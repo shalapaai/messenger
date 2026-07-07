@@ -128,6 +128,7 @@
     "departmentPlaceholder": "For example, Engineering",
     "errors": {
       "avatarTooLarge": "Avatar must not exceed 5 MB",
+      "avatarInvalidType": "Avatar must be an image (JPEG, PNG, WebP or GIF)",
       "loginTaken": "Username is already taken",
       "saveFailed": "Could not save profile. Please try again.",
       "displayNameRequired": "Enter display name",

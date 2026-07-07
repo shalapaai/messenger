@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { getCroppedImage } from '../../../shared/lib/image'
 import type { CroppedAreaPixels } from '../../../shared/lib/image'
+import { isAllowedAvatarImage } from '../../../shared/lib/fileType'
 import { profileApi } from '../../../shared/api/profileApi'
 import { useUserProfile } from '../../../shared/context/useUserProfile'
 import { AvatarCropModal } from '../AvatarCropModal'
@@ -51,6 +52,11 @@ function ProfileSetupForm() {
   }, [cropImageSrc])
 
   function handleAvatarChange(file: File) {
+    if (!isAllowedAvatarImage(file)) {
+      setError(t('profileSetup.errors.avatarInvalidType'))
+      return
+    }
+    setError('')
     setSelectedAvatarFile(file)
     setCropImageSrc(URL.createObjectURL(file))
   }

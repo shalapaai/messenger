@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AvatarUpload } from '../../profile/AvatarUpload'
 import { AvatarCropModal } from '../../profile/AvatarCropModal'
 import { getCroppedImage, type CroppedAreaPixels } from '../../../shared/lib/image'
+import { isAllowedAvatarImage } from '../../../shared/lib/fileType'
 import { profileApi } from '../../../shared/api/profileApi'
 import { AvatarColorPicker } from '../../../shared/ui/AvatarColorPicker'
 import type { UserProfile } from '../../../shared/types/user'
@@ -51,6 +52,11 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   const isLoginInvalid  = isLoginEmpty || isLoginBadFmt || !!loginError
 
   function handleAvatarChange(file: File) {
+    if (!isAllowedAvatarImage(file)) {
+      setFormError(t('profileSetup.errors.avatarInvalidType'))
+      return
+    }
+    setFormError('')
     setSelectedAvatarFile(file)
     setCropImageSrc(URL.createObjectURL(file))
   }

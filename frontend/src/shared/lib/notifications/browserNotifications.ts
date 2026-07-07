@@ -158,7 +158,10 @@ export async function syncPushSubscription(): Promise<boolean> {
 export async function unsubscribePushNotifications(): Promise<void> {
   if (!('serviceWorker' in navigator)) return
 
-  const registration = await navigator.serviceWorker.ready.catch(() => null)
+  // getRegistration(), not .ready — .ready waits indefinitely for an active worker and never
+  // resolves if one was never registered (e.g. notifications were never enabled on this device),
+  // which would hang logout forever instead of just skipping the (nonexistent) subscription.
+  const registration = await navigator.serviceWorker.getRegistration().catch(() => undefined)
   const subscription = await registration?.pushManager.getSubscription()
   if (!subscription) return
 

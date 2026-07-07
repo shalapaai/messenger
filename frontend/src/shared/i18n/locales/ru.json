@@ -128,6 +128,7 @@
     "departmentPlaceholder": "Например, Разработка",
     "errors": {
       "avatarTooLarge": "Размер аватарки не должен превышать 5 МБ",
+      "avatarInvalidType": "Аватарка должна быть изображением (JPEG, PNG, WebP или GIF)",
       "loginTaken": "Логин уже занят",
       "saveFailed": "Не удалось сохранить профиль. Попробуйте еще раз.",
       "displayNameRequired": "Введите имя пользователя",

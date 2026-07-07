@@ -38,7 +38,7 @@ export function EditGroupModal({ isOpen, chatId, currentName, currentAvatarUrl, 
 
 type EditGroupModalContentProps = Omit<EditGroupModalProps, 'isOpen'>
 
-type SaveError = 'name' | 'size' | 'avatarSavedNameFailed' | null
+type SaveError = 'name' | 'size' | 'type' | 'avatarSavedNameFailed' | null
 
 function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentColor, onClose, onSave, onAvatarUploaded }: EditGroupModalContentProps) {
   const { t } = useTranslation()
@@ -96,7 +96,11 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
               avatarPreview={avatarRemoved ? undefined : (avatarCrop.avatarPreview ?? currentAvatarUrl ?? undefined)}
               color={avatarColor}
               shape="square"
-              onChange={(file) => { setAvatarRemoved(false); avatarCrop.handleAvatarChange(file) }}
+              onChange={(file) => {
+                if (!avatarCrop.handleAvatarChange(file)) { setError('type'); return }
+                setAvatarRemoved(false)
+                setError(null)
+              }}
               onRemove={() => { avatarCrop.removeAvatar(); setAvatarRemoved(true) }}
             />
             <div className={s.colorPickerWrap}>
@@ -113,6 +117,7 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
             maxLength={100}
           />
           {error === 'size' && <p className={s.error}>{t('profileSetup.errors.avatarTooLarge')}</p>}
+          {error === 'type' && <p className={s.error}>{t('profileSetup.errors.avatarInvalidType')}</p>}
           {error === 'name' && <p className={s.error}>{t('messenger.updateGroupFailed')}</p>}
           {error === 'avatarSavedNameFailed' && <p className={s.error}>{t('group.avatarSavedNameFailed')}</p>}
           <div className={s.actions}>
