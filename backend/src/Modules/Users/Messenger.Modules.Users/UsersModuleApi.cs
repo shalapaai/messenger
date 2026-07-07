@@ -5,7 +5,6 @@ using Messenger.Modules.Users.Infrastructure;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-// Реализация публичного API модуля — вызывается другими модулями через IUsersModule
 internal sealed class UsersModuleApi(UsersDbContext dbContext) : IUsersModule
 {
     public async Task<Result<Dictionary<Guid, UserSummaryDto>>> GetSummariesByAuthUserIdsAsync(

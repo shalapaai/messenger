@@ -8,7 +8,6 @@ using Messenger.Modules.Realtime.Hubs;
 using Messenger.Modules.Users.Application.Contracts;
 using Microsoft.AspNetCore.SignalR;
 
-// Реагирует на доменное событие Messages-модуля и транслирует в WebSocket
 // Межмодульная связь через MediatR INotification — не прямой вызов
 public sealed class MessageSentEventHandler(
     IHubContext<MessengerHub> hubContext,

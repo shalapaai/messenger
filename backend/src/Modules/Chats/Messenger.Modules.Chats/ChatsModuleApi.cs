@@ -4,7 +4,6 @@ using Messenger.Modules.Chats.Application.Contracts;
 using Messenger.Modules.Chats.Domain;
 using Messenger.Shared.Kernel.Results;
 
-// Реализация публичного API модуля — вызывается другими модулями через IChatsModule
 internal sealed class ChatsModuleApi(IChatRepository chatRepository) : IChatsModule
 {
     public async Task<Result<List<Guid>>> GetChatIdsByUserIdAsync(Guid userId, CancellationToken ct = default)
