@@ -15,6 +15,12 @@ import styles from './ProfileSetupForm.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
+// должно совпадать с лимитами на бэкенде (CreateUserProfileCommandValidator)
+const DISPLAY_NAME_MAX_LENGTH = 100
+const STATUS_MAX_LENGTH = 200
+const PHONE_MAX_LENGTH = 20
+const CITY_MAX_LENGTH = 100
+const DEPARTMENT_MAX_LENGTH = 100
 
 function ProfileSetupForm() {
   const { t } = useTranslation()
@@ -38,10 +44,17 @@ function ProfileSetupForm() {
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false)
 
   const trimmedLogin = login.trim()
-  const isDisplayNameInvalid = hasTriedSubmit && !displayName.trim()
+  const isDisplayNameEmpty     = hasTriedSubmit && !displayName.trim()
+  const isDisplayNameTooLong   = displayName.trim().length > DISPLAY_NAME_MAX_LENGTH
+  const isDisplayNameInvalid   = isDisplayNameEmpty || isDisplayNameTooLong
   const isLoginEmpty   = hasTriedSubmit && !trimmedLogin
   const isLoginBadFmt  = hasTriedSubmit && !!trimmedLogin && !LOGIN_REGEX.test(trimmedLogin)
   const isLoginInvalid = isLoginEmpty || isLoginBadFmt || !!loginError
+  const isStatusTooLong     = status.trim().length     > STATUS_MAX_LENGTH
+  const isPhoneTooLong      = phone.trim().length      > PHONE_MAX_LENGTH
+  const isCityTooLong       = city.trim().length       > CITY_MAX_LENGTH
+  const isDepartmentTooLong = department.trim().length > DEPARTMENT_MAX_LENGTH
+  const hasOptionalFieldError = isStatusTooLong || isPhoneTooLong || isCityTooLong || isDepartmentTooLong
 
   useEffect(() => {
     return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }
@@ -82,7 +95,9 @@ function ProfileSetupForm() {
     event.preventDefault()
     setHasTriedSubmit(true)
 
-    if (!displayName.trim() || !LOGIN_REGEX.test(trimmedLogin)) return
+    // Ни один запрос не уходит, пока хоть одно поле (даже необязательное) невалидно —
+    // иначе бэкенд может успеть сохранить часть полей до того, как найдёт невалидное
+    if (!displayName.trim() || isDisplayNameTooLong || !LOGIN_REGEX.test(trimmedLogin) || hasOptionalFieldError) return
 
     if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
       setError(t('profileSetup.errors.avatarTooLarge'))
@@ -94,9 +109,18 @@ function ProfileSetupForm() {
     setIsLoading(true)
 
     try {
-      // Создаём профиль; 409 ProfileAlreadyExists — игнорируем и продолжаем
+      // Создаём профиль одним атомарным запросом (все поля сразу, включая необязательные) —
+      // 409 ProfileAlreadyExists означает, что он уже был создан в прошлой успешной попытке
       try {
-        await profileApi.create({ displayName: displayName.trim(), login: trimmedLogin, avatarColor })
+        await profileApi.create({
+          displayName: displayName.trim(),
+          login: trimmedLogin,
+          avatarColor,
+          status:     status.trim()     || undefined,
+          phone:      phone.trim()      || undefined,
+          city:       city.trim()       || undefined,
+          department: department.trim() || undefined,
+        })
       } catch (createErr) {
         if (!axios.isAxiosError(createErr) || createErr.response?.status !== 409) {
           throw createErr
@@ -105,17 +129,6 @@ function ProfileSetupForm() {
           setLoginError(t('profileSetup.errors.loginTaken'))
           return
         }
-      }
-
-      // Обновляем опциональные поля (только непустые)
-      const optionalFields = {
-        status:     status.trim()     || undefined,
-        phone:      phone.trim()      || undefined,
-        city:       city.trim()       || undefined,
-        department: department.trim() || undefined,
-      }
-      if (Object.values(optionalFields).some(Boolean)) {
-        await profileApi.update(optionalFields)
       }
 
       if (croppedAvatarFile) {
@@ -165,9 +178,14 @@ function ProfileSetupForm() {
               aria-invalid={isDisplayNameInvalid}
               aria-describedby={isDisplayNameInvalid ? 'display-name-error' : undefined}
             />
-            {isDisplayNameInvalid && (
+            {isDisplayNameEmpty && (
               <span id="display-name-error" className={styles.fieldError}>
                 {t('profileSetup.errors.displayNameRequired')}
+              </span>
+            )}
+            {isDisplayNameTooLong && (
+              <span id="display-name-error" className={styles.fieldError}>
+                {t('profileSetup.errors.displayNameTooLong', { max: DISPLAY_NAME_MAX_LENGTH })}
               </span>
             )}
           </label>
@@ -210,49 +228,77 @@ function ProfileSetupForm() {
           <label className={styles.field}>
             <span className={styles.label}>{t('common.status')}</span>
             <input
-              className={styles.input}
+              className={`${styles.input} ${isStatusTooLong ? styles.inputError : ''}`}
               type="text"
               name="status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               placeholder={t('profileSetup.statusPlaceholder')}
+              aria-invalid={isStatusTooLong}
+              aria-describedby={isStatusTooLong ? 'status-error' : undefined}
             />
+            {isStatusTooLong && (
+              <span id="status-error" className={styles.fieldError}>
+                {t('profileSetup.errors.statusTooLong', { max: STATUS_MAX_LENGTH })}
+              </span>
+            )}
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>{t('common.phone')}</span>
             <input
-              className={styles.input}
+              className={`${styles.input} ${isPhoneTooLong ? styles.inputError : ''}`}
               type="text"
               name="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+7 000 000-00-00"
+              aria-invalid={isPhoneTooLong}
+              aria-describedby={isPhoneTooLong ? 'phone-error' : undefined}
             />
+            {isPhoneTooLong && (
+              <span id="phone-error" className={styles.fieldError}>
+                {t('profileSetup.errors.phoneTooLong', { max: PHONE_MAX_LENGTH })}
+              </span>
+            )}
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>{t('common.city')}</span>
             <input
-              className={styles.input}
+              className={`${styles.input} ${isCityTooLong ? styles.inputError : ''}`}
               type="text"
               name="city"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder={t('profileSetup.cityPlaceholder')}
+              aria-invalid={isCityTooLong}
+              aria-describedby={isCityTooLong ? 'city-error' : undefined}
             />
+            {isCityTooLong && (
+              <span id="city-error" className={styles.fieldError}>
+                {t('profileSetup.errors.cityTooLong', { max: CITY_MAX_LENGTH })}
+              </span>
+            )}
           </label>
 
           <label className={styles.field}>
             <span className={styles.label}>{t('common.department')}</span>
             <input
-              className={styles.input}
+              className={`${styles.input} ${isDepartmentTooLong ? styles.inputError : ''}`}
               type="text"
               name="department"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
               placeholder={t('profileSetup.departmentPlaceholder')}
+              aria-invalid={isDepartmentTooLong}
+              aria-describedby={isDepartmentTooLong ? 'department-error' : undefined}
             />
+            {isDepartmentTooLong && (
+              <span id="department-error" className={styles.fieldError}>
+                {t('profileSetup.errors.departmentTooLong', { max: DEPARTMENT_MAX_LENGTH })}
+              </span>
+            )}
           </label>
         </div>
 

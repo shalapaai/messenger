@@ -18,6 +18,10 @@ export interface CreateProfileData {
   displayName: string
   login?: string
   avatarColor?: string
+  status?: string
+  phone?: string
+  city?: string
+  department?: string
 }
 
 export interface UpdateProfileData {

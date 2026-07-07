@@ -7,7 +7,11 @@ public sealed record CreateUserProfileCommand(
     string  Email,
     string  DisplayName,
     string? Login,
-    string? AvatarColor) : ICommand<UserProfileDto>;
+    string? AvatarColor,
+    string? Status,
+    string? Phone,
+    string? City,
+    string? Department) : ICommand<UserProfileDto>;
 
 public sealed record UserProfileDto(
     Guid      UserId,
@@ -17,4 +21,7 @@ public sealed record UserProfileDto(
     string?   Status,
     string?   AvatarUrl,
     string    AvatarColor,
+    string?   Phone,
+    string?   City,
+    string?   Department,
     DateTime  CreatedAt);

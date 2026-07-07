@@ -132,8 +132,13 @@
       "loginTaken": "Username is already taken",
       "saveFailed": "Could not save profile. Please try again.",
       "displayNameRequired": "Enter display name",
+      "displayNameTooLong": "Maximum {{max}} characters",
       "loginRequired": "Enter username",
-      "loginFormat": "3-30 characters: letters, digits, and _"
+      "loginFormat": "3-30 characters: letters, digits, and _",
+      "statusTooLong": "Maximum {{max}} characters",
+      "phoneTooLong": "Maximum {{max}} characters",
+      "cityTooLong": "Maximum {{max}} characters",
+      "departmentTooLong": "Maximum {{max}} characters"
     }
   },
   "avatar": {

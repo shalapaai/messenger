@@ -132,8 +132,13 @@
       "loginTaken": "Логин уже занят",
       "saveFailed": "Не удалось сохранить профиль. Попробуйте еще раз.",
       "displayNameRequired": "Введите имя пользователя",
+      "displayNameTooLong": "Максимум {{max}} символов",
       "loginRequired": "Введите логин",
-      "loginFormat": "3–30 символов: буквы, цифры и _"
+      "loginFormat": "3–30 символов: буквы, цифры и _",
+      "statusTooLong": "Максимум {{max}} символов",
+      "phoneTooLong": "Максимум {{max}} символов",
+      "cityTooLong": "Максимум {{max}} символов",
+      "departmentTooLong": "Максимум {{max}} символов"
     }
   },
   "avatar": {
