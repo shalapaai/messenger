@@ -16,7 +16,7 @@ function formatFileSize(bytes: number): string {
 function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }: Attachment) {
   const { t } = useTranslation()
   const isImage = fileContentType.startsWith('image/')
-  const { blobUrl, error } = useAuthedFileUrl(fileUrl, isImage)
+  const { blobUrl, error, progress } = useAuthedFileUrl(fileUrl, isImage)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
@@ -41,7 +41,17 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
         <div className={s.attachmentImageWrap} onClick={() => blobUrl && setLightboxOpen(true)}>
           {blobUrl
             ? <img src={blobUrl} alt={fileName} className={s.attachmentImage} />
-            : <div className={s.attachmentImageLoading} />
+            : (
+              <div className={s.attachmentImageLoading}>
+                <div className={s.attachmentProgress}>
+                  <div
+                    className={progress === null ? `${s.attachmentProgressBar} ${s.attachmentProgressIndeterminate}` : s.attachmentProgressBar}
+                    style={progress === null ? undefined : { width: `${progress}%` }}
+                  />
+                </div>
+                {progress !== null && <span className={s.attachmentProgressLabel}>{progress}%</span>}
+              </div>
+            )
           }
         </div>
         {lightboxOpen && blobUrl && (
@@ -54,7 +64,20 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
               title={t('messenger.downloadFile')}
               onClick={(e) => { e.stopPropagation(); handleDownload() }}
             >
-              ⬇
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 3v12" />
+                <path d="M7 10l5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
             </button>
             <button type="button" className={s.lightboxClose} onClick={() => setLightboxOpen(false)}>✕</button>
           </div>

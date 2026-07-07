@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '../lib/auth/authTokens'
+import { acquireFileBlobUrl, releaseFileBlobUrl } from '../lib/fileBlobCache'
 
 // Вложения чатов (в отличие от аватарок) отдаются НЕ анонимно — бэкенд проверяет,
 // что скачивающий состоит в этом чате (см. DownloadFile в FilesEndpoints.cs). Обычный
@@ -14,33 +15,39 @@ async function fetchProtectedFileBlob(url: string): Promise<Blob> {
   return res.data
 }
 
-/** Резолвит защищённый fileUrl вложения в локальный blob-URL. Лениво: пока не понадобится
+/** Резолвит защищённый fileUrl вложения в локальный blob-URL, переиспользуя уже
+ *  скачанный blob из fileBlobCache — ChatWindow пересоздаётся при переключении
+ *  чата (key={chatId}), и без кэша это означало повторное скачивание тех же
+ *  картинок при каждом возврате в чат. Лениво: пока не понадобится
  *  (см. useLazyAuthedFileDownload) — просто передайте enabled=false. */
 export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = true) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [error,   setError]   = useState(false)
+  // null — процент неизвестен (сервер не прислал Content-Length) или загрузка ещё не началась.
+  const [progress, setProgress] = useState<number | null>(null)
 
   useEffect(() => {
     if (!fileUrl || !enabled) return
     let cancelled = false
-    let localUrl: string | null = null
+    setBlobUrl(null)
+    setError(false)
+    setProgress(null)
 
-    fetchProtectedFileBlob(fileUrl)
-      .then(blob => {
-        if (cancelled) return
-        localUrl = URL.createObjectURL(blob)
-        setBlobUrl(localUrl)
-        setError(false)
+    const onProgress = (percent: number | null) => { if (!cancelled) setProgress(percent) }
+
+    acquireFileBlobUrl(fileUrl, onProgress)
+      .then(url => {
+        if (!cancelled) setBlobUrl(url)
       })
       .catch(() => { if (!cancelled) setError(true) })
 
     return () => {
       cancelled = true
-      if (localUrl) URL.revokeObjectURL(localUrl)
+      releaseFileBlobUrl(fileUrl, onProgress)
     }
   }, [fileUrl, enabled])
 
-  return { blobUrl, error }
+  return { blobUrl, error, progress }
 }
 
 /** Скачивание "по клику" без предзагрузки на рендере — для карточек не-картиночных файлов,

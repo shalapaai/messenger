@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
+import { clearFileBlobCache } from '../../shared/lib/fileBlobCache'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { ThemeModeToggle } from '../../shared/ui/ThemeModeToggle'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
@@ -26,6 +27,7 @@ export function IconNav({ onProfileOpen, userInitials, userAvatarUrl, userAvatar
       await logout()
     } finally {
       clearAuthTokens()
+      clearFileBlobCache()
       clearProfile()
       navigate('/login')
     }
