@@ -36,6 +36,7 @@ public sealed class GetMessagesQueryHandler(
             .SelectMany(m => m.ForwardedFromUserId is { } fwId ? new[] { m.SenderId, fwId } : [m.SenderId])
             .Concat(replySources.Select(m => m.SenderId))
             .Concat(items.Where(m => m.TargetUserId.HasValue).Select(m => m.TargetUserId!.Value))
+            .Concat(items.SelectMany(m => m.Reactions.Select(r => r.UserId)))
             .Distinct()
             .ToList();
         var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(userIds, ct);
@@ -87,7 +88,20 @@ public sealed class GetMessagesQueryHandler(
                     m.Kind.ToString(),
                     m.SystemEventType?.ToString(),
                     m.TargetUserId,
-                    targetUserName);
+                    targetUserName,
+                    m.Reactions
+                        .OrderBy(r => r.CreatedAt)
+                        .Select(r =>
+                        {
+                            summaries.TryGetValue(r.UserId, out var reactionUser);
+                            return new MessageReactionDto(
+                                r.UserId,
+                                reactionUser?.DisplayName ?? "Пользователь",
+                                reactionUser?.AvatarUrl,
+                                reactionUser?.AvatarColor ?? "#2C5BF0",
+                                r.Emoji);
+                        })
+                        .ToList());
             })
             .ToList();
 

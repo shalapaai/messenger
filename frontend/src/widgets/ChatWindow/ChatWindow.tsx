@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
   type RefObject,
   type KeyboardEvent,
@@ -29,6 +30,16 @@ const MESSAGE_MAX_LENGTH = 4096
 // сотен коротких строк даёт вполне укладывающееся в лимит по символам, но нечитаемо длинное
 // сообщение на весь экран
 const MESSAGE_MAX_LINES = 30
+const QUICK_REACTIONS = ['❤️', '😂', '👍', '🔥', '😮', '😢', '👏']
+const REACTION_DETAILS_PANEL_WIDTH = 300
+const REACTION_DETAILS_PANEL_HEIGHT = 420
+const REACTION_DETAILS_PANEL_GAP = 8
+
+interface ReactionDetailsState {
+  msg: Message
+  mode: 'click' | 'hover'
+  position: { left: number; top: number } | null
+}
 
 interface ChatWindowProps {
   chatId: string
@@ -51,6 +62,7 @@ interface ChatWindowProps {
   onRetry: (msg: Message) => void
   onDelete: (msg: Message) => void
   onEdit: (msg: Message, newText: string) => void
+  onReact: (msg: Message, emoji: string | null) => void
   onBulkDelete: (msgs: Message[]) => void
   onForward: (msgs: Message[]) => void
   onTyping: () => void
@@ -68,7 +80,7 @@ export function ChatWindow({
   chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onSendFiles, onRetry, onDelete, onEdit, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
+  onSend, onSendFiles, onRetry, onDelete, onEdit, onReact, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
   onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
 }: ChatWindowProps) {
   const { t } = useTranslation()
@@ -81,11 +93,16 @@ export function ChatWindow({
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null)
   const [confirmDeleteMsg, setConfirmDeleteMsg] = useState<Message | null>(null)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+  const [reactionDetails, setReactionDetails] = useState<ReactionDetailsState | null>(null)
+  const reactionPreviewCloseTimerRef = useRef<number | null>(null)
 
   const attachments = useAttachmentQueue({ onSendFiles })
   const mobileInput = useMobileInputLayer()
 
   const hasMessages = messages.length > 0
+  const reactionDetailsMessage = reactionDetails?.msg.messageId
+    ? messages.find((msg) => msg.messageId === reactionDetails.msg.messageId) ?? reactionDetails.msg
+    : reactionDetails?.msg ?? null
   const lineCount = text.split('\n').length
   const isOverLength = text.length > MESSAGE_MAX_LENGTH
   const isOverLines  = lineCount > MESSAGE_MAX_LINES
@@ -144,7 +161,10 @@ export function ChatWindow({
 
   useEffect(() => {
     if (!contextMenu) return
-    const close = () => setContextMenu(null)
+    const close = () => {
+      setContextMenu(null)
+      setReactionDetails(null)
+    }
     const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') close() }
     const messagesEl = messagesRef.current
     window.addEventListener('click', close)
@@ -156,6 +176,12 @@ export function ChatWindow({
       messagesEl?.removeEventListener('scroll', close)
     }
   }, [contextMenu, messagesRef])
+
+  useEffect(() => () => {
+    if (reactionPreviewCloseTimerRef.current !== null) {
+      window.clearTimeout(reactionPreviewCloseTimerRef.current)
+    }
+  }, [])
 
   const openContextMenu = useCallback((e: MouseEvent, msg: Message) => {
     // Сообщение без messageId — ещё отправляется или не отправилось; меню для него имеет смысл
@@ -220,6 +246,68 @@ export function ChatWindow({
     if (selected.length === 0) return
     onForward(selected)
     selection.exitSelectMode()
+  }
+
+  function handleReactionSelect(msg: Message, emoji: string) {
+    const myReaction = msg.reactions?.find((reaction) => reaction.userId === meSender.senderId)
+    onReact(msg, myReaction?.emoji === emoji ? null : emoji)
+    setContextMenu(null)
+  }
+
+  function reactionDetailsPosition(anchor: DOMRect): ReactionDetailsState['position'] {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return null
+
+    const rightLeft = anchor.right + REACTION_DETAILS_PANEL_GAP
+    const leftLeft = anchor.left - REACTION_DETAILS_PANEL_WIDTH - REACTION_DETAILS_PANEL_GAP
+    const left = rightLeft + REACTION_DETAILS_PANEL_WIDTH <= window.innerWidth - 8
+      ? rightLeft
+      : Math.max(8, leftLeft)
+    const top = Math.max(
+      8,
+      Math.min(anchor.top, window.innerHeight - REACTION_DETAILS_PANEL_HEIGHT - 8),
+    )
+
+    return { left, top }
+  }
+
+  function clearReactionPreviewCloseTimer() {
+    if (reactionPreviewCloseTimerRef.current === null) return
+    window.clearTimeout(reactionPreviewCloseTimerRef.current)
+    reactionPreviewCloseTimerRef.current = null
+  }
+
+  function openReactionDetails(msg: Message, anchor: DOMRect) {
+    clearReactionPreviewCloseTimer()
+    setReactionDetails({ msg, mode: 'click', position: reactionDetailsPosition(anchor) })
+  }
+
+  function previewReactionDetails(msg: Message, anchor: DOMRect) {
+    clearReactionPreviewCloseTimer()
+    setReactionDetails({ msg, mode: 'hover', position: reactionDetailsPosition(anchor) })
+  }
+
+  function closeReactionPreview() {
+    if (reactionDetails?.mode !== 'hover') return
+    clearReactionPreviewCloseTimer()
+    reactionPreviewCloseTimerRef.current = window.setTimeout(() => {
+      reactionPreviewCloseTimerRef.current = null
+      setReactionDetails((current) => current?.mode === 'hover' ? null : current)
+    }, 120)
+  }
+
+  function openReactionUserProfile(reaction: NonNullable<Message['reactions']>[number]) {
+    onAvatarClick({
+      id: 0,
+      text: '',
+      own: false,
+      senderId: reaction.userId,
+      senderName: reaction.userName,
+      senderInitials: reaction.userName.slice(0, 2).toUpperCase(),
+      senderColor: reaction.userAvatarColor,
+      senderAvatarUrl: reaction.userAvatarUrl,
+      time: '',
+      sentAt: new Date().toISOString(),
+    })
   }
 
   async function send() {
@@ -408,6 +496,7 @@ export function ChatWindow({
               onContextMenu={openContextMenu}
               onRetry={onRetry}
               onScrollToMessage={scrollToMessage}
+              onReact={handleReactionSelect}
               onForwardedUserClick={onForwardedUserClick}
             />
 
@@ -573,14 +662,65 @@ export function ChatWindow({
         <ContextMenu
           state={contextMenu}
           canDeleteMessages={canDeleteMessages}
+          currentUserId={meSender.senderId}
           onReply={startReply}
           onEdit={startEdit}
           onForward={(msg) => { onForward([msg]); setContextMenu(null) }}
           onDelete={requestDelete}
           onSelect={enterSelectMode}
+          onReact={handleReactionSelect}
+          onOpenReactions={openReactionDetails}
+          onPreviewReactions={previewReactionDetails}
+          onCloseReactionPreview={closeReactionPreview}
+          quickReactions={QUICK_REACTIONS}
+          isGroup={meta.group}
           onBulkForward={() => { requestBulkForward(); setContextMenu(null) }}
           onBulkDelete={() => { requestBulkDelete(); setContextMenu(null) }}
         />
+      )}
+
+      {reactionDetailsMessage && (
+        <div
+          className={reactionDetails?.position ? s.reactionDetailsFloatingLayer : s.reactionDetailsOverlay}
+          onClick={() => {
+            if (reactionDetails?.mode === 'click' || !reactionDetails?.position) setReactionDetails(null)
+          }}
+        >
+          <div
+            className={`${s.reactionDetails} ${reactionDetails?.position ? s.reactionDetailsFloating : ''}`}
+            style={reactionDetails?.position ?? undefined}
+            onClick={(event) => event.stopPropagation()}
+            onMouseEnter={clearReactionPreviewCloseTimer}
+            onMouseLeave={closeReactionPreview}
+          >
+            <div className={s.reactionDetailsHeader}>
+              <h3>{t('reactions.title')}</h3>
+              <button type="button" className={s.reactionDetailsClose} onClick={() => setReactionDetails(null)}>✕</button>
+            </div>
+            <div className={s.reactionDetailsList}>
+              {(reactionDetailsMessage.reactions ?? []).map((reaction) => (
+                <button
+                  type="button"
+                  className={s.reactionDetailsRow}
+                  key={reaction.userId}
+                  onClick={() => openReactionUserProfile(reaction)}
+                >
+                  <span
+                    className={s.reactionDetailsAvatar}
+                    style={reaction.userAvatarUrl ? undefined : { background: reaction.userAvatarColor }}
+                  >
+                    {reaction.userAvatarUrl
+                      ? <AvatarImage src={reaction.userAvatarUrl} alt={reaction.userName} className={s.reactionDetailsAvatarImg} />
+                      : reaction.userName.slice(0, 2).toUpperCase()
+                    }
+                  </span>
+                  <span className={s.reactionDetailsName}>{reaction.userName}</span>
+                  <span className={s.reactionDetailsEmoji}>{reaction.emoji}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmDeleteMsg && (

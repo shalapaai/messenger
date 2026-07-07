@@ -68,6 +68,14 @@
     "newMessage": "New message",
     "attachmentMessage": "Attachment"
   },
+  "reactions": {
+    "quick": "Quick reactions",
+    "set": "React with {{emoji}}",
+    "remove": "Remove {{emoji}} reaction",
+    "details": "View reactions",
+    "count": "{{count}} reactions",
+    "title": "Reactions"
+  },
   "auth": {
     "loginTitle": "Sign in",
     "loginSubtitle": "Enter your details to continue messaging.",

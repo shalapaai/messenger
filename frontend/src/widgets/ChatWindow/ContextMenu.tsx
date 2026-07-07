@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { ReplyIcon, EditIcon, ForwardIcon, TrashIcon, SelectIcon } from './icons'
+import { AvatarImage } from '../../shared/ui/AvatarImage'
 import type { Message } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -10,17 +11,25 @@ export interface ContextMenuState { x: number; y: number; msg: Message; selectio
 interface ContextMenuProps {
   state: ContextMenuState
   canDeleteMessages: boolean
+  currentUserId: string
   onReply: (msg: Message) => void
   onEdit: (msg: Message) => void
   onForward: (msg: Message) => void
   onDelete: (msg: Message) => void
   onSelect: (msg: Message) => void
+  onReact: (msg: Message, emoji: string) => void
+  onOpenReactions: (msg: Message, anchor: DOMRect) => void
+  onPreviewReactions: (msg: Message, anchor: DOMRect) => void
+  onCloseReactionPreview: () => void
+  quickReactions: string[]
+  isGroup: boolean
   onBulkForward: () => void
   onBulkDelete: () => void
 }
 
 export function ContextMenu({
-  state, canDeleteMessages, onReply, onEdit, onForward, onDelete, onSelect, onBulkForward, onBulkDelete,
+  state, canDeleteMessages, currentUserId, onReply, onEdit, onForward, onDelete, onSelect, onReact,
+  onOpenReactions, onPreviewReactions, onCloseReactionPreview, quickReactions, isGroup, onBulkForward, onBulkDelete,
 }: ContextMenuProps) {
   const { t } = useTranslation()
   const { msg, selection } = state
@@ -29,13 +38,24 @@ export function ContextMenu({
   // (и оно не завязано на canDeleteMessages — это право удалять чужие/групповые сообщения,
   // а тут пользователь убирает свой же неотправленный черновик, который никто больше не видел)
   const isLocalOnly = !msg.messageId
+  const reactions = msg.reactions ?? []
+  const showReactionDetails = isGroup && reactions.length > 0 && !selection && !isLocalOnly
+  const menuHeight = selection
+    ? 88
+    : isLocalOnly
+      ? 56
+      : (msg.own ? 246 : 210) + (showReactionDetails ? 46 : 0)
+  const menuWidth = Math.min(240, window.innerWidth - 16)
+  const left = Math.max(8, Math.min(state.x, window.innerWidth - menuWidth - 8))
+  const top = Math.max(8, Math.min(state.y, window.innerHeight - menuHeight - 8))
 
   return (
     <div
       className={s.contextMenu}
+      onClick={(event) => event.stopPropagation()}
       style={{
-        left: Math.min(state.x, window.innerWidth - 190),
-        top:  Math.min(state.y, window.innerHeight - (selection ? 88 : isLocalOnly ? 56 : msg.own ? 192 : 156)),
+        left,
+        top,
       }}
     >
       {selection ? (
@@ -55,6 +75,22 @@ export function ContextMenu({
         </button>
       ) : (
         <>
+          <div className={s.contextReactionRow} role="group" aria-label={t('reactions.quick')}>
+            {quickReactions.map((emoji) => {
+              const selected = msg.reactions?.some((reaction) => reaction.userId === currentUserId && reaction.emoji === emoji)
+              return (
+                <button
+                  key={emoji}
+                  type="button"
+                  className={`${s.contextReactionBtn} ${selected ? s.contextReactionBtnActive : ''}`}
+                  onClick={() => onReact(msg, emoji)}
+                  aria-label={t('reactions.set', { emoji })}
+                >
+                  {emoji}
+                </button>
+              )
+            })}
+          </div>
           <button type="button" className={s.contextMenuItem} onClick={() => onReply(msg)}>
             <ReplyIcon />{t('messenger.replyMessage')}
           </button>
@@ -69,6 +105,40 @@ export function ContextMenu({
           <button type="button" className={s.contextMenuItem} onClick={() => onSelect(msg)}>
             <SelectIcon />{t('messenger.selectMessage')}
           </button>
+          {showReactionDetails && (
+            <button
+              type="button"
+              className={`${s.contextMenuItem} ${s.contextReactionSummary}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                onOpenReactions(msg, event.currentTarget.getBoundingClientRect())
+              }}
+              onMouseEnter={(event) => {
+                if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                  onPreviewReactions(msg, event.currentTarget.getBoundingClientRect())
+                }
+              }}
+              onMouseLeave={onCloseReactionPreview}
+            >
+              <span className={s.contextReactionSummaryIcon}>✺</span>
+              <span className={s.contextReactionSummaryText}>{t('reactions.count', { count: reactions.length })}</span>
+              <span className={s.contextReactionSummaryAvatars}>
+                {reactions.slice(0, 3).map((reaction) => (
+                  <span
+                    key={reaction.userId}
+                    className={s.contextReactionSummaryAvatar}
+                    style={reaction.userAvatarUrl ? undefined : { background: reaction.userAvatarColor }}
+                  >
+                    {reaction.userAvatarUrl
+                      ? <AvatarImage src={reaction.userAvatarUrl} alt={reaction.userName} className={s.contextReactionSummaryAvatarImg} />
+                      : reaction.userName.slice(0, 2).toUpperCase()
+                    }
+                  </span>
+                ))}
+              </span>
+              <span className={s.contextReactionSummaryArrow}>›</span>
+            </button>
+          )}
           {canDeleteMessages && (
             <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => onDelete(msg)}>
               <TrashIcon />{t('messenger.deleteMessage')}

@@ -107,9 +107,9 @@ export function MessengerPage() {
 
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
-    handleIncomingMessage, handleDeletedMessage, handleEditedMessage, handleUserProfileUpdated,
+    handleIncomingMessage, handleDeletedMessage, handleEditedMessage, handleUserProfileUpdated, handleReactionChanged,
     loadMoreHistory, loadingHistory, historyLoaded,
-    send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage,
+    send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage, setMessageReaction,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
@@ -146,6 +146,7 @@ export function MessengerPage() {
     onMessage: handleIncomingMessage,
     onMessageDeleted: handleDeletedMessage,
     onMessageEdited: handleEditedMessage,
+    onMessageReactionChanged: handleReactionChanged,
     onMessagesRead: (event) => handleMessagesRead(event.chatId, event.readerId, event.readAt),
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
@@ -479,6 +480,7 @@ export function MessengerPage() {
               onRetry={handleRetrySend}
               onDelete={handleDeleteMessage}
               onEdit={handleEditMessage}
+              onReact={(msg, emoji) => { if (id) void setMessageReaction(id, msg, emoji) }}
               onBulkDelete={handleBulkDeleteMessages}
               onForward={msgs => { if (id) setForwardState({ sourceChatId: id, messages: msgs }) }}
               onTyping={typingIndicator.handleOwnTyping}

@@ -18,6 +18,13 @@ public sealed record AttachmentDto(
     string ContentType,
     long   FileSizeBytes);
 
+public sealed record MessageReactionDto(
+    Guid   UserId,
+    string UserName,
+    string? UserAvatarUrl,
+    string UserAvatarColor,
+    string Emoji);
+
 public sealed record MessageDto(
     Guid      Id,
     Guid      ChatId,
@@ -38,4 +45,5 @@ public sealed record MessageDto(
     string    Kind,
     string?   SystemEventType,
     Guid?     TargetUserId,
-    string?   TargetUserName);
+    string?   TargetUserName,
+    List<MessageReactionDto> Reactions);
