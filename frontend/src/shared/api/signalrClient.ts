@@ -30,6 +30,10 @@ export interface IncomingMessage {
   replyToMessageId?: string | null
   replyToSenderName?: string | null
   replyToContent?: string | null
+  kind?: 'Text' | 'System'
+  systemEventType?: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved'
+  targetUserId?: string | null
+  targetUserName?: string | null
 }
 
 export interface MessageEdited {

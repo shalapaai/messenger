@@ -214,6 +214,9 @@
 
 .dateSepLabel { font-size: 12px; font-weight: 700; color: var(--color-text-faint); background: var(--color-border); padding: 4px 14px; border-radius: 20px; }
 
+.systemMsgName { cursor: pointer; font-weight: 800; }
+.systemMsgName:hover { text-decoration: underline; }
+
 .msgRow {
   display: flex;
   flex-direction: row;

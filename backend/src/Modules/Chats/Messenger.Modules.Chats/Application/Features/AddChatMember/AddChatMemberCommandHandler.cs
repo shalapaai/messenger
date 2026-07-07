@@ -2,12 +2,15 @@ namespace Messenger.Modules.Chats.Application.Features.AddChatMember;
 
 using Messenger.Modules.Chats.Application;
 using Messenger.Modules.Chats.Domain;
+using Messenger.Modules.Messages.Application.Contracts;
+using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Abstractions;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
 public sealed class AddChatMemberCommandHandler(
     IChatRepository chatRepository,
+    IMessagesModule messagesModule,
     IUnitOfWork     unitOfWork)
     : ICommandHandler<AddChatMemberCommand>
 {
@@ -45,6 +48,9 @@ public sealed class AddChatMemberCommandHandler(
             // дружелюбную ошибку валидации, а не 500.
             return Result.Failure(Error.Validation("UserId", "User is already a member of this chat"));
         }
+
+        await messagesModule.CreateSystemMessageAsync(
+            command.ChatId, command.RequesterId, command.UserId, SystemEventType.MemberAdded, ct);
 
         return Result.Success();
     }

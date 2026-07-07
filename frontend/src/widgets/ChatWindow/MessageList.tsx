@@ -1,5 +1,5 @@
 import { type MouseEvent } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { MessageAttachments } from './MessageAttachment'
 import { CheckIcon } from './icons'
@@ -9,19 +9,42 @@ import s from './ChatWindow.module.css'
 
 type RenderedItem =
   | { type: 'sep'; label: string }
+  | { type: 'system'; msg: Message }
   | { type: 'msg'; msg: Message; showAvatar: boolean; showName: boolean; senderSwitch: boolean }
+
+function systemMessageKey(eventType: Message['systemEventType']): string | null {
+  switch (eventType) {
+    case 'MemberAdded':   return 'messenger.systemMemberAdded'
+    case 'MemberLeft':    return 'messenger.systemMemberLeft'
+    case 'MemberRemoved': return 'messenger.systemMemberRemoved'
+    default: return null
+  }
+}
 
 function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[] {
   const rendered: RenderedItem[] = []
   let lastDateKey = ''
   for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i], prev = messages[i - 1], next = messages[i + 1]
+    const msg = messages[i]
     // Группируем по стабильному, не зависящему от языка ключу календарного дня (а не по
     // готовой переведённой метке) — иначе сообщения, загруженные до и после смены языка
     // интерфейса, оказались бы в разных группах на один и тот же день (ровно тот баг:
     // "Сегодня" и "Today" одновременно). Саму метку считаем заново при каждом рендере.
     const key = dateKey(msg.sentAt)
     if (key !== lastDateKey) { rendered.push({ type: 'sep', label: formatDateLabel(msg.sentAt) }); lastDateKey = key }
+
+    if (msg.kind === 'System') {
+      rendered.push({ type: 'system', msg })
+      continue
+    }
+
+    // Системные сообщения не должны считаться "соседями" для группировки аватарок/имени —
+    // ищем ближайшее НЕ системное сообщение по обе стороны, а не просто messages[i ± 1]
+    let prev: Message | undefined
+    for (let j = i - 1; j >= 0; j--) { if (messages[j].kind !== 'System') { prev = messages[j]; break } }
+    let next: Message | undefined
+    for (let j = i + 1; j < messages.length; j++) { if (messages[j].kind !== 'System') { next = messages[j]; break } }
+
     rendered.push({
       type: 'msg', msg,
       showAvatar: !next || next.senderId !== msg.senderId,
@@ -67,7 +90,38 @@ export function MessageList({
           <div key={`sep-${i}`} className={s.dateSep}>
             <span className={s.dateSepLabel}>{item.label}</span>
           </div>
-        ) : (() => {
+        ) : item.type === 'system' ? (() => {
+          const i18nKey = systemMessageKey(item.msg.systemEventType)
+          if (!i18nKey) return null
+          // Если это сообщение обо мне самом — берём живое текущее имя (meSender), а не
+          // замороженное на момент доставки targetUserName: иначе переименование себя не
+          // отражалось бы в уже показанных "вышел/добавлен в группу" без перезахода в чат
+          const targetName = item.msg.targetUserId === meSender.senderId
+            ? meSender.senderName
+            : (item.msg.targetUserName ?? '')
+          return (
+            <div key={`system-${i}`} className={s.dateSep}>
+              <span className={s.dateSepLabel}>
+                <Trans
+                  i18nKey={i18nKey}
+                  values={{ name: targetName }}
+                  components={{
+                    user: item.msg.targetUserId ? (
+                      <span
+                        className={s.systemMsgName}
+                        onClick={() => onAvatarClick({
+                          ...item.msg,
+                          senderId:   item.msg.targetUserId!,
+                          senderName: targetName,
+                        })}
+                      />
+                    ) : <span />,
+                  }}
+                />
+              </span>
+            </div>
+          )
+        })() : (() => {
           const displaySender = item.msg.own
             ? { ...item.msg, senderColor: meSender.senderColor, senderAvatarUrl: meSender.senderAvatarUrl, senderInitials: meSender.senderInitials, senderName: meSender.senderName }
             : item.msg

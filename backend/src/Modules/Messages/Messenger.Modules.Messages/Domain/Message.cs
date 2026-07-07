@@ -41,6 +41,11 @@ public sealed class Message : AggregateRoot<MessageId>
     public Guid? ReplyToMessageId { get; private set; }
     public Guid? ForwardedFromMessageId { get; private set; }
     public Guid? ForwardedFromUserId { get; private set; }
+    public MessageKind Kind { get; private set; } = MessageKind.Text;
+    public SystemEventType? SystemEventType { get; private set; }
+    /// <summary>Только для Kind == System — кого именно добавили/удалили/кто вышел (SenderId
+    /// при этом — тот, кто выполнил действие: сам ушедший для MemberLeft, админ для остальных).</summary>
+    public Guid? TargetUserId { get; private set; }
 
     public static Result<Message> Create(Guid chatId, Guid senderId, string content, Guid? replyToMessageId = null)
     {
@@ -102,6 +107,23 @@ public sealed class Message : AggregateRoot<MessageId>
             message.Id.Value, targetChatId, forwarderId, message.Content, originalMessageId, originalSenderId,
             attachments: clonedAttachments));
         return Result.Success(message);
+    }
+
+    // Системное сообщение о смене состава группы (добавили/вышел/удалили) — Content не показывается
+    // пользователю напрямую (клиент строит локализованный текст из Kind/SystemEventType/TargetUserId),
+    // но должен быть непустым: колонка content в БД NOT NULL, как и у обычных сообщений.
+    public static Message CreateSystem(Guid chatId, Guid actorUserId, Guid targetUserId, SystemEventType eventType)
+    {
+        var message = new Message(MessageId.New(), chatId, actorUserId, $"system:{eventType}", null)
+        {
+            Kind = MessageKind.System,
+            SystemEventType = eventType,
+            TargetUserId = targetUserId,
+        };
+        message.RaiseDomainEvent(new MessageSentDomainEvent(
+            message.Id.Value, chatId, actorUserId, message.Content,
+            kind: MessageKind.System, systemEventType: eventType, targetUserId: targetUserId));
+        return message;
     }
 
     public Result Edit(Guid requesterId, string newContent)

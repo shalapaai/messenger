@@ -1,5 +1,6 @@
 namespace Messenger.Modules.Messages.Application.Contracts;
 
+using Messenger.Modules.Messages.Domain;
 using Messenger.Shared.Kernel.Results;
 
 public sealed record LastMessageDto(
@@ -13,7 +14,10 @@ public sealed record LastMessageDto(
     bool     HasAttachments,
     string?  FirstAttachmentUrl,
     string?  FirstAttachmentContentType,
-    string?  FirstAttachmentFileName);
+    string?  FirstAttachmentFileName,
+    // "System" — фронт показывает generic-заглушку вместо Content (тот не переведён и не
+    // предназначен для отображения, см. Message.CreateSystem)
+    string   Kind);
 
 public sealed record MessagePreviewDto(
     Guid   MessageId,
@@ -46,4 +50,9 @@ public interface IMessagesModule
     // "ещё ни разу не читал", тогда unread = все чужие сообщения в чате.
     Task<Result<Dictionary<Guid, int>>> GetUnreadCountsByChatIdsAsync(
         Guid userId, IReadOnlyDictionary<Guid, DateTime?> lastReadAtByChatId, CancellationToken ct = default);
+    // Персистит системное сообщение о смене состава группы (добавили/вышел/удалили) — вызывается
+    // Chats-модулем из AddChatMemberCommandHandler/RemoveChatMemberCommandHandler. actorUserId —
+    // кто выполнил действие (сам ушедший для MemberLeft), targetUserId — кого добавили/удалили.
+    Task<Result<Guid>> CreateSystemMessageAsync(
+        Guid chatId, Guid actorUserId, Guid targetUserId, SystemEventType eventType, CancellationToken ct = default);
 }

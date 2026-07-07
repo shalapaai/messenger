@@ -333,6 +333,18 @@ export function MessengerPage() {
     }
   }
 
+  // createDirectChat идемпотентен — если чат с этим пользователем уже есть, просто вернёт его id
+  async function handleOpenDirectChat(userId: string) {
+    setModalUser(null)
+    try {
+      const chatId = await createDirectChat(userId)
+      await loadChats()
+      navigate(`/chats/${chatId}`)
+    } catch {
+      // ignored
+    }
+  }
+
   async function handleLeaveGroup() {
     if (!id || !profile) return
     try {
@@ -519,7 +531,10 @@ export function MessengerPage() {
               onTyping={typingIndicator.handleOwnTyping}
               onBack={() => { discardInputHistoryLayer(); navigate('/chats') }}
               onHeaderClick={() => {
-                if (meta.group) { setGroupModalOpen(true); return }
+                // Открытие карточки группы — повод перезапросить участников заново, а не
+                // показывать закэшированный groupMembers: он не обновляется сам по себе, если
+                // кто-то (в т.ч. я сам) поменял имя/аватар/цвет, не меняя при этом состав чата
+                if (meta.group) { setGroupModalOpen(true); if (id) loadGroupMembers(id); return }
                 if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }
               }}
               onAvatarClick={msg => { setModalUserIsChatPartner(false); openUserModal(msg.senderId, msg.senderName, onlineStatuses[msg.senderId] ?? false) }}
@@ -580,6 +595,9 @@ export function MessengerPage() {
         user={modalUser}
         onClose={() => setModalUser(null)}
         onDeleteChat={id && modalUserIsChatPartner ? handleDeleteChat : undefined}
+        onMessage={modalUser?.userId && modalUser.userId !== profile?.userId
+          ? () => handleOpenDirectChat(modalUser.userId!)
+          : undefined}
       />
 
       {id && meta && (

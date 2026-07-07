@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using Messenger.Api.Middleware;
 using Messenger.Modules.Auth;
 using Messenger.Modules.Auth.Application.Abstractions;
@@ -9,10 +10,13 @@ using Messenger.Modules.Localization;
 using Messenger.Modules.Messages;
 using Messenger.Modules.Notifications;
 using Messenger.Modules.Realtime;
+using Messenger.Modules.Realtime.Hubs;
 using Messenger.Modules.Users;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Extensions;
 using Messenger.Shared.Kernel.Presence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -45,6 +49,10 @@ IModuleInstaller[] modules =
 foreach (var module in modules)
     module.Install(builder.Services, builder.Configuration);
 
+// Троттлинг на "дорогие"/потенциально спамные хаб-методы (SendMessage/StartTyping/StopTyping) —
+// см. HubRateLimitFilter, регистрируется как фильтр хаба через opts.AddFilter ниже.
+builder.Services.AddSingleton<HubRateLimitFilter>();
+
 // SignalR backplane → Redis (горизонтальное масштабирование)
 builder.Services.AddSignalR(opts =>
 {
@@ -52,6 +60,7 @@ builder.Services.AddSignalR(opts =>
     opts.MaximumReceiveMessageSize    = 32 * 1024;
     opts.ClientTimeoutInterval        = TimeSpan.FromSeconds(60);
     opts.KeepAliveInterval            = TimeSpan.FromSeconds(15);
+    opts.AddFilter<HubRateLimitFilter>();
 }).AddStackExchangeRedis(redisConnectionString, opts =>
 {
     opts.Configuration.ChannelPrefix = RedisChannel.Literal("messenger");
@@ -149,6 +158,63 @@ builder.Services.AddCors(opts =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+// Троттлинг по IP на чувствительных auth-эндпойнтах — без этого login/verify-otp/reset-password
+// можно долбить перебором без каких-либо ограничений (пароль, 6-значный OTP-код, код сброса).
+// "auth" — обычные попытки входа/регистрации, "auth-strict" — узкие окна с секретом, который
+// подбирается перебором (OTP, код сброса пароля).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 10,
+                QueueLimit = 0,
+            }));
+
+    options.AddPolicy("auth-strict", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(5),
+                PermitLimit = 5,
+                QueueLimit = 0,
+            }));
+
+    // Эти два — на уже аутентифицированных эндпойнтах, поэтому партиционируем по userId
+    // (не по IP): один аккаунт не может обойти лимит сменой IP, а несколько пользователей
+    // за одним NAT/офисным IP не делят один и тот же лимит.
+    options.AddPolicy("messaging", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: UserIdOrIp(httpContext),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromSeconds(10),
+                PermitLimit = 20,
+                QueueLimit = 0,
+            }));
+
+    options.AddPolicy("uploads", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: UserIdOrIp(httpContext),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 10,
+                QueueLimit = 0,
+            }));
+});
+
+static string UserIdOrIp(HttpContext httpContext) =>
+    httpContext.User.Identity?.IsAuthenticated == true
+        ? httpContext.GetUserId().ToString()
+        : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
 // Health checks для Docker HEALTHCHECK и load balancer
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("MessengerDb")!, "SELECT 1;", name: "postgres")
@@ -192,6 +258,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+if (!app.Environment.IsDevelopment())
+    app.UseHsts();
+
 app.UseHttpsRedirection();
 app.UseCors();
 app.UseSerilogRequestLogging(opts =>
@@ -205,6 +274,7 @@ app.UseSerilogRequestLogging(opts =>
 app.UseLocalizationModule();     // культура из Accept-Language / ?lang=
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseExceptionHandler();
 
 // ── Endpoints ─────────────────────────────────────────────────────────────────
