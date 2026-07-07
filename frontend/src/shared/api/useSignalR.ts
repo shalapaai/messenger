@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent, type ChatUpdatedEvent } from './signalrClient'
+import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent, type ChatUpdatedEvent, type UserProfileUpdatedEvent } from './signalrClient'
 import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
 export type { ConnectionStatus }
@@ -14,6 +14,7 @@ interface UseSignalROptions {
   onStoppedTyping?: (event: TypingEvent) => void
   onUserOnline?: (event: UserOnlineEvent) => void
   onChatUpdated?: (event: ChatUpdatedEvent) => void
+  onUserProfileUpdated?: (event: UserProfileUpdatedEvent) => void
 }
 
 export function useSignalR(options: UseSignalROptions = {}) {
@@ -49,6 +50,7 @@ export function useSignalR(options: UseSignalROptions = {}) {
       signalR.onUserStoppedTyping(event => optionsRef.current.onStoppedTyping?.(event)),
       signalR.onUserOnline(event => optionsRef.current.onUserOnline?.(event)),
       signalR.onChatUpdated(event => optionsRef.current.onChatUpdated?.(event)),
+      signalR.onUserProfileUpdated(event => optionsRef.current.onUserProfileUpdated?.(event)),
     ]
 
     return () => off.forEach(fn => fn())

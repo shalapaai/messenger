@@ -65,6 +65,14 @@ export interface ChatUpdatedEvent {
   chatId: string
 }
 
+/** Имя / аватарка / цвет профиля пользователя изменились — приходит во все чаты, где он состоит. */
+export interface UserProfileUpdatedEvent {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
+  avatarColor: string
+}
+
 // ── Клиент ────────────────────────────────────────────────────────────────────
 
 export class SignalRClient {
@@ -177,6 +185,11 @@ export class SignalRClient {
   onChatUpdated(handler: (event: ChatUpdatedEvent) => void): () => void {
     this.connection.on('ChatUpdated', handler)
     return () => this.connection.off('ChatUpdated', handler)
+  }
+
+  onUserProfileUpdated(handler: (event: UserProfileUpdatedEvent) => void): () => void {
+    this.connection.on('UserProfileUpdated', handler)
+    return () => this.connection.off('UserProfileUpdated', handler)
   }
 
   onReconnecting(handler: () => void): void {

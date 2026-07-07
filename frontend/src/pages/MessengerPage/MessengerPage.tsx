@@ -99,11 +99,9 @@ export function MessengerPage() {
   useEffect(() => { loadChats() }, [loadChats])
   useEffect(() => { if (id) resetUnread(id) }, [id, resetUnread])
 
-  // ── Участники группового чата — резолвятся отдельно (имя/аватар/онлайн), т.к.
-  // список чатов их не содержит; подгружаем при открытии карточки группы ─────────
-  // requestedGroupChatIdRef защищает от гонки ответов: если открыть карточку группы A,
-  // сразу закрыть и открыть карточку группы B, а ответ по A придёт позже ответа по B,
-  // устаревший ответ по A не должен затереть уже показанных участников группы B
+  // ── Участники группового чата — резолвятся отдельно (имя/аватар/онлайн), подгружаем при
+  // открытии карточки группы. requestedGroupChatIdRef защищает от гонки: устаревший ответ по
+  // закрытой уже карточке A не должен затереть участников открытой следом карточки B.
   const requestedGroupChatIdRef = useRef<string | null>(null)
 
   async function loadGroupMembers(chatId: string) {
@@ -148,7 +146,8 @@ export function MessengerPage() {
   // ── Сообщения текущего чата + realtime-приём ───────────────────────────────
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
-    handleIncomingMessage, handleDeletedMessage, handleEditedMessage, loadMoreHistory, loadingHistory, historyLoaded,
+    handleIncomingMessage, handleDeletedMessage, handleEditedMessage, handleUserProfileUpdated,
+    loadMoreHistory, loadingHistory, historyLoaded,
     send, sendFiles, retry, deleteMessage, deleteMessages, editMessage,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
@@ -193,6 +192,16 @@ export function MessengerPage() {
     onChatUpdated: (event) => {
       loadChats()
       if (event.chatId === id && isGroupChat) loadGroupMembers(id)
+    },
+    onUserProfileUpdated: (event) => {
+      handleUserProfileUpdated(event)
+      // Карточка группы могла уже подгрузить участников — обновляем и её, иначе
+      // открытая сейчас карточка так и покажет старые имя/аватар до повторного открытия.
+      setGroupMembers(prev => prev.map(m =>
+        m.userId === event.userId
+          ? { ...m, name: event.displayName, initials: getInitials(event.displayName), avatarUrl: event.avatarUrl, color: event.avatarColor }
+          : m
+      ))
     },
   })
 

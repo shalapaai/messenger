@@ -16,7 +16,7 @@ import { useConnectionStore } from '../../shared/api/connectionStore'
 import { signalR } from '../../shared/api/signalrClient'
 import { ConnectionBanner } from '../../shared/ui/ConnectionBanner/ConnectionBanner'
 import { ErrorModal } from '../../shared/ui/ErrorModal'
-import type { IncomingMessage, UserOnlineEvent } from '../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted, UserOnlineEvent, UserProfileUpdatedEvent } from '../../shared/api/signalrClient'
 import { AppLoadingSkeleton } from './AppLoadingSkeleton'
 
 function ForgotPasswordRoute() {
@@ -32,7 +32,9 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   useSignalRConnection()
 
   const { pathname } = useLocation()
-  const handleNewMessage = useChatsStore((s) => s.handleNewMessage)
+  const handleNewMessage         = useChatsStore((s) => s.handleNewMessage)
+  const handleMessageDeleted     = useChatsStore((s) => s.handleMessageDeleted)
+  const handleUserProfileUpdated = useChatsStore((s) => s.handleUserProfileUpdated)
   const setOnline        = useOnlineStore((s) => s.setOnline)
   const chats            = useChatsStore((s) => s.chats)
   const chatsLoaded      = useChatsStore((s) => s.chatsLoaded)
@@ -57,7 +59,15 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
     setOnline(event.userId, event.isOnline)
   }, [setOnline])
 
-  useSignalR({ onMessage, onUserOnline })
+  const onMessageDeleted = useCallback((event: MessageDeleted) => {
+    handleMessageDeleted(event.chatId, event.messageId)
+  }, [handleMessageDeleted])
+
+  const onUserProfileUpdated = useCallback((event: UserProfileUpdatedEvent) => {
+    handleUserProfileUpdated(event)
+  }, [handleUserProfileUpdated])
+
+  useSignalR({ onMessage, onUserOnline, onMessageDeleted, onUserProfileUpdated })
 
   return (
     <>

@@ -3,7 +3,7 @@ import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
 import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage, MessageDeleted, MessageEdited } from '../../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted, MessageEdited, UserProfileUpdatedEvent } from '../../../shared/api/signalrClient'
 import i18n, { getCurrentLocale } from '../../../shared/i18n'
 
 type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
@@ -84,9 +84,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   }, [id])
 
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
-    // обычную отправку своего сообщения уже показал optimistic-UI в send() — этот echo игнорируем.
-    // Пересылка — исключение: у неё нет локального оптимистичного добавления, поэтому свою же
-    // пересланную копию нужно показать по этому же realtime-событию
+    // Своё сообщение уже показал optimistic-UI в send() — этот echo игнорируем, кроме пересылки:
+    // у неё нет локального добавления, свою же копию показываем именно по этому событию
     if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId) return
 
     setChatMessages(prev => {
@@ -175,15 +174,43 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       const replyPreview = truncateReplyPreview(event.newContent)
       return {
         ...prev,
-        // цитата — живая ссылка на оригинал: правим и сам отредактированный текст, и превью
-        // цитаты у всех сообщений, которые на него ссылаются (иначе цитата "протухнет" до
-        // следующей загрузки истории с сервера)
+        // Цитата — живая ссылка на оригинал: правим и текст, и превью у всех ответов на него.
         [event.chatId]: chatMsgs.map(m => {
           if (m.messageId === event.messageId) return { ...m, text: event.newContent, edited: true }
           if (m.replyToMessageId === event.messageId) return { ...m, replyToContent: replyPreview }
           return m
         }),
       }
+    })
+  }, [])
+
+  // Имя/аватарка/цвет отправителя денормализованы в каждое сообщение на момент его получения —
+  // патчим уже загруженную историю по всем закэшированным чатам (не только открытому), иначе
+  // сообщения от этого пользователя так и останутся со старыми данными до следующей загрузки истории.
+  const handleUserProfileUpdated = useCallback((event: UserProfileUpdatedEvent) => {
+    setChatMessages(prev => {
+      let changed = false
+      const next: typeof prev = {}
+      for (const [chatId, msgs] of Object.entries(prev)) {
+        next[chatId] = msgs.map(m => {
+          if (m.senderId === event.userId) {
+            changed = true
+            return {
+              ...m,
+              senderName:      event.displayName,
+              senderInitials:  initials(event.displayName),
+              senderColor:     event.avatarColor,
+              senderAvatarUrl: event.avatarUrl,
+            }
+          }
+          if (m.forwardedFromUserId === event.userId) {
+            changed = true
+            return { ...m, forwardedFromUserName: event.displayName }
+          }
+          return m
+        })
+      }
+      return changed ? next : prev
     })
   }, [])
 
@@ -206,10 +233,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     setLoadingHistory(true)
     onBeforePrepend()
 
-    // страница целиком из удалённых сообщений после фильтрации на клиенте (см. fetchMessages)
-    // даёт messages.length === 0 при непустом nextCursor — IntersectionObserver в этом случае
-    // больше не пересечётся заново, и подгрузка молча зависнет. Поэтому тянем страницы подряд,
-    // пока не найдём хоть одно видимое сообщение или не закончится история.
+    // Страница целиком из удалённых даёт messages.length === 0 при непустом nextCursor, и
+    // IntersectionObserver больше не сработает — тянем страницы подряд, пока не найдём видимое.
     async function fetchUntilVisible(before: string | null) {
       const { messages: older, nextCursor: cursor } = await fetchMessages(id!, { before })
       setNextCursor(prev => ({ ...prev, [id!]: cursor }))
@@ -270,13 +295,9 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doSend])
 
-  // Файлы шлём через REST (не хаб — SignalR не годится для передачи бинарных данных), поэтому,
-  // в отличие от send(), тут нет двухфазного pending→sent: bubble добавляется сразу с готовым
-  // результатом после того, как сервер подтвердил загрузку. Все файлы уходят одним запросом —
-  // одним сообщением с несколькими вложениями, а не по файлу за раз (иначе на "черновом" чате
-  // параллельные запросы гонкой создавали бы себе каждый свой собственный новый чат). Эхо этого
-  // же сообщения по SignalR (та же рассылка в chat-группу, что доставляет всем остальным)
-  // дедуплицируется по messageId в handleIncomingMessage — двойного бабла не будет.
+  // Файлы шлём через REST (SignalR не годится для бинарных данных), поэтому, в отличие от send(),
+  // тут нет pending→sent: bubble добавляется сразу с готовым результатом. Эхо этого же сообщения
+  // по SignalR дедуплицируется по messageId в handleIncomingMessage — двойного бабла не будет.
   const sendFiles = useCallback(async (
     chatId: string, files: File[], caption: string | undefined, meSender: Sender,
     onUploadProgress?: (percent: number) => void,
@@ -301,11 +322,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     }
     setChatMessages(prev => {
       const chatMsgs = prev[chatId] ?? []
-      // Черновик-чат: sendFiles() отправляется ДО navigate() на реальный /chats/{id}, а после
-      // навигации useEffect по [id] в этом хуке может успеть сам подгрузить историю (в которой
-      // это сообщение уже есть — оно ведь уже сохранено на сервере) раньше, чем сюда придёт этот
-      // then-колбэк. Порядок между двумя async-цепочками не гарантирован, поэтому дедуплицируем
-      // по messageId так же, как и для входящих realtime-сообщений в handleIncomingMessage.
+      // На черновом чате история могла уже подгрузиться (с этим же сообщением) раньше этого
+      // колбэка — порядок между async-цепочками не гарантирован, дедуплицируем по messageId.
       if (chatMsgs.some(m => m.messageId === newMsg.messageId)) return prev
       return { ...prev, [chatId]: [...chatMsgs, newMsg] }
     })
@@ -331,6 +349,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     handleIncomingMessage,
     handleDeletedMessage,
     handleEditedMessage,
+    handleUserProfileUpdated,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,

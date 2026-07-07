@@ -1,5 +1,6 @@
 namespace Messenger.Modules.Users.Domain;
 
+using Messenger.Modules.Users.Domain.Events;
 using Messenger.Shared.Kernel.Primitives;
 using Messenger.Shared.Kernel.Results;
 
@@ -71,4 +72,9 @@ public sealed class UserProfile : AggregateRoot<Guid>
         AvatarColor = color;
         UpdatedAt   = DateTime.UtcNow;
     }
+
+    /// <summary>Рассылается явно из хендлеров после Update/SetAvatarUrl/SetAvatarColor —
+    /// не автоматически при каждом сеттере, чтобы batch-изменения профиля не плодили события.</summary>
+    public void NotifyProfileUpdated() =>
+        RaiseDomainEvent(new UserProfileUpdatedDomainEvent(AuthUserId, DisplayName, AvatarUrl, AvatarColor));
 }

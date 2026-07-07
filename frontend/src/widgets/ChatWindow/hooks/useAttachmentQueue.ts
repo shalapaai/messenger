@@ -74,9 +74,8 @@ export function useAttachmentQueue({ onSendFiles, showError }: UseAttachmentQueu
   }
 
   // ── Drag-and-drop файлов из проводника поверх окна чата ─────────────────────
-  // dragenter/dragleave всплывают с дочерних элементов — считаем "глубину" входов,
-  // а не полагаемся на единичный dragleave, иначе оверлей будет мигать при
-  // перемещении курсора над дочерними узлами внутри окна чата
+  // dragenter/dragleave всплывают с дочерних элементов — считаем "глубину" входов, а не
+  // полагаемся на единичный dragleave, иначе оверлей мигал бы при движении над дочерними узлами
   const [isDraggingFile, setIsDraggingFile] = useState(false)
   const dragCounterRef = useRef(0)
 

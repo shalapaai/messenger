@@ -1,4 +1,4 @@
-import { type MouseEvent } from 'react'
+import { memo, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { MessageAttachments } from './MessageAttachment'
@@ -44,7 +44,9 @@ interface MessageListProps {
   onForwardedUserClick?: (userId: string, name: string) => void
 }
 
-export function MessageList({
+// Мемоизирован: text-состояние поля ввода живёт в ChatWindow и меняется на каждое нажатие
+// клавиши — без memo это перестраивало бы весь список сообщений при вводе текста.
+export const MessageList = memo(function MessageList({
   messages, meta, meSender, otherReadAt, selectMode, selectedIds, highlightedMsgId,
   onToggleSelect, onAvatarClick, onContextMenu, onRetry, onScrollToMessage, onForwardedUserClick,
 }: MessageListProps) {
@@ -164,4 +166,4 @@ export function MessageList({
       )}
     </>
   )
-}
+})

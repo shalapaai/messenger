@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Chat } from '../types/messenger'
-import type { IncomingMessage } from './signalrClient'
-import { fetchChats } from './chatsApi'
+import type { IncomingMessage, UserProfileUpdatedEvent } from './signalrClient'
+import { fetchChats, initials } from './chatsApi'
 import { useOnlineStore } from './onlineStore'
 import { getMyUserId } from '../lib/auth/authTokens'
 
@@ -16,6 +16,8 @@ interface ChatsState {
   loadChats: () => Promise<void>
   handleNewMessage: (msg: IncomingMessage, activeChatId: string | null) => void
   handleMessagesRead: (chatId: string, readerId: string, readAt: string) => void
+  handleMessageDeleted: (chatId: string, messageId: string) => void
+  handleUserProfileUpdated: (event: UserProfileUpdatedEvent) => void
   resetUnread: (chatId: string) => void
   removeChat: (chatId: string) => void
 }
@@ -48,12 +50,8 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     const isOwnMessage = msg.senderId === getMyUserId()
 
     if (!target) {
-      // сообщение пришло в чат, которого ещё нет в списке — собеседник только что создал
-      // его первым сообщением. Подтягиваем список целиком, чтобы чат появился сразу, без
-      // перезагрузки страницы — сервер уже отдаст верный unreadCount для него (сообщение
-      // к этому моменту уже сохранено в БД), вручную прибавлять +1 НЕЛЬЗЯ: это задвоило бы
-      // счётчик (сервер и так его уже посчитал). lastMessageId всё равно проставляем — иначе
-      // повторная доставка этого же сообщения (chat-группа + личная группа) не задедуплицируется.
+      // Чата ещё нет в списке (собеседник только что создал его первым сообщением) — тянем
+      // список целиком, сервер уже посчитает верный unreadCount сам; +1 вручную задвоило бы счётчик.
       get().loadChats().then(() => {
         set((s) => ({
           chats: s.chats.map(c =>
@@ -106,6 +104,27 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
       ),
     }
   }),
+
+  // Превью/unread в списке чатов резолвятся только сервером (GetChats) — если удалённое
+  // сообщение было последним в чате, локально нечем его заменить, поэтому просто перезапрашиваем
+  // список целиком. Не в этом чате прямо сейчас — правки в открытой переписке уже применяет
+  // useChatMessages, а список чатов слушает это событие отдельно и глобально (см. ConnectedLayout).
+  handleMessageDeleted: (chatId, messageId) => {
+    const chat = get().chats.find(c => c.id === chatId)
+    if (!chat || chat.lastMessageId !== messageId) return
+    get().loadChats()
+  },
+
+  // Имя/аватарка личного чата без своего названия — это резолвленный displayName собеседника
+  // (см. GetChatsQueryHandler), поэтому патчим только чаты, где он в роли otherUserId; у групп
+  // своё название, к профилю конкретного участника не привязанное.
+  handleUserProfileUpdated: (event) => set((state) => ({
+    chats: state.chats.map(chat =>
+      chat.otherUserId === event.userId
+        ? { ...chat, name: event.displayName, initials: initials(event.displayName), avatarUrl: event.avatarUrl, color: event.avatarColor }
+        : chat
+    ),
+  })),
 
   resetUnread: (chatId) => set((state) => ({
     chats: state.chats.map(chat =>
