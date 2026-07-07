@@ -438,7 +438,7 @@ export function MessengerPage() {
           loading={!chatsLoaded}
           error={chatsError}
           onRetry={loadChats}
-          activeId={id}
+          activeId={chatId}
           filter={filter}
           query={query}
           onFilterChange={setFilter}

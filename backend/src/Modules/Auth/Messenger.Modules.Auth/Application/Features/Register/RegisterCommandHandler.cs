@@ -48,6 +48,7 @@ public sealed class RegisterCommandHandler(
 
         await unitOfWork.SaveChangesAsync(ct);
 
+        // Send OTP for email confirmation
         var code = GenerateCode();
         cache.Set(
             CacheKeyPrefix + user.Email,

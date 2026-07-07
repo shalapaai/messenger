@@ -25,9 +25,11 @@ public static class FilesEndpoints
             .RequireRateLimiting("uploads")
             .RequireAuthorization();
 
-        // Аватары публичные; вложения чатов проверяются внутри хендлера (маршрут анонимный, чтобы не ломать
-        // аватарки). Catch-all (не просто {fileKey}) — у S3-ключей есть слэши (date-префикс папок), обычный
-        // сегмент их бы не заматчил.
+        // Скачивание файла. Аватары — публичные (как у любого мессенджера).
+        // Вложения чатов (ChatAttachment) — только авторизованный участник этого чата,
+        // проверяется внутри хендлера (маршрут анонимный, чтобы не ломать аватарки).
+        // Catch-all (не просто {fileKey}) — у S3-ключей есть слэши (date-префикс папок,
+        // см. S3FileStorage.UploadAsync), обычный сегмент их бы не заматчил.
         group.MapGet("/{*fileKey}", DownloadFile)
             .WithName("DownloadFile")
             .Produces(StatusCodes.Status200OK)
