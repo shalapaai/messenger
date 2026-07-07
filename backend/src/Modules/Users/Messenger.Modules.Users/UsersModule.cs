@@ -1,12 +1,14 @@
 namespace Messenger.Modules.Users;
 
 using FluentValidation;
+using MediatR;
 using Messenger.Modules.Users.Application.Abstractions;
 using Messenger.Modules.Users.Application.Contracts;
 using Messenger.Modules.Users.Infrastructure;
 using Messenger.Modules.Users.Infrastructure.Repositories;
 using Messenger.Modules.Users.Presentation;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Behaviors;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,7 +28,11 @@ public sealed class UsersModule : IModuleInstaller
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IUsersModule, UsersModuleApi>();
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(UsersModule).Assembly));
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(typeof(UsersModule).Assembly);
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
+        });
         services.AddValidatorsFromAssembly(typeof(UsersModule).Assembly);
     }
 

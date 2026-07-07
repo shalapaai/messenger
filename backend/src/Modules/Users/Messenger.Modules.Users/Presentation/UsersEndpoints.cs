@@ -92,7 +92,9 @@ public static class UsersEndpoints
         HttpContext ctx,
         CancellationToken ct)
     {
-        var command = new CreateUserProfileCommand(ctx.GetUserId(), ctx.GetUserEmail(), request.DisplayName, request.Login, request.AvatarColor);
+        var command = new CreateUserProfileCommand(
+            ctx.GetUserId(), ctx.GetUserEmail(), request.DisplayName, request.Login, request.AvatarColor,
+            request.Status, request.Phone, request.City, request.Department);
         var result  = await sender.Send(command, ct);
         return result.IsSuccess
             ? Results.Created($"/api/users/{result.Value!.UserId}", result.Value)
@@ -166,7 +168,9 @@ public static class UsersEndpoints
     }
 }
 
-public sealed record CreateUserProfileRequest(string DisplayName, string? Login, string? AvatarColor);
+public sealed record CreateUserProfileRequest(
+    string DisplayName, string? Login, string? AvatarColor,
+    string? Status = null, string? Phone = null, string? City = null, string? Department = null);
 public sealed record UpdateUserProfileRequest(string? DisplayName, string? Status, string? Login, string? Phone, string? City, string? Department, string? AvatarColor);
 public sealed record AvatarUrlDto(string AvatarUrl);
 public sealed record SearchResultDto(

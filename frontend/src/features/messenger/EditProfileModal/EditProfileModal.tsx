@@ -11,6 +11,12 @@ import s from './EditProfileModal.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
+// должно совпадать с лимитами на бэкенде (UpdateUserProfileCommandValidator)
+const DISPLAY_NAME_MAX_LENGTH = 100
+const STATUS_MAX_LENGTH = 200
+const PHONE_MAX_LENGTH = 20
+const CITY_MAX_LENGTH = 100
+const DEPARTMENT_MAX_LENGTH = 100
 
 interface EditProfileModalProps {
   isOpen: boolean
@@ -45,10 +51,17 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   const [loginError, setLoginError] = useState('')
 
   const trimmedLogin    = editLogin.trim()
-  const isNameInvalid   = hasTriedSubmit && !displayName.trim()
+  const isNameEmpty     = hasTriedSubmit && !displayName.trim()
+  const isNameTooLong   = displayName.trim().length > DISPLAY_NAME_MAX_LENGTH
+  const isNameInvalid   = isNameEmpty || isNameTooLong
   const isLoginEmpty    = hasTriedSubmit && !trimmedLogin
   const isLoginBadFmt   = hasTriedSubmit && !!trimmedLogin && !LOGIN_REGEX.test(trimmedLogin)
   const isLoginInvalid  = isLoginEmpty || isLoginBadFmt || !!loginError
+  const isStatusTooLong = editStatus.trim().length > STATUS_MAX_LENGTH
+  const isPhoneTooLong  = editPhone.trim().length  > PHONE_MAX_LENGTH
+  const isCityTooLong   = editCity.trim().length   > CITY_MAX_LENGTH
+  const isDeptTooLong   = editDept.trim().length   > DEPARTMENT_MAX_LENGTH
+  const hasOptionalFieldError = isStatusTooLong || isPhoneTooLong || isCityTooLong || isDeptTooLong
 
   function handleAvatarChange(file: File) {
     setSelectedAvatarFile(file)
@@ -72,7 +85,9 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     setHasTriedSubmit(true)
-    if (!displayName.trim() || !trimmedLogin || isLoginBadFmt) return
+    // Ни один запрос не уходит, пока хоть одно поле (даже необязательное) невалидно —
+    // иначе бэкенд может успеть сохранить часть полей до того, как найдёт невалидное
+    if (!displayName.trim() || isNameTooLong || !trimmedLogin || isLoginBadFmt || hasOptionalFieldError) return
     if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
       setFormError(t('profileSetup.errors.avatarTooLarge'))
       return
@@ -142,7 +157,8 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setDisplayName(e.target.value)}
                   placeholder={t('profileSetup.displayNamePlaceholder')}
                 />
-                {isNameInvalid && <span className={s.modalFieldError}>{t('profileSetup.errors.displayNameRequired')}</span>}
+                {isNameEmpty && <span className={s.modalFieldError}>{t('profileSetup.errors.displayNameRequired')}</span>}
+                {isNameTooLong && <span className={s.modalFieldError}>{t('profileSetup.errors.displayNameTooLong', { max: DISPLAY_NAME_MAX_LENGTH })}</span>}
               </label>
               <label className={s.modalField}>
                 <span className={s.modalFieldLabel}>{t('common.login')} <span className={s.required}>*</span></span>
@@ -163,19 +179,23 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
               </label>
               <label className={s.modalField}>
                 <span className={s.modalFieldLabel}>{t('common.status')}</span>
-                <input className={s.modalFieldInput} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder={t('profileSetup.statusPlaceholder')} />
+                <input className={`${s.modalFieldInput} ${isStatusTooLong ? s.modalFieldInputError : ''}`} type="text" value={editStatus} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditStatus(e.target.value)} placeholder={t('profileSetup.statusPlaceholder')} />
+                {isStatusTooLong && <span className={s.modalFieldError}>{t('profileSetup.errors.statusTooLong', { max: STATUS_MAX_LENGTH })}</span>}
               </label>
               <label className={s.modalField}>
                 <span className={s.modalFieldLabel}>{t('common.phone')}</span>
-                <input className={s.modalFieldInput} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
+                <input className={`${s.modalFieldInput} ${isPhoneTooLong ? s.modalFieldInputError : ''}`} type="text" value={editPhone} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditPhone(e.target.value)} placeholder="+7 000 000-00-00" />
+                {isPhoneTooLong && <span className={s.modalFieldError}>{t('profileSetup.errors.phoneTooLong', { max: PHONE_MAX_LENGTH })}</span>}
               </label>
               <label className={s.modalField}>
                 <span className={s.modalFieldLabel}>{t('common.city')}</span>
-                <input className={s.modalFieldInput} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder={t('profileSetup.cityPlaceholder')} />
+                <input className={`${s.modalFieldInput} ${isCityTooLong ? s.modalFieldInputError : ''}`} type="text" value={editCity} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditCity(e.target.value)} placeholder={t('profileSetup.cityPlaceholder')} />
+                {isCityTooLong && <span className={s.modalFieldError}>{t('profileSetup.errors.cityTooLong', { max: CITY_MAX_LENGTH })}</span>}
               </label>
               <label className={s.modalField}>
                 <span className={s.modalFieldLabel}>{t('common.department')}</span>
-                <input className={s.modalFieldInput} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder={t('profileSetup.departmentPlaceholder')} />
+                <input className={`${s.modalFieldInput} ${isDeptTooLong ? s.modalFieldInputError : ''}`} type="text" value={editDept} onChange={(e: ChangeEvent<HTMLInputElement>) => setEditDept(e.target.value)} placeholder={t('profileSetup.departmentPlaceholder')} />
+                {isDeptTooLong && <span className={s.modalFieldError}>{t('profileSetup.errors.departmentTooLong', { max: DEPARTMENT_MAX_LENGTH })}</span>}
               </label>
             </div>
             {formError && <p className={s.modalFormError}>{formError}</p>}
