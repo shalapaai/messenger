@@ -16,7 +16,6 @@ function RegisterForm() {
   const [error, setError]               = useState('')
   const [isLoading, setIsLoading]       = useState(false)
 
-  // OTP state
   const [otpEmail, setOtpEmail]     = useState<string | null>(null)
   const [otpCode, setOtpCode]       = useState('')
   const [otpError, setOtpError]     = useState('')
@@ -79,7 +78,6 @@ function RegisterForm() {
     }
   }
 
-  // OTP screen
   if (otpEmail) {
     return (
       <form className={styles.form} onSubmit={handleOtpSubmit} noValidate>

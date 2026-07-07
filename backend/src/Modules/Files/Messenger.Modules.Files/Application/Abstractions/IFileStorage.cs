@@ -11,7 +11,6 @@ public interface IFileStorage
 
     Task DeleteAsync(string fileKey, CancellationToken ct = default);
 
-    // Возвращает URL для клиента — для Local это /api/files/{key}, для S3 — CDN URL
     string GetPublicUrl(string fileKey);
 }
 

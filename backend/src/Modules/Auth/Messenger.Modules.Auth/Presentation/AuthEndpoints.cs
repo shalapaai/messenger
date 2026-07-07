@@ -18,8 +18,6 @@ using Microsoft.Extensions.Hosting;
 
 public static class AuthEndpoints
 {
-    private const string RefreshTokenCookieName = "messenger_refresh_token";
-
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Auth");
@@ -111,7 +109,7 @@ public static class AuthEndpoints
         if (dto.RequiresOtp)
             return Results.Accepted(value: dto);
 
-        AppendRefreshTokenCookie(httpContext.Response, dto.RefreshToken!, environment);
+        RefreshTokenCookie.Append(httpContext.Response, dto.RefreshToken!, environment);
         return Results.Created("/api/auth/register", dto);
     }
 
@@ -138,7 +136,7 @@ public static class AuthEndpoints
         if (dto.RequiresOtp)
             return Results.Accepted(value: dto);
 
-        AppendRefreshTokenCookie(httpContext.Response, dto.RefreshToken!, environment);
+        RefreshTokenCookie.Append(httpContext.Response, dto.RefreshToken!, environment);
         return Results.Ok(dto);
     }
 
@@ -156,7 +154,7 @@ public static class AuthEndpoints
             return result.Error.ToHttpResult();
 
         var tokens = result.Value!;
-        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
+        RefreshTokenCookie.Append(httpContext.Response, tokens.RefreshToken, environment);
         return Results.Ok(tokens);
     }
 
@@ -167,7 +165,7 @@ public static class AuthEndpoints
         IHostEnvironment environment,
         CancellationToken ct)
     {
-        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.Token;
+        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookie.Name] ?? request?.Token;
         if (string.IsNullOrWhiteSpace(refreshToken))
             return Results.Unauthorized();
 
@@ -181,12 +179,12 @@ public static class AuthEndpoints
             // httpOnly, клиент не может стереть её через JS, поэтому без явного Delete здесь
             // она осталась бы в браузере навсегда и каждый следующий /refresh падал бы с той
             // же ошибкой, пока пользователь не почистит cookies вручную.
-            DeleteRefreshTokenCookie(httpContext.Response, environment);
+            RefreshTokenCookie.Delete(httpContext.Response, environment);
             return result.Error.ToHttpResult();
         }
 
         var tokens = result.Value!;
-        AppendRefreshTokenCookie(httpContext.Response, tokens.RefreshToken, environment);
+        RefreshTokenCookie.Append(httpContext.Response, tokens.RefreshToken, environment);
         return Results.Ok(tokens);
     }
 
@@ -197,11 +195,11 @@ public static class AuthEndpoints
         IHostEnvironment environment,
         CancellationToken ct)
     {
-        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookieName] ?? request?.RefreshToken;
+        var refreshToken = httpContext.Request.Cookies[RefreshTokenCookie.Name] ?? request?.RefreshToken;
         if (!string.IsNullOrWhiteSpace(refreshToken))
             await sender.Send(new LogoutCommand(refreshToken), ct);
 
-        DeleteRefreshTokenCookie(httpContext.Response, environment);
+        RefreshTokenCookie.Delete(httpContext.Response, environment);
         return Results.NoContent();
     }
 
@@ -233,44 +231,4 @@ public static class AuthEndpoints
 
         return Results.NoContent();
     }
-
-    private static void AppendRefreshTokenCookie(
-        HttpResponse response,
-        string refreshToken,
-        IHostEnvironment environment)
-    {
-        response.Cookies.Append(
-            RefreshTokenCookieName,
-            refreshToken,
-            CreateRefreshTokenCookieOptions(environment, DateTimeOffset.UtcNow.AddDays(7)));
-    }
-
-    private static void DeleteRefreshTokenCookie(HttpResponse response, IHostEnvironment environment)
-    {
-        response.Cookies.Delete(
-            RefreshTokenCookieName,
-            CreateRefreshTokenCookieOptions(environment));
-    }
-
-    private static CookieOptions CreateRefreshTokenCookieOptions(
-        IHostEnvironment environment,
-        DateTimeOffset? expires = null)
-    {
-        return new CookieOptions
-        {
-            HttpOnly = true,
-            Secure   = !environment.IsDevelopment(),
-            SameSite = environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
-            Expires  = expires,
-            Path     = "/api/auth",
-        };
-    }
 }
-
-public sealed record RegisterRequest(string Email, string Password);
-public sealed record VerifyOtpRequest(string Email, string Code);
-public sealed record RefreshTokenRequest(string Token);
-public sealed record LogoutRequest(string RefreshToken);
-public sealed record ForgotPasswordRequest(string Email);
-public sealed record ResetPasswordRequest(string Email, string Code, string NewPassword);
-public sealed record AuthFeaturesDto(bool PasswordResetEnabled, bool TwoFactorEnabled);

@@ -101,16 +101,4 @@ export interface ModalUser {
   city?: string | null
 }
 
-export interface StubUser {
-  initials: string
-  fullName: string
-  username: string
-  bio: string
-  city: string
-  since: string
-  email: string
-  phone: string
-  department: string
-}
-
 export type Filter = 'all' | 'direct' | 'group'

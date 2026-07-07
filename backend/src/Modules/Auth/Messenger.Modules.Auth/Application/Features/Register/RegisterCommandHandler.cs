@@ -40,7 +40,6 @@ public sealed class RegisterCommandHandler(
 
         if (!twoFactorEnabled)
         {
-            // Email verification skipped — mark verified immediately and issue tokens
             user.VerifyEmail();
             // IssueTokensAsync saves once, persisting the new user and refresh token together
             var tokens = await IssueTokensAsync(user, ct);

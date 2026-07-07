@@ -4,43 +4,6 @@ using Messenger.Modules.Chats.Domain.Events;
 using Messenger.Shared.Kernel.Primitives;
 using Messenger.Shared.Kernel.Results;
 
-// ── Value types ───────────────────────────────────────────────────────────────
-
-public record ChatId(Guid Value)
-{
-    public static ChatId New() => new(Guid.NewGuid());
-    public static ChatId From(Guid value) => new(value);
-    public override string ToString() => Value.ToString();
-}
-
-public enum ChatType { Direct, Group }
-
-public enum ChatMemberRole { Member, Admin, Owner }
-
-// ── Entities ──────────────────────────────────────────────────────────────────
-
-public sealed class ChatMember
-{
-    private ChatMember() { } // EF Core
-
-    internal ChatMember(ChatId chatId, Guid userId, ChatMemberRole role)
-    {
-        ChatId = chatId;
-        UserId = userId;
-        Role = role;
-        JoinedAt = DateTime.UtcNow;
-    }
-
-    public ChatId ChatId { get; private set; } = default!;
-    public Guid UserId { get; private set; }
-    public ChatMemberRole Role { get; private set; }
-    public DateTime JoinedAt { get; private set; }
-    public DateTime? LastReadAt { get; private set; }
-
-    internal void MarkAsRead() => LastReadAt = DateTime.UtcNow;
-    internal void SetRole(ChatMemberRole role) => Role = role;
-}
-
 public sealed class Chat : AggregateRoot<ChatId>
 {
     private readonly List<ChatMember> _members = [];
@@ -231,17 +194,4 @@ public sealed class Chat : AggregateRoot<ChatId>
 
         return Result.Success();
     }
-}
-
-// ── Repository contract ───────────────────────────────────────────────────────
-
-public interface IChatRepository
-{
-    Task<Chat?> GetByIdAsync(ChatId id, CancellationToken ct = default);
-    Task<Guid?> FindDirectChatIdAsync(Guid userId1, Guid userId2, CancellationToken ct = default);
-    Task<List<Chat>> GetByUserIdAsync(Guid userId, CancellationToken ct = default);
-    /// <summary>Лёгкая EXISTS-проверка по составному ключу (chat_id, user_id) — без загрузки агрегата.</summary>
-    Task<bool> IsMemberAsync(ChatId chatId, Guid userId, CancellationToken ct = default);
-    void Add(Chat chat);
-    void Delete(Chat chat);
 }
