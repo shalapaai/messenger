@@ -28,7 +28,8 @@ public sealed class LoginEndpointTests(AuthApiFactory factory)
         // RefreshToken не должен попадать в тело ответа — только в httpOnly-куку ниже
         body.RefreshToken.Should().BeNullOrEmpty();
         body.AccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
-        GetRefreshCookie(response).Should().Contain("HttpOnly");
+        // Cookie-атрибуты регистронезависимы (RFC 6265) — сервер отдаёт "httponly" в нижнем регистре
+        GetRefreshCookie(response).Should().ContainEquivalentOf("httponly");
     }
 
     [Fact]

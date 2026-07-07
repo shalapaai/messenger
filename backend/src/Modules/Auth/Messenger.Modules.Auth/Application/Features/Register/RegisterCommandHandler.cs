@@ -35,16 +35,18 @@ public sealed class RegisterCommandHandler(
 
         var user = userResult.Value!;
         userRepository.Add(user);
-        await unitOfWork.SaveChangesAsync(ct);
 
         var twoFactorEnabled = configuration.GetValue<bool>("TwoFactor:Enabled");
 
         if (!twoFactorEnabled)
         {
             user.VerifyEmail();
+            // IssueTokensAsync saves once, persisting the new user and refresh token together
             var tokens = await IssueTokensAsync(user, ct);
             return Result.Success(LoginResultDto.WithTokens(tokens));
         }
+
+        await unitOfWork.SaveChangesAsync(ct);
 
         var code = GenerateCode();
         cache.Set(

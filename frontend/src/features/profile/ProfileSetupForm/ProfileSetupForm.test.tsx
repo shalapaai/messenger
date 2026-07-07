@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -151,6 +151,11 @@ describe('ProfileSetupForm', () => {
     expect(createObjectURL).toHaveBeenCalledWith(croppedFile)
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:original-avatar')
     expect(screen.getByLabelText('Заменить фото')).toBeInTheDocument()
+
+    // jsdom не грузит blob: как настоящую картинку — <img> никогда не эмитит load сам по себе,
+    // а до этого события AvatarImage держит его скрытым (aria-hidden) от роли "img"
+    fireEvent.load(screen.getByAltText('Николай'))
+
     await waitFor(() => {
       expect(screen.getByRole('img', { name: 'Николай' })).toHaveAttribute(
         'src',
