@@ -32,8 +32,8 @@ public sealed class GetChatsQueryHandler(
             c => c.Id.Value,
             c => c.Members.FirstOrDefault(m => m.UserId == query.CurrentUserId)?.LastReadAt);
 
-        var unreadCountsResult = await messagesModule.GetUnreadCountsByChatIdsAsync(
-            query.CurrentUserId, myLastReadAtByChatId, ct);
+        var unreadCountsResult = await messagesModule.GetUnreadCountsByChatIdsAsync(query.CurrentUserId, myLastReadAtByChatId, ct);
+
         if (unreadCountsResult.IsFailure)
             return Result.Failure<List<ChatSummaryDto>>(unreadCountsResult.Error);
 
@@ -50,7 +50,7 @@ public sealed class GetChatsQueryHandler(
         // Независимые вызовы в разные хранилища (UsersDbContext и Redis) — безопасно параллелить,
         // как и в GetChatByIdQueryHandler.
         var summariesTask = usersModule.GetSummariesByAuthUserIdsAsync(otherUserIds, ct);
-        var onlineTask     = presence.GetOnlineAsync(otherUserIds, ct);
+        var onlineTask = presence.GetOnlineAsync(otherUserIds, ct);
         await Task.WhenAll(summariesTask, onlineTask);
 
         var summariesResult = summariesTask.Result;
@@ -65,11 +65,10 @@ public sealed class GetChatsQueryHandler(
             {
                 lastMessages.TryGetValue(c.Id.Value, out var lastMessage);
 
-                var name        = c.Name;
-                var avatarUrl   = c.AvatarUrl;
+                var name = c.Name;
+                var avatarUrl = c.AvatarUrl;
                 var avatarColor = c.AvatarColor;
                 Guid? otherUserId = null;
-
                 DateTime? otherMemberLastReadAt = null;
 
                 if (c.Type == ChatType.Direct)
@@ -77,8 +76,8 @@ public sealed class GetChatsQueryHandler(
                     otherUserId = c.Members.Select(m => m.UserId).FirstOrDefault(uid => uid != query.CurrentUserId);
                     if (otherUserId.HasValue && userSummaries.TryGetValue(otherUserId.Value, out var summary))
                     {
-                        name        = name      ?? summary.DisplayName;
-                        avatarUrl   = avatarUrl ?? summary.AvatarUrl;
+                        name = name ?? summary.DisplayName;
+                        avatarUrl = avatarUrl ?? summary.AvatarUrl;
                         avatarColor = summary.AvatarColor;
                     }
                     otherMemberLastReadAt = c.Members

@@ -27,7 +27,7 @@ public sealed class GetChatByIdQueryHandler(
         // Независимые вызовы в разные хранилища (UsersDbContext и Redis) — безопасно параллелить,
         // в отличие от ForwardMessagesCommandHandler, где оба вызова шли через один DbContext
         var summariesTask = usersModule.GetSummariesByAuthUserIdsAsync(memberIds, ct);
-        var onlineTask     = presence.GetOnlineAsync(memberIds, ct);
+        var onlineTask = presence.GetOnlineAsync(memberIds, ct);
         await Task.WhenAll(summariesTask, onlineTask);
 
         var summariesResult = summariesTask.Result;
