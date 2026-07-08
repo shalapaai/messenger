@@ -27,13 +27,25 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMe
                 .HasColumnName("type")
                 .HasConversion(v => v.ToString().ToLower(), v => Enum.Parse<ChatType>(v, true))
                 .HasMaxLength(10).IsRequired();
-            b.Property(c => c.Name).HasColumnName("name").HasMaxLength(100);
-            b.Property(c => c.AvatarUrl).HasColumnName("avatar_url");
-            b.Property(c => c.AvatarColor).HasColumnName("avatar_color").HasMaxLength(7);
-            b.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
-            b.Property(c => c.DirectUserId1).HasColumnName("direct_user_id_1");
-            b.Property(c => c.DirectUserId2).HasColumnName("direct_user_id_2");
-            b.HasMany(c => c.Members).WithOne().HasForeignKey(m => m.ChatId).OnDelete(DeleteBehavior.Cascade);
+            b.Property(c => c.Name)
+                .HasColumnName("name")
+                .HasMaxLength(100);
+            b.Property(c => c.AvatarUrl)
+                .HasColumnName("avatar_url");
+            b.Property(c => c.AvatarColor)
+                .HasColumnName("avatar_color")
+                .HasMaxLength(7);
+            b.Property(c => c.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired();
+            b.Property(c => c.DirectUserId1)
+                .HasColumnName("direct_user_id_1");
+            b.Property(c => c.DirectUserId2)
+                .HasColumnName("direct_user_id_2");
+            b.HasMany(c => c.Members)
+                .WithOne()
+                .HasForeignKey(m => m.ChatId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Не даёт двум параллельным запросам создать два direct-чата для одной пары (TOCTOU);
             // пара хранится прямо на Chat, а не индексом по members, где её не выразить без агрегатного запроса.
@@ -52,14 +64,21 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMe
                 .HasColumnName("chat_id")
                 .HasConversion(id => id.Value, value => ChatId.From(value))
                 .IsRequired();
-            b.Property(m => m.UserId).HasColumnName("user_id").IsRequired();
+            b.Property(m => m.UserId)
+                .HasColumnName("user_id")
+                .IsRequired();
             b.Property(m => m.Role)
                 .HasColumnName("role")
                 .HasConversion(v => v.ToString().ToLower(), v => Enum.Parse<ChatMemberRole>(v, true))
-                .HasMaxLength(10).IsRequired();
-            b.Property(m => m.JoinedAt).HasColumnName("joined_at").IsRequired();
-            b.Property(m => m.LastReadAt).HasColumnName("last_read_at");
-            b.HasIndex(m => m.UserId).HasDatabaseName("idx_chats_members_user_id");
+                .HasMaxLength(10)
+                .IsRequired();
+            b.Property(m => m.JoinedAt)
+                .HasColumnName("joined_at")
+                .IsRequired();
+            b.Property(m => m.LastReadAt)
+                .HasColumnName("last_read_at");
+            b.HasIndex(m => m.UserId)
+                .HasDatabaseName("idx_chats_members_user_id");
             b.ToTable("members");
         });
     }
