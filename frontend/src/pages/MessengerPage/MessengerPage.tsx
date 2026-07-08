@@ -112,13 +112,15 @@ export function MessengerPage() {
     send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage, setMessageReaction,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
-    onIncomingRead: (chatId) => markChatRead(chatId).catch(() => {}),
+    // Если markChatRead упал, локальный unread уже обнулён — перезапрашиваем чаты,
+    // чтобы не продвинувшийся серверный unreadCount не остался замаскирован навсегда.
+    onIncomingRead: (chatId) => markChatRead(chatId).catch(() => loadChats()),
   })
 
   // Чат открыт/выбран (включая повторный заход в уже загруженный чат) — отмечаем прочитанным
   useEffect(() => {
-    if (id) markChatRead(id).catch(() => {})
-  }, [id])
+    if (id) markChatRead(id).catch(() => loadChats())
+  }, [id, loadChats])
 
   const scroll = useScrollRestore(messages)
   const {
@@ -172,9 +174,7 @@ export function MessengerPage() {
     stopTypingRef.current = stopTyping
   }, [startTyping, stopTyping])
 
-  // Ref нужен, чтобы IntersectionObserver всегда вызывал актуальную версию
-  // loadMoreHistory. Без него колбэк захватывает устаревший экземпляр функции,
-  // где loadingHistory === true, и повторные скроллы вверх молча игнорируются.
+  // Ref — иначе IntersectionObserver держит устаревший loadMoreHistory и молча игнорирует повторные скроллы вверх.
   const loadMoreHistoryRef = useRef(loadMoreHistory)
   useEffect(() => {
     loadMoreHistoryRef.current = loadMoreHistory
@@ -199,8 +199,6 @@ export function MessengerPage() {
   async function handleSend(text: string, replyTo?: Message) {
     typingIndicator.stopOwnTyping()
 
-    // Черновик (чат с этим пользователем ещё не создан) — создаём чат и шлём
-    // первое сообщение через REST, затем переходим на его реальный URL.
     if (newUserId) {
       try {
         const newChatId = await createDirectChat(newUserId)
@@ -218,9 +216,7 @@ export function MessengerPage() {
   }
 
   async function handleSendFiles(files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) {
-    // Черновик — как и в handleSend, сначала создаём чат (один раз, а не по разу на файл —
-    // все файлы уходят одним запросом, поэтому гонки параллельных createDirectChat здесь нет);
-    // ошибки здесь и ниже ловит сам ChatWindow (см. send() там) и показывает модалку ошибки
+    // Один createDirectChat на все файлы, а не по одному на файл — иначе гонка параллельных вызовов.
     if (newUserId) {
       const newChatId = await createDirectChat(newUserId)
       await sendFiles(newChatId, files, caption, meSender, onUploadProgress)
@@ -486,9 +482,7 @@ export function MessengerPage() {
               onTyping={typingIndicator.handleOwnTyping}
               onBack={() => { discardInputHistoryLayer(); navigate('/chats') }}
               onHeaderClick={() => {
-                // Открытие карточки группы — повод перезапросить участников заново, а не
-                // показывать закэшированный groupMembers: он не обновляется сам по себе, если
-                // кто-то (в т.ч. я сам) поменял имя/аватар/цвет, не меняя при этом состав чата
+                // Перезапрашиваем участников: groupMembers не обновляется сам, если кто-то поменял имя/аватар, не меняя состав чата.
                 if (meta.group) { setGroupModalOpen(true); if (id) loadGroupMembers(id); return }
                 if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }
               }}
