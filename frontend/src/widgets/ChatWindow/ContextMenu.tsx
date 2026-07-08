@@ -1,3 +1,4 @@
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ReplyIcon, EditIcon, ForwardIcon, TrashIcon, SelectIcon } from './icons'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
@@ -33,6 +34,8 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const { t } = useTranslation()
   const { msg, selection } = state
+  const reactionRowRef = useRef<HTMLDivElement>(null)
+  const [reactionScroll, setReactionScroll] = useState({ left: 0, max: 0, viewport: 1, content: 1 })
   // Сообщение без messageId ещё не долетело до сервера — доступно только удаление черновика,
   // не через canDeleteMessages (то право на чужие/групповые сообщения, а тут свой неотправленный).
   const isLocalOnly = !msg.messageId
@@ -53,9 +56,33 @@ export function ContextMenu({
     : isLocalOnly
       ? 56
       : (msg.own ? 246 : 210) + (showReactionDetails ? 46 : 0)
-  const menuWidth = Math.min(240, window.innerWidth - 16)
+  const menuMaxWidth = window.innerWidth <= 480 ? 200 : 240
+  const menuWidth = Math.min(menuMaxWidth, window.innerWidth - 16)
   const left = Math.max(8, Math.min(state.x, window.innerWidth - menuWidth - 8))
   const top = Math.max(8, Math.min(state.y, window.innerHeight - menuHeight - 8))
+
+  const updateReactionScroll = useCallback(() => {
+    const row = reactionRowRef.current
+    if (!row) return
+    setReactionScroll({
+      left: row.scrollLeft,
+      max: Math.max(0, row.scrollWidth - row.clientWidth),
+      viewport: row.clientWidth,
+      content: row.scrollWidth,
+    })
+  }, [])
+
+  useLayoutEffect(() => {
+    updateReactionScroll()
+    window.addEventListener('resize', updateReactionScroll)
+    return () => window.removeEventListener('resize', updateReactionScroll)
+  }, [quickReactions.length, selection, isLocalOnly, updateReactionScroll])
+
+  const hasReactionScroll = reactionScroll.max > 1
+  const reactionThumbWidth = Math.max(28, (reactionScroll.viewport / reactionScroll.content) * reactionScroll.viewport)
+  const reactionThumbLeft = hasReactionScroll
+    ? (reactionScroll.left / reactionScroll.max) * (reactionScroll.viewport - reactionThumbWidth)
+    : 0
 
   return (
     <div
@@ -83,21 +110,34 @@ export function ContextMenu({
         </button>
       ) : (
         <>
-          <div className={s.contextReactionRow} role="group" aria-label={t('reactions.quick')}>
-            {quickReactions.map((emoji) => {
-              const selected = msg.reactions?.some((reaction) => reaction.userId === currentUser.senderId && reaction.emoji === emoji)
-              return (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={`${s.contextReactionBtn} ${selected ? s.contextReactionBtnActive : ''}`}
-                  onClick={() => onReact(msg, emoji)}
-                  aria-label={t('reactions.set', { emoji })}
-                >
-                  {emoji}
-                </button>
-              )
-            })}
+          <div className={s.contextReactionScroller}>
+            <div ref={reactionRowRef} className={s.contextReactionRow} role="group" aria-label={t('reactions.quick')} onScroll={updateReactionScroll}>
+              {quickReactions.map((emoji) => {
+                const selected = msg.reactions?.some((reaction) => reaction.userId === currentUser.senderId && reaction.emoji === emoji)
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    className={`${s.contextReactionBtn} ${selected ? s.contextReactionBtnActive : ''}`}
+                    onClick={() => onReact(msg, emoji)}
+                    aria-label={t('reactions.set', { emoji })}
+                  >
+                    {emoji}
+                  </button>
+                )
+              })}
+            </div>
+            {hasReactionScroll && (
+              <div className={s.contextReactionScrollbar} aria-hidden="true">
+                <span
+                  className={s.contextReactionScrollbarThumb}
+                  style={{
+                    width: `${reactionThumbWidth}px`,
+                    transform: `translateX(${reactionThumbLeft}px)`,
+                  }}
+                />
+              </div>
+            )}
           </div>
           <button type="button" className={s.contextMenuItem} onClick={() => onReply(msg)}>
             <ReplyIcon />{t('messenger.replyMessage')}
