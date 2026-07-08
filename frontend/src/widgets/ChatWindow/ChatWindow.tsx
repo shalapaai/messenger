@@ -7,6 +7,7 @@ import {
   type RefObject,
   type KeyboardEvent,
   type ChangeEvent,
+  type ClipboardEvent,
   type MouseEvent,
 } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -361,6 +362,17 @@ export function ChatWindow({
       if (replyingTo) cancelReply()
     }
   }
+  
+  function handlePaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = Array.from(e.clipboardData.items)
+      .filter(item => item.kind === 'file')
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file !== null)
+
+    if (files.length === 0) return
+    e.preventDefault()
+    attachments.selectFiles(files)
+  }
 
   function handleEmojiSelect(emoji: string) {
     const textarea = mobileInput.textareaRef.current
@@ -609,6 +621,7 @@ export function ChatWindow({
               rows={1}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { setText(e.target.value); onTyping() }}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               onSelect={mobileInput.rememberTextSelection}
               onPointerDown={() => {
                 if (mobileInput.isMobileInputMode() && mobileInput.isEmojiPickerOpen) {
