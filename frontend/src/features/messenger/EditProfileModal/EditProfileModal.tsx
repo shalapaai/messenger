@@ -62,6 +62,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   const isCityTooLong   = editCity.trim().length   > CITY_MAX_LENGTH
   const isDeptTooLong   = editDept.trim().length   > DEPARTMENT_MAX_LENGTH
   const hasOptionalFieldError = isStatusTooLong || isPhoneTooLong || isCityTooLong || isDeptTooLong
+  const hasImageAvatar = !avatarRemoved && !!(avatarPreview ?? profile.avatarUrl)
 
   function handleAvatarChange(file: File) {
     if (!isAllowedAvatarImage(file)) {
@@ -115,7 +116,7 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
         phone:       editPhone.trim(),
         city:        editCity.trim(),
         department:  editDept.trim(),
-        avatarColor,
+        ...(hasImageAvatar ? {} : { avatarColor }),
       })
 
       if (avatarRemoved && !croppedAvatarFile) {
@@ -155,10 +156,12 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
                 onChange={(file) => { setAvatarRemoved(false); handleAvatarChange(file) }}
                 onRemove={() => { setAvatarPreview(undefined); setAvatarRemoved(true); setCroppedAvatarFile(null) }}
               />
-              <div className={s.colorPickerWrap}>
-                <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
-                <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
-              </div>
+              {!hasImageAvatar && (
+                <div className={s.colorPickerWrap}>
+                  <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
+                  <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+                </div>
+              )}
             </div>
             <div className={s.modalFields}>
               <label className={s.modalField}>

@@ -54,6 +54,7 @@ function ProfileSetupForm() {
   const isCityTooLong       = city.trim().length       > CITY_MAX_LENGTH
   const isDepartmentTooLong = department.trim().length > DEPARTMENT_MAX_LENGTH
   const hasOptionalFieldError = isStatusTooLong || isPhoneTooLong || isCityTooLong || isDepartmentTooLong
+  const hasImageAvatar = !!avatarPreview
 
   useEffect(() => {
     return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }
@@ -162,10 +163,12 @@ function ProfileSetupForm() {
             onChange={handleAvatarChange}
             onRemove={() => { setAvatarPreview(undefined); setCroppedAvatarFile(null) }}
           />
-          <div className={styles.colorPickerWrap}>
-            <span className={styles.colorPickerLabel}>{t('avatar.color')}</span>
-            <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
-          </div>
+          {!hasImageAvatar && (
+            <div className={styles.colorPickerWrap}>
+              <span className={styles.colorPickerLabel}>{t('avatar.color')}</span>
+              <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+            </div>
+          )}
         </div>
 
         <div className={styles.fields}>

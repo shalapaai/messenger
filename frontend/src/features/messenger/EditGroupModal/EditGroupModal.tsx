@@ -15,7 +15,7 @@ interface EditGroupModalProps {
   currentAvatarUrl: string | null
   currentColor: string
   onClose: () => void
-  onSave: (name: string, avatarColor: string) => Promise<void>
+  onSave: (name: string, avatarColor?: string) => Promise<void>
   onAvatarUploaded: () => void
 }
 
@@ -47,6 +47,7 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState<SaveError>(null)
   const avatarCrop = useAvatarCrop()
+  const hasImageAvatar = !avatarRemoved && !!(avatarCrop.avatarPreview ?? currentAvatarUrl)
 
   async function handleSave() {
     const trimmed = name.trim()
@@ -72,7 +73,10 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
         avatarAlreadySaved = true
         onAvatarUploaded()
       }
-      if (trimmed !== currentName || avatarColor !== currentColor) await onSave(trimmed, avatarColor)
+      const nextAvatarColor = hasImageAvatar ? undefined : avatarColor
+      if (trimmed !== currentName || (nextAvatarColor !== undefined && avatarColor !== currentColor)) {
+        await onSave(trimmed, nextAvatarColor)
+      }
       onClose()
     } catch {
       const nextError = avatarAlreadySaved ? 'avatarSavedNameFailed' : 'name'
@@ -102,10 +106,12 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
               }}
               onRemove={() => { avatarCrop.removeAvatar(); setAvatarRemoved(true) }}
             />
-            <div className={s.colorPickerWrap}>
-              <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
-              <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
-            </div>
+            {!hasImageAvatar && (
+              <div className={s.colorPickerWrap}>
+                <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
+                <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+              </div>
+            )}
           </div>
 
           <input

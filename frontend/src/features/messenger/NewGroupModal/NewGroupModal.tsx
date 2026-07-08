@@ -29,6 +29,7 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
   const [modalError, setModalError] = useState<ModalError>(null)
   const { query, setQuery, results, loading, error } = useUserSearch(isOpen)
   const avatarCrop = useAvatarCrop()
+  const hasImageAvatar = !!avatarCrop.avatarPreview
 
   useEffect(() => {
     if (isOpen) return
@@ -92,10 +93,12 @@ export function NewGroupModal({ isOpen, onClose, onCreate }: NewGroupModalProps)
               }}
               onRemove={avatarCrop.removeAvatar}
             />
-            <div className={s.colorPickerWrap}>
-              <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
-              <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
-            </div>
+            {!hasImageAvatar && (
+              <div className={s.colorPickerWrap}>
+                <span className={s.colorPickerLabel}>{t('avatar.color')}</span>
+                <AvatarColorPicker value={avatarColor} onChange={setAvatarColor} />
+              </div>
+            )}
           </div>
 
           <input

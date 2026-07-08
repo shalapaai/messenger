@@ -83,7 +83,7 @@ public sealed class Chat : AggregateRoot<ChatId>
         if (avatarUrl is not null)
             AvatarUrl = avatarUrl;
 
-        if (avatarColor is not null)
+        if (avatarColor is not null && AvatarUrl is null)
             AvatarColor = avatarColor;
 
         NotifyMembershipChanged();
