@@ -51,13 +51,10 @@ export function getFileTypeInfo(fileName: string | null | undefined, contentType
   return DEFAULT_INFO
 }
 
-// Должно соответствовать AllowedAttachmentMimeTypes в backend/.../Files/FilesModuleApi.cs —
-// проверяем на клиенте по расширению (не по File.type: браузер на некоторых ОС не знает
-// MIME для .rar/.7z/.docx и отдаёт пустую строку или application/octet-stream, из-за чего
-// проверка по одному только MIME-типу ложно отклоняла бы совершенно нормальные файлы).
-// Бэкенд всё равно перепроверяет сам — это только быстрая обратная связь на клиенте.
+// По расширению, а не File.type — на некоторых ОС браузер не знает MIME для .rar/.7z/.docx.
+// Должно соответствовать AllowedAttachmentMimeTypes на бэкенде.
 export const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
-  'jpg', 'jpeg', 'png', 'webp', 'gif', 'svg',
+  'jpg', 'jpeg', 'png', 'webp', 'gif',
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv',
   'zip', 'rar', '7z',
   'mp3', 'wav', 'ogg', 'm4a', 'weba',
@@ -69,13 +66,14 @@ export const MAX_ATTACHMENT_SIZE_BYTES = 25 * 1024 * 1024
 export function isAllowedAttachment(file: File): boolean {
   const ext = file.name.split('.').pop()?.toLowerCase()
   if (ext && ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) return true
-  // файл без расширения (или с незнакомым) — доверяем MIME-типу, если браузер его распознал
-  return file.type.startsWith('image/') || file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf'
+  // файл без расширения (или с незнакомым) — доверяем MIME-типу, если браузер его распознал;
+  // SVG исключаем явно (может нести <script>, см. ALLOWED_ATTACHMENT_EXTENSIONS)
+  return (file.type.startsWith('image/') && file.type !== 'image/svg+xml')
+    || file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf'
 }
 
-// Должно соответствовать AvatarReplace.AllowedMimeTypes на бэкенде — уже без SVG (в отличие от
-// вложений чата): аватарки рендерятся как <img src>, а неанимированный растровый набор проще
-// и безопаснее, чем разрешать SVG с потенциальным script/onload внутри.
+// Без SVG (в отличие от вложений чата) — аватарки рендерятся как <img src>, и растровый набор
+// безопаснее, чем SVG с потенциальным script/onload. Должно соответствовать бэкенду.
 const ALLOWED_AVATAR_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif'])
 
 export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
