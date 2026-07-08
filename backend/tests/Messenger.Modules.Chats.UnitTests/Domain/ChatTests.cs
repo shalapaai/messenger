@@ -529,5 +529,6 @@ public sealed class ChatTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    private static Chat CreateGroup(string name = "Group") => Chat.CreateGroup(name).Value!;
+    private static Chat CreateGroup(string name = "Group", string? avatarColor = null) =>
+        Chat.CreateGroup(name, avatarColor).Value!;
 }
