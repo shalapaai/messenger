@@ -14,6 +14,8 @@ interface ReactionGroup {
   reactedByMe: boolean
 }
 
+type MessageReaction = NonNullable<Message['reactions']>[number]
+
 type RenderedItem =
   | { type: 'sep'; label: string }
   | { type: 'system'; msg: Message }
@@ -60,11 +62,24 @@ function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[]
   return rendered
 }
 
+function reactionForDisplay(reaction: MessageReaction, meSender: Sender): MessageReaction {
+  if (reaction.userId !== meSender.senderId) return reaction
+
+  return {
+    ...reaction,
+    userName: meSender.senderName,
+    userInitials: meSender.senderInitials,
+    userAvatarUrl: meSender.senderAvatarUrl ?? null,
+    userAvatarColor: meSender.senderColor,
+  }
+}
+
 function groupReactions(msg: Message, meSender: Sender): ReactionGroup[] {
   const reactions = msg.reactions ?? []
   const byEmoji = new Map<string, ReactionGroup>()
 
-  reactions.forEach((reaction) => {
+  reactions.forEach((rawReaction) => {
+    const reaction = reactionForDisplay(rawReaction, meSender)
     const group = byEmoji.get(reaction.emoji)
     if (group) {
       group.count += 1
@@ -285,10 +300,10 @@ export const MessageList = memo(function MessageList({
                                       className={s.reactionAvatar}
                                       style={reaction.userAvatarUrl ? undefined : { background: reaction.userAvatarColor }}
                                     >
-                                      {reaction.userAvatarUrl
-                                        ? <AvatarImage src={reaction.userAvatarUrl} alt={reaction.userName} className={s.reactionAvatarImg} />
-                                        : reaction.userName.slice(0, 2).toUpperCase()
-                                      }
+                                {reaction.userAvatarUrl
+                                  ? <AvatarImage src={reaction.userAvatarUrl} alt={reaction.userName} className={s.reactionAvatarImg} />
+                                  : reaction.userInitials ?? reaction.userName.slice(0, 2).toUpperCase()
+                                }
                                     </span>
                                   ))}
                                 </span>

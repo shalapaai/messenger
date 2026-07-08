@@ -40,6 +40,8 @@ interface ReactionDetailsState {
   position: { left: number; top: number } | null
 }
 
+type MessageReaction = NonNullable<Message['reactions']>[number]
+
 interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
@@ -289,14 +291,28 @@ export function ChatWindow({
     }, 120)
   }
 
-  function openReactionUserProfile(reaction: NonNullable<Message['reactions']>[number]) {
+  function reactionForDisplay(reaction: MessageReaction): MessageReaction {
+    if (reaction.userId !== meSender.senderId) return reaction
+
+    return {
+      ...reaction,
+      userName: meSender.senderName,
+      userInitials: meSender.senderInitials,
+      userAvatarUrl: meSender.senderAvatarUrl ?? null,
+      userAvatarColor: meSender.senderColor,
+    }
+  }
+
+  function openReactionUserProfile(rawReaction: MessageReaction) {
+    const reaction = reactionForDisplay(rawReaction)
+
     onAvatarClick({
       id: 0,
       text: '',
       own: false,
       senderId: reaction.userId,
       senderName: reaction.userName,
-      senderInitials: reaction.userName.slice(0, 2).toUpperCase(),
+      senderInitials: reaction.userInitials ?? reaction.userName.slice(0, 2).toUpperCase(),
       senderColor: reaction.userAvatarColor,
       senderAvatarUrl: reaction.userAvatarUrl,
       time: '',
@@ -656,7 +672,7 @@ export function ChatWindow({
         <ContextMenu
           state={contextMenu}
           canDeleteMessages={canDeleteMessages}
-          currentUserId={meSender.senderId}
+          currentUser={meSender}
           onReply={startReply}
           onEdit={startEdit}
           onForward={(msg) => { onForward([msg]); setContextMenu(null) }}
@@ -692,7 +708,7 @@ export function ChatWindow({
               <button type="button" className={s.reactionDetailsClose} onClick={() => setReactionDetails(null)}>✕</button>
             </div>
             <div className={s.reactionDetailsList}>
-              {(reactionDetailsMessage.reactions ?? []).map((reaction) => (
+              {(reactionDetailsMessage.reactions ?? []).map(reactionForDisplay).map((reaction) => (
                 <button
                   type="button"
                   className={s.reactionDetailsRow}
@@ -705,7 +721,7 @@ export function ChatWindow({
                   >
                     {reaction.userAvatarUrl
                       ? <AvatarImage src={reaction.userAvatarUrl} alt={reaction.userName} className={s.reactionDetailsAvatarImg} />
-                      : reaction.userName.slice(0, 2).toUpperCase()
+                      : reaction.userInitials ?? reaction.userName.slice(0, 2).toUpperCase()
                     }
                   </span>
                   <span className={s.reactionDetailsName}>{reaction.userName}</span>

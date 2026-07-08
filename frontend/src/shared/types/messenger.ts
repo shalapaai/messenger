@@ -53,6 +53,7 @@ export interface Attachment {
 export interface MessageReaction {
   userId: string
   userName: string
+  userInitials?: string
   userAvatarUrl: string | null
   userAvatarColor: string
   emoji: string

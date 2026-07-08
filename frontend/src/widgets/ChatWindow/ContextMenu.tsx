@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { ReplyIcon, EditIcon, ForwardIcon, TrashIcon, SelectIcon } from './icons'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
-import type { Message } from '../../shared/types/messenger'
+import type { Message, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
 /** selection: true — открыто правым кликом по уже выделенным сообщениям (режим множественного
@@ -11,7 +11,7 @@ export interface ContextMenuState { x: number; y: number; msg: Message; selectio
 interface ContextMenuProps {
   state: ContextMenuState
   canDeleteMessages: boolean
-  currentUserId: string
+  currentUser: Sender
   onReply: (msg: Message) => void
   onEdit: (msg: Message) => void
   onForward: (msg: Message) => void
@@ -28,7 +28,7 @@ interface ContextMenuProps {
 }
 
 export function ContextMenu({
-  state, canDeleteMessages, currentUserId, onReply, onEdit, onForward, onDelete, onSelect, onReact,
+  state, canDeleteMessages, currentUser, onReply, onEdit, onForward, onDelete, onSelect, onReact,
   onOpenReactions, onPreviewReactions, onCloseReactionPreview, quickReactions, isGroup, onBulkForward, onBulkDelete,
 }: ContextMenuProps) {
   const { t } = useTranslation()
@@ -36,7 +36,17 @@ export function ContextMenu({
   // Сообщение без messageId ещё не долетело до сервера — доступно только удаление черновика,
   // не через canDeleteMessages (то право на чужие/групповые сообщения, а тут свой неотправленный).
   const isLocalOnly = !msg.messageId
-  const reactions = msg.reactions ?? []
+  const reactions = (msg.reactions ?? []).map((reaction) =>
+    reaction.userId === currentUser.senderId
+      ? {
+          ...reaction,
+          userName: currentUser.senderName,
+          userInitials: currentUser.senderInitials,
+          userAvatarUrl: currentUser.senderAvatarUrl ?? null,
+          userAvatarColor: currentUser.senderColor,
+        }
+      : reaction,
+  )
   const showReactionDetails = isGroup && reactions.length > 0 && !selection && !isLocalOnly
   const menuHeight = selection
     ? 88
@@ -75,7 +85,7 @@ export function ContextMenu({
         <>
           <div className={s.contextReactionRow} role="group" aria-label={t('reactions.quick')}>
             {quickReactions.map((emoji) => {
-              const selected = msg.reactions?.some((reaction) => reaction.userId === currentUserId && reaction.emoji === emoji)
+              const selected = msg.reactions?.some((reaction) => reaction.userId === currentUser.senderId && reaction.emoji === emoji)
               return (
                 <button
                   key={emoji}
@@ -129,7 +139,7 @@ export function ContextMenu({
                   >
                     {reaction.userAvatarUrl
                       ? <AvatarImage src={reaction.userAvatarUrl} alt={reaction.userName} className={s.contextReactionSummaryAvatarImg} />
-                      : reaction.userName.slice(0, 2).toUpperCase()
+                      : reaction.userInitials ?? reaction.userName.slice(0, 2).toUpperCase()
                     }
                   </span>
                 ))}

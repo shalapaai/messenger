@@ -17,25 +17,27 @@ async function fetchProtectedFileBlob(url: string): Promise<Blob> {
  *  fileBlobCache (иначе пересоздание ChatWindow при смене чата качало бы файлы заново).
  *  Передайте enabled=false, чтобы не загружать сразу. */
 export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = true) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null)
-  const [error,   setError]   = useState(false)
+  const [fileState, setFileState] = useState<{
+    fileUrl: string | null
+    blobUrl: string | null
+    error: boolean
+    progress: number | null
+  }>({ fileUrl: null, blobUrl: null, error: false, progress: null })
   // null — процент неизвестен (сервер не прислал Content-Length) или загрузка ещё не началась.
-  const [progress, setProgress] = useState<number | null>(null)
 
   useEffect(() => {
     if (!fileUrl || !enabled) return
     let cancelled = false
-    setBlobUrl(null)
-    setError(false)
-    setProgress(null)
 
-    const onProgress = (percent: number | null) => { if (!cancelled) setProgress(percent) }
+    const onProgress = (percent: number | null) => {
+      if (!cancelled) setFileState({ fileUrl, blobUrl: null, error: false, progress: percent })
+    }
 
     acquireFileBlobUrl(fileUrl, onProgress)
       .then(url => {
-        if (!cancelled) setBlobUrl(url)
+        if (!cancelled) setFileState({ fileUrl, blobUrl: url, error: false, progress: null })
       })
-      .catch(() => { if (!cancelled) setError(true) })
+      .catch(() => { if (!cancelled) setFileState({ fileUrl, blobUrl: null, error: true, progress: null }) })
 
     return () => {
       cancelled = true
@@ -43,7 +45,13 @@ export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = t
     }
   }, [fileUrl, enabled])
 
-  return { blobUrl, error, progress }
+  const isCurrentFile = enabled && !!fileUrl && fileState.fileUrl === fileUrl
+
+  return {
+    blobUrl: isCurrentFile ? fileState.blobUrl : null,
+    error: isCurrentFile ? fileState.error : false,
+    progress: isCurrentFile ? fileState.progress : null,
+  }
 }
 
 /** Скачивание "по клику" без предзагрузки на рендере — для карточек не-картиночных файлов,
