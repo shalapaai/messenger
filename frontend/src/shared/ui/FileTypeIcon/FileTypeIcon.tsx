@@ -7,9 +7,7 @@ interface FileTypeIconProps {
   size?: number
 }
 
-/** Цветная иконка-бейдж с сокращением типа файла (PDF/DOC/ZIP/MP3…) — тот же приём,
- *  что у Google Drive/Slack: не рисовать десятки уникальных пиктограмм под каждый формат,
- *  а один силуэт документа + цвет + подпись расширения. */
+/** Цветной бейдж-иконка формата файла — один силуэт + подпись расширения вместо уникальной пиктограммы под каждый тип. */
 export function FileTypeIcon({ fileName, contentType, size = 40 }: FileTypeIconProps) {
   const { label, color } = getFileTypeInfo(fileName, contentType)
 

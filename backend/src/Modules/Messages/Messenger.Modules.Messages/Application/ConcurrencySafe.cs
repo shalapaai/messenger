@@ -3,9 +3,7 @@ namespace Messenger.Modules.Messages.Application;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-// Общая обработка гонки конкурентного изменения/удаления одного и того же сообщения —
-// Edit/Delete/DeleteMessages все ловили DbUpdateConcurrencyException и превращали её
-// в Error.Conflict одинаково.
+// Общий маппинг DbUpdateConcurrencyException -> Error.Conflict для Edit/Delete/DeleteMessages.
 internal static class ConcurrencySafe
 {
     public static async Task<Result> SaveChangesAsync(IUnitOfWork unitOfWork, string conflictEntity, CancellationToken ct)

@@ -23,10 +23,8 @@ export function useSignalR(options: UseSignalROptions = {}) {
   const optionsRef = useRef(options)
   useLayoutEffect(() => { optionsRef.current = options })
 
-  // Группу НЕ покидаем при смене/размонтировании: ConnectedLayout держит
-  // соединение во всех чатах пользователя постоянно (фоновые realtime-обновления
-  // списка и кэша сообщений). joinChat здесь — подстраховка для чата, которого
-  // ещё нет в сторе (например, только что созданного).
+  // Группу НЕ покидаем при смене/размонтировании — соединение держится во всех чатах постоянно;
+  // joinChat здесь — подстраховка для чата, которого ещё нет в сторе.
   useEffect(() => {
     const { chatId } = optionsRef.current
     if (!chatId || !signalR.isConnected) return
@@ -34,11 +32,8 @@ export function useSignalR(options: UseSignalROptions = {}) {
     signalR.joinChat(chatId).catch(() => {})
   }, [options.chatId, status])
 
-  // Подписываемся ОДИН раз (пустой deps) через стабильные trampoline-колбэки, которые на
-  // каждый вызов читают actuals из optionsRef — иначе, поскольку вызывающий код (MessengerPage)
-  // передаёт options как новый объект с новыми инлайн-функциями на каждый рендер, эффект
-  // пересоздавал бы ВСЕ 8 подписок при каждом ре-рендере страницы (а не только изменившуюся),
-  // с окном рассинхронизации между off() и повторным on(), где событие могло бы потеряться
+  // trampoline-колбэки читают actuals из optionsRef — иначе новый объект options на каждый
+  // рендер пересоздавал бы подписки, с окном между off()/on(), где событие могло потеряться.
   useEffect(() => {
     const off = [
       signalR.onReceiveMessage(msg => optionsRef.current.onMessage?.(msg)),

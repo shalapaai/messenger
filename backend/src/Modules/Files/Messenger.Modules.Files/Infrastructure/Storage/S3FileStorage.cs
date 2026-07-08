@@ -41,10 +41,8 @@ public sealed class S3FileStorage(IAmazonS3 s3Client, IOptions<S3StorageOptions>
     public async Task DeleteAsync(string fileKey, CancellationToken ct = default) =>
         await s3Client.DeleteObjectAsync(_opts.BucketName, fileKey, ct);
 
-    // ВАЖНО: намеренно НЕ прямой URL на бакет/CDN. Объект приватный (CannedACL.Private),
-    // а прямая ссылка на CloudFront/бакет обходила бы проверку членства в чате из
-    // FilesEndpoints.DownloadFile — тот же путь, что и для LocalFileStorage, единственное
-    // место, отдающее вложения чата, чтобы у Local/S3 было одинаковое поведение доступа.
+    // Намеренно не прямой URL на бакет/CDN: объект приватный (CannedACL.Private), а прямая
+    // ссылка обходила бы проверку членства в чате из FilesEndpoints.DownloadFile.
     public string GetPublicUrl(string fileKey) => $"/api/files/{fileKey}";
 }
 

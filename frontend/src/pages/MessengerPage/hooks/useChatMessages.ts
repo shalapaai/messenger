@@ -23,12 +23,6 @@ interface UseChatMessagesOptions {
   onIncomingRead?: (chatId: string) => void
 }
 
-/**
- * Владеет содержимым переписок: загрузка истории (с реальной cursor-пагинацией),
- * приём realtime-сообщений, отправка с оптимистичным UI и ретраем.
- *
- * Если чат не загрузился — отдаёт loadError; UI показывает ошибку с кнопкой «Повторить».
- */
 export function useChatMessages(id: string | undefined, opts: UseChatMessagesOptions = {}) {
   const [chatMessages,   setChatMessages]   = useState<Record<string, Message[]>>({})
   const [loadingInitial, setLoadingInitial] = useState<Record<string, boolean>>({})
@@ -38,9 +32,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   const [historyLoaded,  setHistoryLoaded]  = useState<Record<string, boolean>>({})
 
   const rawMessages = id ? chatMessages[id] : undefined
-  // Финальный предохранитель от дублей на рендере — независимо от того, ИЗ-ЗА ЧЕГО в массиве
-  // оказались две записи с одним messageId (гонка между оптимистичной вставкой и подгрузкой
-  // истории, повторная realtime-доставка и т.п.), на экране всегда будет только первая из них
+  // Финальный предохранитель от дублей: гонка между optimistic-вставкой, историей и повторной
+  // realtime-доставкой может дать два сообщения с одним messageId — оставляем первое.
   const messages = useMemo(() => {
     if (!rawMessages) return []
     const seenMessageIds = new Set<string>()
@@ -83,10 +76,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   }, [id])
 
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
-    // обычную отправку своего сообщения уже показал optimistic-UI в send() — этот echo игнорируем.
-    // Пересылка и системные сообщения — исключение: у них нет локального оптимистичного
-    // добавления (в т.ч. когда именно я — тот, кто добавил/удалил участника), поэтому их
-    // нужно показать по этому же realtime-событию, даже если senderId === я
+    // Обычное свое сообщение уже показал optimistic-UI в send() — этот echo игнорируем.
+    // Исключение — пересылка и системные события: у них нет локального оптимистичного добавления.
     if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId && msg.kind !== 'System') return
 
     setChatMessages(prev => {
@@ -112,8 +103,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           senderAvatarUrl: msg.senderAvatarUrl,
           time:            formatMessageTime(msg.sentAt),
           sentAt:          msg.sentAt,
-          // свои сообщения сюда попадают только пересланными (см. guard выше) — сервер уже
-          // подтвердил отправку, значит статус сразу 'sent', иначе галочка никогда бы не появилась
+          // Свои сообщения сюда попадают только пересланными — сервер уже подтвердил отправку, значит статус сразу 'sent'.
           status:          own ? 'sent' as const : undefined,
           attachments:     msg.attachments,
           forwardedFromUserId:   msg.forwardedFromUserId ?? undefined,
@@ -198,9 +188,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     })
   }, [])
 
-  // Имя/аватарка/цвет отправителя денормализованы в каждое сообщение на момент его получения —
-  // патчим уже загруженную историю по всем закэшированным чатам (не только открытому), иначе
-  // сообщения от этого пользователя так и останутся со старыми данными до следующей загрузки истории.
+  // Имя/аватар/цвет денормализованы в каждое сообщение — патчим все закэшированные чаты, не
+  // только открытый, иначе сообщения так и останутся со старыми данными.
   const handleUserProfileUpdated = useCallback((event: UserProfileUpdatedEvent) => {
     setChatMessages(prev => {
       let changed = false
@@ -347,9 +336,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doSend])
 
-  // Файлы шлём через REST (SignalR не годится для бинарных данных), поэтому, в отличие от send(),
-  // тут нет pending→sent: bubble добавляется сразу с готовым результатом. Эхо этого же сообщения
-  // по SignalR дедуплицируется по messageId в handleIncomingMessage — двойного бабла не будет.
+  // Файлы шлём через REST (SignalR не годится для бинарных данных) — без pending→sent, bubble
+  // сразу с готовым результатом. SignalR-эхо дедуплицируется по messageId в handleIncomingMessage.
   const sendFiles = useCallback(async (
     chatId: string, files: File[], caption: string | undefined, meSender: Sender,
     onUploadProgress?: (percent: number) => void,
@@ -394,10 +382,8 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
 
   return {
     messages,
-    // Пока для чата ещё ни разу не завершилась загрузка (chatMessages[id] не задан) и не было
-    // ошибки — считаем это состоянием загрузки, а не "сообщений нет". Иначе на первом рендере
-    // после смены id (до срабатывания эффекта ниже) messages=[] и loadingInitial[id]=false
-    // совпадают, и ChatWindow на миг показывает пустую заглушку вместо скелетона.
+    // Пока chatMessages[id] не задан и не было ошибки — считаем это загрузкой, не "сообщений нет":
+    // иначе на первом рендере после смены id мелькает пустая заглушка вместо скелетона.
     loadingInitial: id ? (chatMessages[id] === undefined ? !loadError[id] : !!loadingInitial[id]) : false,
     loadError:      id ? !!loadError[id] : false,
     retryLoadInitial: () => id && loadInitial(id),

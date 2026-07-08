@@ -16,11 +16,7 @@ interface UseAttachmentQueueOptions {
   onSendFiles: (files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) => Promise<void>
 }
 
-/**
- * Очередь прикреплённых файлов, ожидающих отправки: выбор (клик или drag-and-drop), all-or-nothing
- * валидация типа/размера/количества, и отправка всей очереди одним запросом — одним сообщением
- * с несколькими вложениями, а не по файлу за раз (см. sendQueuedFiles).
- */
+/** Отправка всей очереди уходит одним запросом — одно сообщение с несколькими вложениями, а не по файлу за раз. */
 export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
   const { t } = useTranslation()
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([])
@@ -38,9 +34,8 @@ export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
     queuedFilesRef.current.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl) })
   }, [])
 
-  // Всё-или-ничего: если хоть один файл в новой пачке не проходит проверку, не добавляем
-  // в очередь НИ ОДНОГО из них — иначе легко случайно отправить часть альбома, даже не
-  // заметив, что один файл молча отсеялся
+  // Всё-или-ничего: если хоть один файл не проходит проверку, не добавляем в очередь ни одного —
+  // иначе можно случайно отправить часть альбома, не заметив, что один файл отсеялся.
   function selectFiles(files: File[]) {
     setAttachmentError(null)
 
@@ -75,9 +70,8 @@ export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
     if (files.length > 0) selectFiles(files)
   }
 
-  // ── Drag-and-drop файлов из проводника поверх окна чата ─────────────────────
-  // dragenter/dragleave всплывают с дочерних элементов — считаем "глубину" входов, а не
-  // полагаемся на единичный dragleave, иначе оверлей мигал бы при движении над дочерними узлами
+  // dragenter/dragleave всплывают с дочерних элементов — считаем "глубину" входов, иначе
+  // оверлей мигал бы от dragleave при движении над дочерними узлами.
   const [isDraggingFile, setIsDraggingFile] = useState(false)
   const dragCounterRef = useRef(0)
 
@@ -126,9 +120,8 @@ export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
     setAttachmentError(null)
   }
 
-  /** Отправляет всю очередь одним HTTP-запросом — одно сообщение с несколькими вложениями,
-   *  атомарно (или уходит вся пачка, или сервер отклоняет всё и очередь остаётся как была).
-   *  Возвращает true при успехе — вызывающий может очистить текст сообщения. */
+  /** Атомарно: либо уходит вся очередь, либо сервер отклоняет всё. Возвращает true при успехе,
+   *  чтобы вызывающий мог очистить текст сообщения. */
   async function sendQueuedFiles(caption: string | undefined): Promise<boolean> {
     const filesToSend = queuedFiles.map(f => f.file)
     setFileUploading(true)

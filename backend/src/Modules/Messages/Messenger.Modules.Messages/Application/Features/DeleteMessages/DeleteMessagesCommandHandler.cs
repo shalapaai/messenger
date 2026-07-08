@@ -22,10 +22,8 @@ public sealed class DeleteMessagesCommandHandler(
         var ids = command.MessageIds.Select(MessageId.From).ToList();
         var messages = await messageRepository.GetByIdsAsync(ids, ct);
 
-        // NotFound — только если ни один из переданных id вообще не относится к этому чату
-        // (невалидный/чужой id). Если id относится к чату, но сообщение уже удалено — это не
-        // ошибка запроса: результат, которого хотел клиент (сообщения нет), уже достигнут,
-        // так что повторный bulk-delete по тем же id должен быть идемпотентным no-op, а не 404.
+        // NotFound только если ни один id не относится к этому чату; уже удалённое сообщение —
+        // не ошибка, повторный bulk-delete тех же id должен оставаться идемпотентным.
         var messagesInChat = messages.Where(m => m.ChatId == command.ChatId).ToList();
         if (messagesInChat.Count == 0)
             return Result.Failure<List<Guid>>(Error.NotFound("Message"));

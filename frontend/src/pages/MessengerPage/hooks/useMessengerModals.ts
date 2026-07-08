@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Message, ModalUser } from '../../../shared/types/messenger'
 
-/**
- * Владеет открытым/закрытым состоянием всех модалок MessengerPage и общим
- * поведением "Escape закрывает любую открытую модалку".
- */
 export function useMessengerModals() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -14,9 +10,8 @@ export function useMessengerModals() {
   const [newGroupModalOpen, setNewGroupModalOpen] = useState(false)
   const [editGroupModalOpen, setEditGroupModalOpen] = useState(false)
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false)
-  // sourceChatId фиксируется вместе с сообщениями в момент выбора — если пользователь уйдёт в
-  // другой чат, пока модалка открыта (например, кнопкой "назад" в браузере), пересылка всё равно
-  // уйдёт из правильного исходного чата, а не из того, что случайно стал активным сейчас
+  // sourceChatId фиксируется в момент выбора, чтобы пересылка ушла из исходного чата, даже
+  // если пользователь успеет переключиться на другой, пока модалка ещё открыта.
   const [forwardState, setForwardState] = useState<{ sourceChatId: string; messages: Message[] } | null>(null)
 
   useEffect(() => {

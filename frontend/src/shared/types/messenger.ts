@@ -69,9 +69,7 @@ export interface Message {
   senderColor: string
   senderAvatarUrl: string | null
   time: string
-  /** ISO-момент отправки — нужен, чтобы сверять с otherReadAt и решать, "прочитано" ли сообщение,
-   *  а также для метки-разделителя даты в MessageList (считается заново при каждом рендере,
-   *  чтобы обновляться при смене языка интерфейса без перезагрузки чата) */
+  /** ISO-момент отправки — для сверки с otherReadAt ("прочитано"?) и для метки-разделителя даты */
   sentAt: string
   status?: 'pending' | 'sent' | 'failed'
   edited?: boolean

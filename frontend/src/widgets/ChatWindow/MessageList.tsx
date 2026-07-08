@@ -33,10 +33,8 @@ function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[]
   let lastDateKey = ''
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
-    // Группируем по стабильному, не зависящему от языка ключу календарного дня (а не по
-    // готовой переведённой метке) — иначе сообщения, загруженные до и после смены языка
-    // интерфейса, оказались бы в разных группах на один и тот же день (ровно тот баг:
-    // "Сегодня" и "Today" одновременно). Саму метку считаем заново при каждом рендере.
+    // Группируем по языконезависимому ключу дня, не по переведённой метке — иначе смена языка
+    // интерфейса развела бы сообщения одного дня по разным группам ("Сегодня" vs "Today").
     const key = dateKey(msg.sentAt)
     if (key !== lastDateKey) { rendered.push({ type: 'sep', label: formatDateLabel(msg.sentAt) }); lastDateKey = key }
 
@@ -151,9 +149,8 @@ export const MessageList = memo(function MessageList({
         ) : item.type === 'system' ? (() => {
           const i18nKey = systemMessageKey(item.msg.systemEventType)
           if (!i18nKey) return null
-          // Если это сообщение обо мне самом — берём живое текущее имя (meSender), а не
-          // замороженное на момент доставки targetUserName: иначе переименование себя не
-          // отражалось бы в уже показанных "вышел/добавлен в группу" без перезахода в чат
+          // Если сообщение обо мне самом — берём живое имя (meSender), а не замороженное
+          // targetUserName: иначе переименование не отразилось бы в уже показанных событиях.
           const targetName = item.msg.targetUserId === meSender.senderId
             ? meSender.senderName
             : (item.msg.targetUserName ?? '')

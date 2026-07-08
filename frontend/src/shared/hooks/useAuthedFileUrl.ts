@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '../lib/auth/authTokens'
 
-// Вложения чатов (в отличие от аватарок) отдаются НЕ анонимно — бэкенд проверяет,
-// что скачивающий состоит в этом чате (см. DownloadFile в FilesEndpoints.cs). Обычный
-// <img src="/api/files/..."> браузер шлёт без заголовка Authorization и получит 401 —
-// поэтому качаем файл вручную с токеном и превращаем в blob-URL для <img>/скачивания.
+// Вложения чатов отдаются не анонимно — обычный <img src="/api/files/..."> получит 401,
+// поэтому качаем файл вручную с токеном и превращаем в blob-URL.
 async function fetchProtectedFileBlob(url: string): Promise<Blob> {
   const res = await axios.get<Blob>(url, {
     responseType: 'blob',
@@ -14,8 +12,7 @@ async function fetchProtectedFileBlob(url: string): Promise<Blob> {
   return res.data
 }
 
-/** Резолвит защищённый fileUrl вложения в локальный blob-URL. Лениво: пока не понадобится
- *  (см. useLazyAuthedFileDownload) — просто передайте enabled=false. */
+/** Резолвит защищённый fileUrl вложения в локальный blob-URL. Передайте enabled=false, чтобы не загружать сразу. */
 export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = true) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null)
   const [error,   setError]   = useState(false)

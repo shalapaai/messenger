@@ -18,9 +18,8 @@ public sealed class UploadAndSendMessageCommandHandler(
         if (!await membershipChecker.IsMemberAsync(command.ChatId, command.SenderId, ct))
             return Result.Failure<UploadAndSendMessageResult>(Error.Forbidden("You are not a member of this chat"));
 
-        // Проверяем лимит ДО загрузки — иначе батч на сотни файлов успевает уйти в хранилище
-        // и в БД (по одной записи FileUpload на файл), и только потом всё это откатывается
-        // разом в Message.CreateWithAttachments: лишняя нагрузка на диск/БД без всякой пользы.
+        // Проверяем лимит до загрузки — иначе большой батч уйдёт в storage и БД по файлу,
+        // прежде чем Message.CreateWithAttachments всё равно откатит всё целиком.
         if (command.Files.Count > Message.MaxAttachmentsPerMessage)
             return Result.Failure<UploadAndSendMessageResult>(
                 Error.Validation("Attachments", $"Cannot attach more than {Message.MaxAttachmentsPerMessage} files to a single message"));
