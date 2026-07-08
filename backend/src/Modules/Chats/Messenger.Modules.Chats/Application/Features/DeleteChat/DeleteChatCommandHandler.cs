@@ -27,8 +27,7 @@ public sealed class DeleteChatCommandHandler(
         await unitOfWork.SaveChangesAsync(ct);
 
         // Явный вызов, а не FK CASCADE — Chats не должен зависеть от схемы хранения Messages.
-        // Выполняется после коммита и best-effort: худший случай — чат удалён, а сообщения orphaned
-        // (безопасно, подчищаются повторной попыткой), а не наоборот (чат остался бы, потеряв сообщения).
+        // Best-effort после коммита: худший случай — orphaned-сообщения, а не потеря чата.
         try
         {
             await messagesModule.DeleteAllMessagesInChatAsync(command.ChatId, ct);

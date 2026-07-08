@@ -104,9 +104,8 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    // Системное сообщение о смене состава группы (добавили/вышел/удалили) — Content не показывается
-    // пользователю напрямую (клиент строит локализованный текст из Kind/SystemEventType/TargetUserId),
-    // но должен быть непустым: колонка content в БД NOT NULL, как и у обычных сообщений.
+    // Content не показывается напрямую (клиент локализует из Kind/SystemEventType/TargetUserId),
+    // но должен быть непустым — колонка content в БД NOT NULL.
     public static Message CreateSystem(Guid chatId, Guid actorUserId, Guid targetUserId, SystemEventType eventType)
     {
         var message = new Message(MessageId.New(), chatId, actorUserId, $"system:{eventType}", null)

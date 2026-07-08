@@ -15,6 +15,10 @@ interface ChatsState {
   chatsLoaded: boolean
   /** true если последняя попытка loadChats() упала — список показывает ошибку с кнопкой "Повторить" */
   chatsError: boolean
+  /** Чат, открытый прямо сейчас — пока markChatRead ещё не дошёл до сервера,
+   *  loadChats() не должен возвращать по нему старый unread с сервера. */
+  activeChatId: string | null
+  setActiveChatId: (chatId: string | null) => void
   loadChats: () => Promise<void>
   handleNewMessage: (msg: IncomingMessage, activeChatId: string | null) => void
   handleMessagesRead: (chatId: string, readerId: string, readAt: string) => void
@@ -24,15 +28,16 @@ interface ChatsState {
   removeChat: (chatId: string) => void
 }
 
-// Вне store'а — общий на все компоненты, переживает конкурентные вызовы loadChats() из
-// разных мест (эффект в MessengerPage, ChatUpdated, новое сообщение в ещё не открытый чат
-// и т.п.), схлопывая их в один запрос, а не запуская параллельные fetchChats().
+// Вне store'а — схлопывает конкурентные вызовы loadChats() в один запрос fetchChats().
 let loadChatsInFlight: Promise<void> | null = null
 
 export const useChatsStore = create<ChatsState>((set, get) => ({
   chats: [],
   chatsLoaded: false,
   chatsError: false,
+  activeChatId: null,
+
+  setActiveChatId: (chatId) => set({ activeChatId: chatId }),
 
   loadChats: () => {
     if (loadChatsInFlight) return loadChatsInFlight
@@ -40,14 +45,13 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     loadChatsInFlight = (async () => {
       set({ chatsError: false })
       try {
+        // Сервер — источник истины для unreadCount. Исключение: активный чат в этой вкладке,
+        // где markChatRead мог ещё не дойти до сервера — иначе устаревший unread вернулся бы обратно.
+        const { activeChatId } = get()
         const fetched = await fetchChats()
-        // Сервер не хранит unread — это чисто клиентский счётчик, накопленный live-событиями.
-        // fetchChats() всегда возвращает unread: 0, так что наивная замена всего chats затирала
-        // бы счётчики ВСЕХ чатов нулём при каждом loadChats() — а его вызывают в том числе по
-        // поводу, не связанному с конкретным чатом (переименование группы, аватар, ChatUpdated
-        // от чужого чата и т.п.). Переносим уже накопленное значение по каждому известному чату.
-        const prevUnreadById = new Map(get().chats.map(c => [c.id, c.unread]))
-        const chats = fetched.map(c => ({ ...c, unread: prevUnreadById.get(c.id) ?? c.unread }))
+        const chats = activeChatId
+          ? fetched.map(c => c.id === activeChatId ? { ...c, unread: 0 } : c)
+          : fetched
         set({ chats, chatsLoaded: true })
         // засеваем начальный онлайн-статус собеседников; дальше его обновляют live-события UserOnline
         const { setOnline } = useOnlineStore.getState()
@@ -66,14 +70,12 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
 
   handleNewMessage: (msg, activeChatId) => {
     const target = get().chats.find(c => c.id === msg.chatId)
-    // свои же сообщения (обычные — в открытом чате, пересланные — в любой) никогда не непрочитанные;
-    // без этой проверки пересылка в чат, который сейчас не открыт, помечала бы его непрочитанным
-    // собственным же сообщением отправителя
+    // свои же сообщения (в т.ч. пересланные) никогда не непрочитанные, даже если чат не открыт
     const isOwnMessage = msg.senderId === getMyUserId()
 
     if (!target) {
-      // Чата ещё нет в списке (собеседник только что создал его первым сообщением) — тянем
-      // список целиком, сервер уже посчитает верный unreadCount сам; +1 вручную задвоило бы счётчик.
+      // чата ещё нет в списке — перезапрашиваем, сервер сам посчитает unreadCount;
+      // +1 вручную задвоило бы счётчик
       get().loadChats().then(() => {
         set((s) => ({
           chats: s.chats.map(c =>
@@ -122,25 +124,27 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     // если readerId — это я сам (прочитал с другого устройства), это событие не про него
     if (readerId === getMyUserId()) return state
     return {
-      chats: state.chats.map(chat =>
-        chat.id === chatId ? { ...chat, otherReadAt: readAt } : chat
-      ),
+      chats: state.chats.map(chat => {
+        if (chat.id !== chatId) return chat
+        // события MessagesRead от разных участников группы могут прийти не по порядку;
+        // берём максимум, чтобы устаревшее событие не откатило галочку "прочитано" назад
+        const prev = chat.otherReadAt
+        const isNewer = !prev || new Date(readAt).getTime() > new Date(prev).getTime()
+        return isNewer ? { ...chat, otherReadAt: readAt } : chat
+      }),
     }
   }),
 
-  // Превью/unread в списке чатов резолвятся только сервером (GetChats) — если удалённое
-  // сообщение было последним в чате, локально нечем его заменить, поэтому просто перезапрашиваем
-  // список целиком. Не в этом чате прямо сейчас — правки в открытой переписке уже применяет
-  // useChatMessages, а список чатов слушает это событие отдельно и глобально (см. ConnectedLayout).
+  // если удалённое сообщение было последним в чате, локально нечем заменить превью/unread —
+  // просто перезапрашиваем список целиком
   handleMessageDeleted: (chatId, messageId) => {
     const chat = get().chats.find(c => c.id === chatId)
     if (!chat || chat.lastMessageId !== messageId) return
     get().loadChats()
   },
 
-  // Имя/аватарка личного чата без своего названия — это резолвленный displayName собеседника
-  // (см. GetChatsQueryHandler), поэтому патчим только чаты, где он в роли otherUserId; у групп
-  // своё название, к профилю конкретного участника не привязанное.
+  // имя/аватарка личного чата — это профиль собеседника, поэтому патчим только чаты,
+  // где он в роли otherUserId; у групп своё название, к профилю участника не привязанное
   handleUserProfileUpdated: (event) => set((state) => ({
     chats: state.chats.map(chat =>
       chat.otherUserId === event.userId

@@ -111,9 +111,8 @@ export class SignalRClient {
       .configureLogging(LogLevel.Warning)
       .build()
 
-    // Регистрируем один раз — внутри вызываем заменяемый колбэк,
-    // чтобы внешние вызовы onReconnecting/onReconnected/onDisconnected
-    // не накапливали обработчики, а заменяли друг друга.
+    // Регистрируем один раз; заменяемый колбэк даёт onReconnecting/onReconnected/onDisconnected
+    // заменять обработчик, а не накапливать по одному на каждый вызов.
     this.connection.onreconnecting(() => this._onReconnecting?.())
     this.connection.onreconnected(() => this._onReconnected?.())
     this.connection.onclose(() => this._onDisconnected?.())

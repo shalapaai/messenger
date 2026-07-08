@@ -26,9 +26,8 @@ import s from './ChatWindow.module.css'
 // должно совпадать с лимитом на бэкенде (Message.Create / Message.Edit) — проверяем длину
 // на клиенте до отправки, чтобы слишком длинное сообщение не превращалось молча в "не отправлено"
 const MESSAGE_MAX_LENGTH = 4096
-// чисто клиентское ограничение (бэкенд строки не считает) — без него вставка текста из
-// сотен коротких строк даёт вполне укладывающееся в лимит по символам, но нечитаемо длинное
-// сообщение на весь экран
+// Чисто клиентское ограничение (бэкенд строки не считает) — без него вставка из сотен
+// коротких строк даёт сообщение, укладывающееся в лимит символов, но нечитаемо длинное.
 const MESSAGE_MAX_LINES = 30
 const QUICK_REACTIONS = ['❤️', '😂', '👍', '🔥', '😮', '😢', '👏']
 const REACTION_DETAILS_PANEL_WIDTH = 300
@@ -108,9 +107,7 @@ export function ChatWindow({
   const isOverLines  = lineCount > MESSAGE_MAX_LINES
   const isOverLimit  = isOverLength || isOverLines
 
-  // Растягиваем textarea под содержимое (многострочный ввод, Shift+Enter — перенос строки)
-  // до max-height из CSS, дальше — обычный внутренний скролл. useLayoutEffect, а не useEffect,
-  // чтобы пересчитать высоту синхронно до отрисовки кадра и не мигать старым размером.
+  // useLayoutEffect, а не useEffect — пересчитываем высоту textarea синхронно до отрисовки, чтобы не мигало старым размером.
   useLayoutEffect(() => {
     const el = mobileInput.textareaRef.current
     if (!el) return
@@ -154,10 +151,8 @@ export function ChatWindow({
     setTimeout(() => setHighlightedMsgId(null), 1200)
   }, [messagesRef])
 
-  // per-chat состояние (выделение/редактирование/ответ/мобильная раскладка ввода/очередь файлов)
-  // не нужно сбрасывать вручную при смене чата — MessengerPage.tsx монтирует ChatWindow с
-  // key={chatId}, так что React сам полностью пересоздаёт компонент и весь его state при
-  // переключении на другой чат
+  // Per-chat состояние не нужно сбрасывать вручную при смене чата — ChatWindow монтируется с
+  // key={chatId}, поэтому React полностью пересоздаёт компонент и state при переключении.
 
   useEffect(() => {
     if (!contextMenu) return
@@ -184,8 +179,7 @@ export function ChatWindow({
   }, [])
 
   const openContextMenu = useCallback((e: MouseEvent, msg: Message) => {
-    // Сообщение без messageId — ещё отправляется или не отправилось; меню для него имеет смысл
-    // только чтобы удалить черновик (см. ContextMenu: остальные пункты требуют messageId)
+    // Сообщение без messageId ещё отправляется/не отправилось — меню для него имеет смысл только для удаления черновика.
     if (!msg.messageId && msg.status !== 'failed') return
     e.preventDefault()
     if (selection.selectMode) {

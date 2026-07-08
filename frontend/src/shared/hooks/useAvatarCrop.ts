@@ -2,16 +2,15 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getCroppedImage, type CroppedAreaPixels } from '../lib/image'
 import { isAllowedAvatarImage, MAX_AVATAR_SIZE_BYTES } from '../lib/fileType'
 
-/** Выбор + обрезка аватарки (общий поток для EditGroupModal и EditProfileModal) —
- *  сама загрузка на сервер остаётся на вызывающей стороне, здесь только локальный черновик. */
+/** Выбор + обрезка аватарки — загрузка на сервер остаётся на вызывающей стороне, здесь только локальный черновик. */
 export function useAvatarCrop() {
   const [avatarPreview,      setAvatarPreview]      = useState<string | undefined>(undefined)
   const [selectedAvatarFile, setSelectedAvatarFile]  = useState<File | null>(null)
   const [croppedAvatarFile,  setCroppedAvatarFile]   = useState<File | null>(null)
   const [cropImageSrc,       setCropImageSrc]        = useState<string | undefined>(undefined)
 
-  // ref'ы всегда указывают на актуальные blob URL — нужны в cleanup-эффекте на размонтирование,
-  // где обычное замыкание из пустого deps-массива видело бы только значения первого рендера
+  // ref'ы нужны в cleanup-эффекте на размонтирование, где замыкание из пустого deps
+  // видело бы только значения первого рендера
   const avatarPreviewRef = useRef(avatarPreview)
   const cropImageSrcRef = useRef(cropImageSrc)
   useLayoutEffect(() => {
@@ -24,10 +23,8 @@ export function useAvatarCrop() {
     if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
   }, [])
 
-  /** Возвращает причину отказа, если файл отклонён — черновик тогда не открывается,
-   *  вызывающая сторона сама решает, как показать ошибку. Размер исходного файла проверяем
-   *  здесь же, не дожидаясь обрезки: она пересжимает и обычно уменьшает размер, так что
-   *  проверка только итогового файла легко пропустила бы изначально огромный файл. */
+  /** Возвращает причину отказа, если файл отклонён. Размер проверяем до обрезки: она обычно
+   *  уменьшает файл, так что проверка только итога пропустила бы изначально огромный файл. */
   function handleAvatarChange(file: File): 'ok' | 'type' | 'size' {
     if (!isAllowedAvatarImage(file)) return 'type'
     if (file.size > MAX_AVATAR_SIZE_BYTES) return 'size'
@@ -53,16 +50,14 @@ export function useAvatarCrop() {
     setSelectedAvatarFile(null)
   }
 
-  /** Сбросить выбранный файл после того, как он уже успешно загружен на сервер —
-   *  иначе повторное нажатие "Сохранить" (например, после неудачи в ДРУГОЙ части формы)
+  /** Сбросить выбранный файл после успешной загрузки — иначе повторное нажатие "Сохранить"
    *  заново перезалило бы тот же файл. */
   function clearCroppedFile() {
     setCroppedAvatarFile(null)
   }
 
-  /** Полностью сбросить черновик аватарки — по кнопке "убрать" и при закрытии модалки
-   *  (иначе при повторном открытии всё ещё показывался бы старый превью, хотя он уже
-   *  никуда не применится: croppedAvatarFile из предыдущей сессии редактирования потерян). */
+  /** Полностью сбросить черновик аватарки — иначе при повторном открытии показывался бы
+   *  старый превью, хотя croppedAvatarFile из прошлой сессии уже потерян. */
   function removeAvatar() {
     if (cropImageSrc) URL.revokeObjectURL(cropImageSrc)
     if (avatarPreview) URL.revokeObjectURL(avatarPreview)

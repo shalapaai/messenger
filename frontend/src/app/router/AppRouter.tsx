@@ -33,9 +33,8 @@ function ForgotPasswordRoute() {
   return <ForgotPasswordPage />
 }
 
-// SignalR-соединение живёт только когда пользователь полностью авторизован
-// (есть токены И заполненный профиль) — т.е. внутри финальной "разрешённой" зоны
-// GuardedLayout, а не на /login, /register, /profile/setup.
+// SignalR-соединение живёт только когда пользователь полностью авторизован (токены + профиль),
+// не на /login, /register, /profile/setup.
 function ConnectedLayout({ children }: { children: ReactNode }) {
   useSignalRConnection()
 
@@ -47,12 +46,29 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   const setOnline        = useOnlineStore((s) => s.setOnline)
   const chats            = useChatsStore((s) => s.chats)
   const chatsLoaded      = useChatsStore((s) => s.chatsLoaded)
+  const loadChats        = useChatsStore((s) => s.loadChats)
+  const setActiveChatId  = useChatsStore((s) => s.setActiveChatId)
   const status           = useConnectionStore((s) => s.status)
   const chatIdsKey       = chats.map((c) => c.id).join(',')
   const joinedChatIdsRef = useRef<Set<string>>(new Set())
+  const hasConnectedRef = useRef(false)
   const activeChatId = getActiveChatIdFromPathname(pathname)
   const activeDirectUserId = chats.find(chat => isSameNotificationId(chat.id, activeChatId))?.otherUserId
     ?? getDraftDirectUserIdFromPathname(pathname)
+
+  // loadChats() полагается на activeChatId, чтобы не перезаписать локально обнулённый
+  // unread устаревшим серверным значением.
+  useEffect(() => {
+    setActiveChatId(activeChatId)
+  }, [activeChatId, setActiveChatId])
+
+  // SignalR не досылает пропущенные во время обрыва broadcast-события — после реконнекта
+  // список чатов перезапрашиваем явно. Не на самом первом connect: он уже покрыт начальным loadChats().
+  useEffect(() => {
+    if (status !== 'connected') return
+    if (hasConnectedRef.current) loadChats()
+    hasConnectedRef.current = true
+  }, [status, loadChats])
 
   // Вступаем во все чаты пользователя при подключении / изменении НАБОРА чатов.
   // chatsLoaded ждём, чтобы не слать joinChat с моковыми (не-Guid) ID до загрузки API.

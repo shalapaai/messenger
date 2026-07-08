@@ -23,9 +23,7 @@ public sealed record MessagePreviewDto(
     string Content,
     bool   IsDeleted);
 
-// Общее правило обрезки текста цитаты — используется и в реалтайм-рассылке (MessageSentEventHandler),
-// и при отдаче истории (GetMessagesQueryHandler), чтобы reply-превью не отличалось в зависимости
-// от того, получил клиент сообщение по WebSocket или подгрузил историю через REST.
+// Общее правило обрезки, чтобы reply-превью совпадало в realtime и в REST-истории.
 public static class MessagePreview
 {
     public const int MaxLength = 120;
@@ -47,9 +45,7 @@ public interface IMessagesModule
     // тогда unread = все чужие сообщения в чате.
     Task<Result<Dictionary<Guid, int>>> GetUnreadCountsByChatIdsAsync(
         Guid userId, IReadOnlyDictionary<Guid, DateTime?> lastReadAtByChatId, CancellationToken ct = default);
-    // Персистит системное сообщение о смене состава группы (добавили/вышел/удалили) — вызывается
-    // Chats-модулем из AddChatMemberCommandHandler/RemoveChatMemberCommandHandler. actorUserId —
-    // кто выполнил действие (сам ушедший для MemberLeft), targetUserId — кого добавили/удалили.
+    // actorUserId — кто выполнил действие (ушедший для MemberLeft), targetUserId — кого добавили/удалили.
     Task<Result<Guid>> CreateSystemMessageAsync(
         Guid chatId, Guid actorUserId, Guid targetUserId, SystemEventType eventType, CancellationToken ct = default);
 }

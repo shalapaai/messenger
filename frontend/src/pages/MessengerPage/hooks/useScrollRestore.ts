@@ -1,10 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { Message } from '../../../shared/types/messenger'
 
-/**
- * Управляет скроллом окна сообщений: автоскролл вниз на новое/своё сообщение,
- * и восстановление позиции при подгрузке истории вверх (чтобы не "прыгало").
- */
 export function useScrollRestore(messages: Message[]) {
   const bottomRef      = useRef<HTMLDivElement>(null)
   const messagesRef    = useRef<HTMLDivElement>(null)

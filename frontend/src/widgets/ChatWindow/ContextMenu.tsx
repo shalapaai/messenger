@@ -33,10 +33,8 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const { t } = useTranslation()
   const { msg, selection } = state
-  // Сообщение без messageId ещё отправляется или не отправилось — на сервере его нет, поэтому
-  // ответить/переслать/выделить/редактировать нечего, доступно только удаление черновика
-  // (и оно не завязано на canDeleteMessages — это право удалять чужие/групповые сообщения,
-  // а тут пользователь убирает свой же неотправленный черновик, который никто больше не видел)
+  // Сообщение без messageId ещё не долетело до сервера — доступно только удаление черновика,
+  // не через canDeleteMessages (то право на чужие/групповые сообщения, а тут свой неотправленный).
   const isLocalOnly = !msg.messageId
   const reactions = msg.reactions ?? []
   const showReactionDetails = isGroup && reactions.length > 0 && !selection && !isLocalOnly

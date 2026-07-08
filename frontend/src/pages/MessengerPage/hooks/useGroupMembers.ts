@@ -2,17 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import type { GroupMember } from '../../../shared/types/messenger'
 import { fetchChatDetail } from '../../../shared/api/chatsApi'
 
-/**
- * Владеет составом участников группового чата — резолвится отдельно (имя/аватар/онлайн), т.к.
- * список чатов их не содержит; подгружается при открытии карточки группы или смене активного чата.
- */
 export function useGroupMembers(id: string | undefined, isGroupChat: boolean, currentUserId: string | undefined) {
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
   const [groupMembersLoading, setGroupMembersLoading] = useState(false)
 
-  // requestedGroupChatIdRef защищает от гонки ответов: если открыть карточку группы A,
-  // сразу закрыть и открыть карточку группы B, а ответ по A придёт позже ответа по B,
-  // устаревший ответ по A не должен затереть уже показанных участников группы B
+  // Защищает от гонки ответов: устаревший ответ по ранее открытой группе не должен затереть
+  // уже показанных участников группы, открытой следом.
   const requestedGroupChatIdRef = useRef<string | null>(null)
 
   async function loadGroupMembers(chatId: string) {

@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TypingEvent } from '../../../shared/api/signalrClient'
 
-/**
- * Чужая печать (через realtime UserTyping/UserStoppedTyping) + своя печать
- * (дебаунс StartTyping/StopTyping, чтобы не слать на каждую букву).
- */
 export function useTypingIndicator(startTyping: () => void, stopTyping: () => void) {
   const [typingChats, setTypingChats] = useState<Record<string, boolean>>({})
   const clearTimers  = useRef<Record<string, ReturnType<typeof setTimeout>>>({})

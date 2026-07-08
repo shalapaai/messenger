@@ -4,9 +4,8 @@ using Messenger.Modules.Realtime.Hubs;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.AspNetCore.SignalR;
 
-// Общий fallback для событий по чату: рассылка в группу chat:{id} не доходит до клиента,
-// который ещё не вызвал JoinChat (например, чат только что стал видимым у получателя).
-// Вызывающие сами стартуют membersTask заранее и параллелят её с групповой рассылкой.
+// Фоллбэк для клиента, ещё не вступившего в chat:{id} (например, чат только что стал видимым).
+// Вызывающие стартуют membersTask заранее, параллельно с групповой рассылкой.
 internal static class ChatFallback
 {
     public static async Task BroadcastToMembersAsync(

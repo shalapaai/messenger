@@ -30,10 +30,8 @@ export function colorFromId(id: string): string {
   return COLORS[Math.abs(h) % COLORS.length]
 }
 
-/** Подпись под именем в результатах поиска — показываем и login (если есть), и email, а не
- *  одно "login ?? email": иначе при совпадении по email (поиск матчит email/имя/login разом)
- *  у пользователя с заданным login email просто не виден нигде в строке, и непонятно,
- *  почему этот человек вообще оказался в выдаче. */
+/** Подпись под именем в результатах поиска — показываем и login, и email, а не "login ?? email":
+ *  поиск матчит оба поля, и без этого совпадение по email было бы не видно в строке. */
 export function userSubtitle(user: { login: string | null; email: string }): string {
   return user.login ? `${user.login} · ${user.email}` : user.email
 }
@@ -95,9 +93,7 @@ export async function fetchMessages(
       messageId:      dto.id,
       text:           dto.content,
       own:            dto.senderId === myId,
-      // history отдаёт только уже персистентные (не deleted) сообщения — для своих это
-      // всегда минимум 'sent'; без этого поля галочка "отправлено/прочитано" пропадала
-      // у любого своего сообщения после перезахода в чат (в т.ч. у пересланных)
+      // без status галочка "отправлено/прочитано" пропадала бы для своих сообщений после перезахода в чат
       status:         dto.senderId === myId ? 'sent' as const : undefined,
       senderId:       dto.senderId,
       senderName:     dto.senderName,
