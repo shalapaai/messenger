@@ -330,9 +330,9 @@ export function MessengerPage() {
     }
   }
 
-  async function handleEditGroupSave(name: string, avatarColor: string) {
+  async function handleEditGroupSave(name: string, avatarColor?: string) {
     if (!id) return
-    await updateChat(id, { name, avatarColor })
+    await updateChat(id, { name, ...(avatarColor !== undefined ? { avatarColor } : {}) })
     await loadChats()
     setEditGroupModalOpen(false)
   }

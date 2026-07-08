@@ -336,6 +336,33 @@ public sealed class ChatTests
     }
 
     [Fact]
+    public void UpdateInfo_WithAvatarImage_IgnoresAvatarColor()
+    {
+        var chat = CreateGroup("Original Name", "#2C5BF0");
+        var ownerId = Guid.NewGuid();
+        chat.AddMember(ownerId, ChatMemberRole.Owner);
+        chat.UpdateInfo(ownerId, null, "https://example.com/avatar.png");
+
+        var result = chat.UpdateInfo(ownerId, null, null, "#E0556E");
+
+        result.IsSuccess.Should().BeTrue();
+        chat.AvatarColor.Should().Be("#2C5BF0");
+    }
+
+    [Fact]
+    public void UpdateInfo_WithoutAvatarImage_UpdatesAvatarColor()
+    {
+        var chat = CreateGroup("Original Name", "#2C5BF0");
+        var ownerId = Guid.NewGuid();
+        chat.AddMember(ownerId, ChatMemberRole.Owner);
+
+        var result = chat.UpdateInfo(ownerId, null, null, "#E0556E");
+
+        result.IsSuccess.Should().BeTrue();
+        chat.AvatarColor.Should().Be("#E0556E");
+    }
+
+    [Fact]
     public void UpdateInfo_OnSuccess_RaisesChatUpdatedDomainEvent()
     {
         var chat = CreateGroup();
