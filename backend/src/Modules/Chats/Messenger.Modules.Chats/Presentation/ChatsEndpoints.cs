@@ -146,7 +146,7 @@ public static class ChatsEndpoints
     }
 
     private static async Task<IResult> GetChatById(
-        Guid              id,
+        Guid               id,
         HttpContext        httpContext,
         ISender            sender,
         CancellationToken  ct)
@@ -178,7 +178,7 @@ public static class ChatsEndpoints
     private static async Task<IResult> UpdateChat(
         Guid              id,
         UpdateChatRequest request,
-        HttpContext        httpContext,
+        HttpContext       httpContext,
         ISender           sender,
         CancellationToken ct)
     {
@@ -209,7 +209,7 @@ public static class ChatsEndpoints
     private static async Task<IResult> RemoveChatMember(
         Guid              id,
         Guid              userId,
-        HttpContext        httpContext,
+        HttpContext       httpContext,
         ISender           sender,
         CancellationToken ct)
     {
@@ -224,9 +224,9 @@ public static class ChatsEndpoints
 
     private static async Task<IResult> DeleteChat(
         Guid              id,
-        HttpContext        httpContext,
-        ISender            sender,
-        CancellationToken  ct)
+        HttpContext       httpContext,
+        ISender           sender,
+        CancellationToken ct)
     {
         var requesterId = httpContext.GetUserId();
         var command = new DeleteChatCommand(id, requesterId);
@@ -239,9 +239,9 @@ public static class ChatsEndpoints
 
     private static async Task<IResult> MarkChatRead(
         Guid              id,
-        HttpContext        httpContext,
-        ISender            sender,
-        CancellationToken  ct)
+        HttpContext       httpContext,
+        ISender           sender,
+        CancellationToken ct)
     {
         var requesterId = httpContext.GetUserId();
         var result = await sender.Send(new MarkChatReadCommand(id, requesterId), ct);
