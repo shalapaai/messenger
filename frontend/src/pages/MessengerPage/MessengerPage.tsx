@@ -122,7 +122,7 @@ export function MessengerPage() {
     if (id) markChatRead(id).catch(() => loadChats())
   }, [id, loadChats])
 
-  const scroll = useScrollRestore(messages)
+  const scroll = useScrollRestore()
   const {
     bottomRef,
     messagesRef,

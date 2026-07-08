@@ -1,7 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import type { Message } from '../../../shared/types/messenger'
 
-export function useScrollRestore(messages: Message[]) {
+export function useScrollRestore() {
   const bottomRef      = useRef<HTMLDivElement>(null)
   const messagesRef    = useRef<HTMLDivElement>(null)
   const topSentinelRef = useRef<HTMLDivElement>(null)
@@ -39,7 +38,13 @@ export function useScrollRestore(messages: Message[]) {
       top: el.scrollHeight,
       behavior: bottomSmooth.current ? 'smooth' : 'auto',
     })
-  }, [messages, bottomSignal])
+    // messages НЕ в зависимостях специально: этот эффект должен скроллить только когда его
+    // явно попросили (scrollToBottomNow → bottomSignal), а не при любом изменении messages
+    // (например реакция на старое сообщение) — иначе чат дёргает в низ посреди чтения истории.
+    // setChatMessages и scrollToBottomNow всегда вызываются синхронно друг за другом
+    // (см. useChatMessages.ts), так что React их батчит в один коммит — к моменту, когда
+    // bottomSignal меняется, messagesRef уже отражает обновлённый DOM.
+  }, [bottomSignal])
 
   useLayoutEffect(() => {
     if (restoreSignal === 0 || !messagesRef.current) return
