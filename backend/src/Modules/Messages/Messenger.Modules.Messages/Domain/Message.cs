@@ -182,16 +182,4 @@ public sealed class Message : AggregateRoot<MessageId>
         RaiseDomainEvent(new MessageReactionChangedDomainEvent(Id.Value, ChatId, userId, normalizedEmoji));
         return Result.Success();
     }
-
-    public void MarkAsDelivered()
-    {
-        if (Status == MessageStatus.Sent)
-            Status = MessageStatus.Delivered;
-    }
-
-    public void MarkAsRead()
-    {
-        if (Status is MessageStatus.Sent or MessageStatus.Delivered)
-            Status = MessageStatus.Read;
-    }
 }

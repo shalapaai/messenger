@@ -1,6 +1,7 @@
 namespace Messenger.Modules.Messages;
 
 using FluentValidation;
+using MediatR;
 using Messenger.Modules.Messages.Application;
 using Messenger.Modules.Messages.Application.Contracts;
 using Messenger.Modules.Messages.Domain;
@@ -8,6 +9,7 @@ using Messenger.Modules.Messages.Infrastructure;
 using Messenger.Modules.Messages.Infrastructure.Repositories;
 using Messenger.Modules.Messages.Presentation;
 using Messenger.Shared.Kernel.Abstractions;
+using Messenger.Shared.Kernel.Behaviors;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +29,11 @@ public sealed class MessagesModule : IModuleInstaller
         services.AddScoped<IMessageRepository, MessageRepository>();
         services.AddScoped<IMessagesModule, MessagesModuleApi>();
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(MessagesModule).Assembly));
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(typeof(MessagesModule).Assembly);
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
+        });
         services.AddValidatorsFromAssembly(typeof(MessagesModule).Assembly);
     }
 
