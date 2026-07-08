@@ -19,7 +19,7 @@
 | size_bytes | bigint | Размер в байтах |
 | uploaded_by | uuid | Кто загрузил (FK на auth.user) |
 | uploaded_at | timestamptz | Когда загружен |
-| category | varchar(30) | `"Avatar"`, `"ChatAttachment"`, `"Document"`, `"GroupAvatar"` |
+| category | varchar(30) | `"Avatar"`, `"ChatAttachment"`, `"GroupAvatar"` |
 | chat_id | uuid | Заполнено для `ChatAttachment` (проверка членства при скачивании) и для `GroupAvatar` (поиск текущей аватарки группы при замене). Без FK на `chats.chats` — модули не должны зависеть друг от друга на уровне схемы |
 
 **Индексы:**
