@@ -37,6 +37,8 @@ services:
       # appsettings.Development.json больше не хранит боевой ключ Resend
       Resend__ApiKey:                     ${RESEND_API_KEY:-}
       Resend__FromEmail:                  ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+      TwoFactor__Enabled:                 ${TWO_FACTOR_ENABLED:-false}
+      PasswordReset__Enabled:             ${PASSWORD_RESET_ENABLED:-true}
     ports:
       - "${API_PORT:-8080}:8080"
 
