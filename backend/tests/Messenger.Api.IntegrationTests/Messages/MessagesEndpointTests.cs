@@ -100,19 +100,31 @@ public sealed class MessagesEndpointTests(MessengerApiFactory factory)
     }
 
     [Fact]
-    public async Task DeleteMessage_ByAnyMember_RemovesItFromHistory()
+    public async Task DeleteMessage_BySender_RemovesItFromHistory()
     {
         var alice = await NewAuthedClientAsync();
         var bob   = await NewAuthedUserAsync();
         var chatId = await CreateDirectChatAsync(alice.Client, bob.UserId);
         var messageId = await SendMessageAsync(alice.Client, chatId, "to be deleted");
 
-        using var bobClient = AuthenticatedClient(bob);
-        var deleteResponse = await bobClient.DeleteAsync($"/api/chats/{chatId}/messages/{messageId}");
+        var deleteResponse = await alice.Client.DeleteAsync($"/api/chats/{chatId}/messages/{messageId}");
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var page = await alice.Client.GetFromJsonAsync<MessagesPageDto>($"/api/chats/{chatId}/messages");
         page!.Items.Should().NotContain(m => m.Id == messageId);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_ByNonSenderInDirectChat_ReturnsForbidden()
+    {
+        var alice = await NewAuthedClientAsync();
+        var bob   = await NewAuthedUserAsync();
+        var chatId = await CreateDirectChatAsync(alice.Client, bob.UserId);
+        var messageId = await SendMessageAsync(alice.Client, chatId, "not yours to delete");
+
+        using var bobClient = AuthenticatedClient(bob);
+        var deleteResponse = await bobClient.DeleteAsync($"/api/chats/{chatId}/messages/{messageId}");
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
