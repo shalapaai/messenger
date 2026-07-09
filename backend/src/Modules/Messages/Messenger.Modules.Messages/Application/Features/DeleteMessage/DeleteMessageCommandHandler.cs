@@ -21,6 +21,10 @@ public sealed class DeleteMessageCommandHandler(
         if (!await membershipChecker.IsMemberAsync(message.ChatId, command.RequesterId, ct))
             return Result.Failure(Error.Forbidden("You are not a member of this chat"));
 
+        if (message.SenderId != command.RequesterId
+            && !await membershipChecker.CanModerateAsync(message.ChatId, command.RequesterId, ct))
+            return Result.Failure(Error.Forbidden("Only the sender or a chat admin can delete this message"));
+
         var result = message.Delete();
 
         if (result.IsFailure)

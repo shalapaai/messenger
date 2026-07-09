@@ -68,7 +68,7 @@ interface ChatWindowProps {
   onAvatarClick: (msg: Message) => void
   onForwardedUserClick?: (userId: string, name: string) => void
   shouldAutoFocus?: boolean
-  canDeleteMessages?: boolean
+  isModerator?: boolean
 }
 
 export function ChatWindow({
@@ -76,7 +76,7 @@ export function ChatWindow({
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
   onSend, onSendFiles, onRetry, onDelete, onEdit, onReact, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
-  onForwardedUserClick, shouldAutoFocus, canDeleteMessages = true,
+  onForwardedUserClick, shouldAutoFocus, isModerator = false,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -218,6 +218,10 @@ export function ChatWindow({
     setContextMenu(null)
     selection.enterSelectMode(msg)
   }
+
+  const canBulkDelete = isModerator || messages
+    .filter(m => selection.selectedIds.has(m.id))
+    .every(m => m.own)
 
   function requestBulkDelete() {
     if (selection.selectedIds.size === 0) return
@@ -414,7 +418,7 @@ export function ChatWindow({
             >
               <ForwardIcon />
             </button>
-            {canDeleteMessages && (
+            {canBulkDelete && (
               <button
                 type="button"
                 className={`${s.selectionBarBtn} ${s.selectionBarBtnDanger}`}
@@ -668,7 +672,8 @@ export function ChatWindow({
       {contextMenu && (
         <ContextMenu
           state={contextMenu}
-          canDeleteMessages={canDeleteMessages}
+          isModerator={isModerator}
+          canBulkDelete={canBulkDelete}
           currentUser={meSender}
           onReply={startReply}
           onEdit={startEdit}

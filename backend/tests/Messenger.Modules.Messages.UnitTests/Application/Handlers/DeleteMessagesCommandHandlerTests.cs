@@ -51,8 +51,8 @@ public sealed class DeleteMessagesCommandHandlerTests
     {
         var chatId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
-        var inChat = Message.Create(chatId, Guid.NewGuid(), "in chat").Value!;
-        var otherChat = Message.Create(Guid.NewGuid(), Guid.NewGuid(), "other chat").Value!;
+        var inChat = Message.Create(chatId, requesterId, "in chat").Value!;
+        var otherChat = Message.Create(Guid.NewGuid(), requesterId, "other chat").Value!;
         var command = new DeleteMessagesCommand(chatId, [inChat.Id.Value, otherChat.Id.Value], requesterId);
         _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
         _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())
@@ -71,9 +71,9 @@ public sealed class DeleteMessagesCommandHandlerTests
     {
         var chatId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
-        var alreadyDeleted = Message.Create(chatId, Guid.NewGuid(), "already deleted").Value!;
+        var alreadyDeleted = Message.Create(chatId, requesterId, "already deleted").Value!;
         alreadyDeleted.Delete();
-        var deletable = Message.Create(chatId, Guid.NewGuid(), "still there").Value!;
+        var deletable = Message.Create(chatId, requesterId, "still there").Value!;
         var command = new DeleteMessagesCommand(chatId, [alreadyDeleted.Id.Value, deletable.Id.Value], requesterId);
         _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
         _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())
@@ -92,7 +92,7 @@ public sealed class DeleteMessagesCommandHandlerTests
         // просто уже удалены), а не 404: клиент уже достиг желаемого результата.
         var chatId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
-        var alreadyDeleted = Message.Create(chatId, Guid.NewGuid(), "already deleted").Value!;
+        var alreadyDeleted = Message.Create(chatId, requesterId, "already deleted").Value!;
         alreadyDeleted.Delete();
         var command = new DeleteMessagesCommand(chatId, [alreadyDeleted.Id.Value], requesterId);
         _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
@@ -110,7 +110,7 @@ public sealed class DeleteMessagesCommandHandlerTests
     {
         var chatId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
-        var fromOtherChat = Message.Create(Guid.NewGuid(), Guid.NewGuid(), "wrong chat").Value!;
+        var fromOtherChat = Message.Create(Guid.NewGuid(), requesterId, "wrong chat").Value!;
         var command = new DeleteMessagesCommand(chatId, [fromOtherChat.Id.Value], requesterId);
         _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
         _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())
@@ -123,12 +123,52 @@ public sealed class DeleteMessagesCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OnSuccess_ReturnsDeletedIdsAndSavesChanges()
+    public async Task Handle_WhenNotModerator_SkipsMessagesFromOtherSendersButDeletesOwn()
+    {
+        var chatId = Guid.NewGuid();
+        var requesterId = Guid.NewGuid();
+        var own = Message.Create(chatId, requesterId, "mine").Value!;
+        var someoneElses = Message.Create(chatId, Guid.NewGuid(), "not mine").Value!;
+        var command = new DeleteMessagesCommand(chatId, [own.Id.Value, someoneElses.Id.Value], requesterId);
+        _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _membershipChecker.CanModerateAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(false);
+        _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Message> { own, someoneElses });
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Should().Be(own.Id.Value);
+        someoneElses.Status.Should().Be(MessageStatus.Sent);
+        _messageRepository.DidNotReceive().Update(someoneElses);
+    }
+
+    [Fact]
+    public async Task Handle_WhenModerator_DeletesMessagesFromOtherSenders()
     {
         var chatId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
         var first = Message.Create(chatId, Guid.NewGuid(), "first").Value!;
         var second = Message.Create(chatId, Guid.NewGuid(), "second").Value!;
+        var command = new DeleteMessagesCommand(chatId, [first.Id.Value, second.Id.Value], requesterId);
+        _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _membershipChecker.CanModerateAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Message> { first, second });
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEquivalentTo([first.Id.Value, second.Id.Value]);
+    }
+
+    [Fact]
+    public async Task Handle_OnSuccess_ReturnsDeletedIdsAndSavesChanges()
+    {
+        var chatId = Guid.NewGuid();
+        var requesterId = Guid.NewGuid();
+        var first = Message.Create(chatId, requesterId, "first").Value!;
+        var second = Message.Create(chatId, requesterId, "second").Value!;
         var command = new DeleteMessagesCommand(chatId, [first.Id.Value, second.Id.Value], requesterId);
         _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
         _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())
@@ -148,7 +188,7 @@ public sealed class DeleteMessagesCommandHandlerTests
     {
         var chatId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
-        var deletable = Message.Create(chatId, Guid.NewGuid(), "hello").Value!;
+        var deletable = Message.Create(chatId, requesterId, "hello").Value!;
         var command = new DeleteMessagesCommand(chatId, [deletable.Id.Value], requesterId);
         _membershipChecker.IsMemberAsync(chatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
         _messageRepository.GetByIdsAsync(Arg.Any<IEnumerable<MessageId>>(), Arg.Any<CancellationToken>())

@@ -102,7 +102,7 @@ export function MessengerPage() {
     loadGroupMembers,
     updateMemberRoleLocally,
     patchMemberProfile,
-    canDeleteMessages,
+    isModerator,
   } = useGroupMembers(id, isGroupChat, profile?.userId)
 
   const {
@@ -478,7 +478,7 @@ export function MessengerPage() {
               onAvatarClick={msg => { setModalUserIsChatPartner(false); openUserModal(msg.senderId, msg.senderName, onlineStatuses[msg.senderId] ?? false) }}
               onForwardedUserClick={(userId, name) => { setModalUserIsChatPartner(false); openUserModal(userId, name, onlineStatuses[userId] ?? false) }}
               shouldAutoFocus={focusInput}
-              canDeleteMessages={canDeleteMessages}
+              isModerator={isModerator}
             />
           ) : (
             <div className={s.placeholder}>

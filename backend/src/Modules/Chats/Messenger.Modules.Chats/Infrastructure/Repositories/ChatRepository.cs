@@ -29,6 +29,11 @@ public sealed class ChatRepository(ChatsDbContext dbContext) : IChatRepository
     public async Task<bool> IsMemberAsync(ChatId chatId, Guid userId, CancellationToken ct = default) =>
         await dbContext.Members.AnyAsync(m => m.ChatId == chatId && m.UserId == userId, ct);
 
+    public async Task<bool> IsModeratorAsync(ChatId chatId, Guid userId, CancellationToken ct = default) =>
+        await dbContext.Members.AnyAsync(m =>
+            m.ChatId == chatId && m.UserId == userId &&
+            (m.Role == ChatMemberRole.Admin || m.Role == ChatMemberRole.Owner), ct);
+
     public void Add(Chat chat) => dbContext.Chats.Add(chat);
 
     public void Delete(Chat chat) => dbContext.Chats.Remove(chat);

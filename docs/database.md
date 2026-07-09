@@ -2,125 +2,168 @@
 
 ## Обзор
 
-Используется **PostgreSQL 16** с разделением по схемам — каждый модуль владеет своей схемой и не обращается к чужим таблицам напрямую.
+**PostgreSQL 16**, одна база (`messenger`), разделённая на схемы — каждый модуль владеет своей и не обращается к чужим таблицам напрямую (внешние ключи между схемами есть только там, где это выражает реальную владельческую связь, см. ниже).
 
 ```
 messenger (database)
-├── auth         — UserAuth, RefreshTokens
-├── users        — UserProfiles
-├── messages     — Messages
-├── files        — FileUploads
-└── chats        — Chats, Members (заглушка)
+├── auth      — user, refresh_token
+├── users     — user_profile
+├── chats     — chats, members
+├── messages  — message, message_attachment
+└── files     — file_upload
 ```
+
+Названия таблиц и колонок — **snake_case**, без кавычек (`auth.user`, не `auth."User"`). Столбец `id` почти везде — `UUID`, генерируется приложением (`gen_random_uuid()` как дефолт в БД используется только там, где приложение не передаёт id заранее, см. таблицы ниже).
+
+Подробное описание каждой таблицы (бизнес-смысл колонок, инварианты) — в `docs/modules/*.md`; здесь — сводная схема и то, что относится к БД в целом.
 
 ## Инициализация
 
-При первом старте контейнера PostgreSQL запускает `docker/init.sql`:
-- создаёт схемы (`CREATE SCHEMA IF NOT EXISTS ...`)
-- создаёт расширения (`pg_trgm`, `btree_gin`, `uuid-ossp`)
-- создаёт все таблицы с правильными типами и индексами
+При **первом** старте контейнера PostgreSQL выполняет `docker/init.sql` (через `/docker-entrypoint-initdb.d`, один раз, на пустом volume):
+- создаёт схемы (`auth`, `users`, `chats`, `messages`, `files`)
+- расширения: `uuid-ossp`, `pg_trgm`, `btree_gin` — установлены про запас; на момент написания ни одного GIN/trigram-индекса в коде нет, поиск пользователей (`GET /users/search`) идёт через `EF.Functions.ILike` без индекса
+- все таблицы, индексы, constraints (см. ниже)
 
-При старте API каждый модуль вызывает `db.Database.EnsureCreatedAsync()`. Поскольку таблицы уже созданы init.sql, EF видит их существование и пропускает создание.
+Каждый модуль при старте API вызывает `EnsureCreatedAsync()` — это создаёт таблицы, только если БД физически пуста. Поскольку Postgres создаёт саму БД сам при первом старте контейнера (`POSTGRES_DB`), а `init.sql` уже успевает создать таблицы до этого вызова, `EnsureCreatedAsync` с точки зрения EF Core видит "база уже существует" и молча ничего не делает. **Настоящий источник схемы — `docker/init.sql`.** Если добавляешь колонку в C#-модель — обязательно продублируй в `init.sql` руками, иначе на первом же запросе к новой колонке будет `column ... does not exist`.
 
-> **Важно**: имена колонок в таблицах — PascalCase в кавычках (`"Id"`, `"Email"`, `"CreatedAt"`), чтобы точно совпадать с тем, что генерирует EF Core + Npgsql без `UseSnakeCaseNamingConvention`.
+Применить изменения в dev-окружении — пересоздать volume:
+```bash
+docker compose down && docker volume rm messenger_postgres_data && docker compose up -d
+```
 
 ## Схема: auth
 
-### Таблица `auth.users`
-
-Хранит данные аутентификации — только email и хеш пароля. Профиль пользователя (имя, аватар) — в модуле Users.
-
-| Колонка | Тип | Описание |
+### `auth.user`
+| Колонка | Тип | |
 |---|---|---|
-| `"Id"` | UUID PK | Идентификатор пользователя |
-| `"Email"` | VARCHAR(255) UNIQUE NOT NULL | Email (lowercase) |
-| `"PasswordHash"` | VARCHAR(512) NOT NULL | Bcrypt хеш пароля |
-| `"IsEmailVerified"` | BOOLEAN NOT NULL DEFAULT FALSE | Верификация email |
-| `"CreatedAt"` | TIMESTAMPTZ NOT NULL | Дата регистрации |
+| `id` | uuid PK | `gen_random_uuid()` |
+| `email` | varchar(255) not null | |
+| `password_hash` | varchar(512) not null | Argon2 |
+| `is_email_verified` | boolean not null default false | |
+| `created_at` | timestamptz not null | |
 
-Индекс: `ix_users_email` (unique) на `"Email"`.
+Индекс: `ix_user_email` (unique).
 
-### Таблица `auth.refresh_tokens`
-
-| Колонка | Тип | Описание |
+### `auth.refresh_token`
+| Колонка | Тип | |
 |---|---|---|
-| `"Id"` | UUID PK | |
-| `"UserId"` | UUID NOT NULL | FK → auth.users."Id" |
-| `"Token"` | VARCHAR(256) UNIQUE NOT NULL | Случайный токен |
-| `"ExpiresAt"` | TIMESTAMPTZ NOT NULL | Время истечения |
-| `"CreatedAt"` | TIMESTAMPTZ NOT NULL | Дата создания |
-| `"IsRevoked"` | BOOLEAN NOT NULL DEFAULT FALSE | Отозван ли |
+| `id` | uuid PK | |
+| `user_id` | uuid not null | FK → `auth.user`, `ON DELETE CASCADE` |
+| `token` | varchar(256) not null | **SHA-256 хеш** токена, не сам токен (см. [modules/auth.md](modules/auth.md)) |
+| `expires_at` | timestamptz not null | |
+| `created_at` | timestamptz not null | |
+| `is_revoked` | boolean not null default false | |
 
-Индексы: `ix_refresh_tokens_token` (unique), `ix_refresh_tokens_user_id`.
+Индексы: `ix_refresh_token_token` (unique), `ix_refresh_token_user_id`.
 
 ## Схема: users
 
-### Таблица `users.user_profiles`
-
-Профили пользователей. `"AuthUserId"` — это `"Id"` из `auth.users`. Связь не через FK (модули изолированы), а через бизнес-логику.
-
-| Колонка | Тип | Описание |
+### `users.user_profile`
+| Колонка | Тип | |
 |---|---|---|
-| `"Id"` | UUID PK | |
-| `"AuthUserId"` | UUID UNIQUE NOT NULL | ID из модуля Auth |
-| `"Email"` | VARCHAR(255) UNIQUE NOT NULL | Email (дублируется из Auth) |
-| `"DisplayName"` | VARCHAR(100) NOT NULL | Отображаемое имя |
-| `"Status"` | VARCHAR(200) | Статус пользователя |
-| `"AvatarUrl"` | VARCHAR(2048) | URL аватара |
-| `"CreatedAt"` | TIMESTAMPTZ NOT NULL | |
-| `"UpdatedAt"` | TIMESTAMPTZ | Дата последнего обновления |
+| `id` | uuid PK | Свой, **не** совпадает с `auth.user.id` |
+| `auth_user_id` | uuid not null | FK → `auth.user`, `ON DELETE CASCADE` — единственная межсхемная связь модуля Users |
+| `email` | varchar(255) not null | Дублируется из Auth (поиск без межмодульного вызова) |
+| `display_name` | varchar(100) not null | |
+| `login` | varchar(30) null | Без `@`, уникален среди непустых |
+| `status` | varchar(200) null | |
+| `avatar_url` | varchar(2048) null | |
+| `avatar_color` | varchar(7) not null default `#2C5BF0` | Фолбэк-цвет инициалов |
+| `phone` | varchar(20) null | |
+| `city` | varchar(100) null | |
+| `department` | varchar(100) null | |
+| `created_at` | timestamptz not null | |
+| `updated_at` | timestamptz null | |
 
-Индексы: `ix_user_profiles_auth_user_id` (unique), `ix_user_profiles_email` (unique).
+Индексы: `ix_user_profile_auth_user_id` (unique), `ix_user_profile_email` (unique), `ix_user_profile_login` (unique, частичный — `WHERE login IS NOT NULL`).
+
+## Схема: chats
+
+### `chats.chats`
+| Колонка | Тип | |
+|---|---|---|
+| `id` | uuid PK | |
+| `type` | varchar(10) not null | `CHECK IN ('direct', 'group')` |
+| `name` | varchar(100) null | `CHECK`: обязателен для `group`, для `direct` — не важно |
+| `avatar_url` | varchar(512) null | Только для `group` |
+| `avatar_color` | varchar(7) null | Только для `group`, фолбэк-цвет без загруженной аватарки |
+| `created_at` | timestamptz not null | |
+| `direct_user_id_1` | uuid null | Только для `direct`, канонический порядок (меньший uuid первым) |
+| `direct_user_id_2` | uuid null | |
+
+Индекс: `ux_chats_direct_pair` (unique, частичный — `WHERE type = 'direct'`) на `(direct_user_id_1, direct_user_id_2)` — не даёт гонке создать два direct-чата между одной парой (см. [modules/chats.md](modules/chats.md)).
+
+### `chats.members`
+| Колонка | Тип | |
+|---|---|---|
+| `chat_id` | uuid | PK (часть 1), FK → `chats.chats`, `ON DELETE CASCADE` |
+| `user_id` | uuid | PK (часть 2), FK → `auth.user`, `ON DELETE CASCADE` |
+| `role` | varchar(10) not null default `member` | `CHECK IN ('owner', 'admin', 'member')` |
+| `joined_at` | timestamptz not null | |
+| `last_read_at` | timestamptz null | Двигается через `POST /chats/{id}/read` |
+
+Индекс: `idx_chats_members_user_id`.
 
 ## Схема: messages
 
-### Таблица `messages.messages`
-
-| Колонка | Тип | Описание |
+### `messages.message`
+| Колонка | Тип | |
 |---|---|---|
-| `"Id"` | UUID PK | Генерируется приложением (не БД) |
-| `"ChatId"` | UUID NOT NULL | ID чата |
-| `"SenderId"` | UUID NOT NULL | ID отправителя (auth.users) |
-| `"Content"` | VARCHAR(4096) NOT NULL | Текст сообщения |
-| `"Status"` | VARCHAR(20) NOT NULL | `Sent` / `Delivered` / `Read` / `Deleted` |
-| `"SentAt"` | TIMESTAMPTZ NOT NULL | Время отправки |
-| `"EditedAt"` | TIMESTAMPTZ | Время редактирования |
-| `"DeletedAt"` | TIMESTAMPTZ | Время удаления |
-| `"ReplyToMessageId"` | UUID | ID сообщения-ответа |
+| `id` | uuid PK | Генерируется приложением, без дефолта в БД |
+| `sequence` | bigint `GENERATED ALWAYS AS IDENTITY`, unique | Монотонный тай-брейкер к `sent_at` для курсорной пагинации |
+| `chat_id` | uuid not null | FK → `chats.chats`, `ON DELETE CASCADE` |
+| `sender_id` | uuid not null | FK → `auth.user`, `ON DELETE CASCADE` |
+| `content` | varchar(4096) not null | |
+| `status` | varchar(20) not null | `Sent` / `Delivered` / `Read` / `Deleted` (на практике проставляется только `Sent`/`Deleted`, см. [modules/messages.md](modules/messages.md)) |
+| `sent_at` | timestamptz not null | |
+| `edited_at` | timestamptz null | |
+| `deleted_at` | timestamptz null | |
+| `reply_to_message_id` | uuid null | FK → `messages.message`, `ON DELETE SET NULL` |
+| `forwarded_from_message_id` | uuid null | FK → `messages.message`, `ON DELETE SET NULL` |
+| `forwarded_from_user_id` | uuid null | FK → `auth.user`, `ON DELETE SET NULL` |
+| `message_type` | varchar(10) not null default `Text` | `Text` / `System` |
+| `system_event_type` | varchar(20) null | Только для `System`: `MemberAdded` / `MemberLeft` / `MemberRemoved` |
+| `target_user_id` | uuid null | FK → `auth.user`, `ON DELETE SET NULL`. Только для `System` |
 
-Индексы: `ix_messages_chat_id_sent_at` (ChatId, SentAt), `ix_messages_sender_id`.
+Индексы: `ix_message_chat_id_sent_at`, `ix_message_chat_id_sequence` (курсорная пагинация), `ix_message_sender_id`, `uq_message_sequence` (unique).
+
+### `messages.message_attachment`
+| Колонка | Тип | |
+|---|---|---|
+| `id` | uuid PK | |
+| `message_id` | uuid not null | FK → `messages.message`, `ON DELETE CASCADE` |
+| `file_url` | varchar(2048) not null | |
+| `file_name` | varchar(255) not null | |
+| `content_type` | varchar(100) not null | |
+| `file_size_bytes` | bigint not null | |
+| `sort_order` | int not null default 0 | Порядок выбора файлов пользователем |
+
+Индекс: `ix_message_attachment_message_id`. Одно сообщение может нести несколько вложений (см. [modules/messages.md](modules/messages.md)).
 
 ## Схема: files
 
-### Таблица `files.file_uploads`
-
-| Колонка | Тип | Описание |
+### `files.file_upload`
+| Колонка | Тип | |
 |---|---|---|
-| `"Id"` | UUID PK | |
-| `"FileKey"` | VARCHAR(512) UNIQUE NOT NULL | Ключ в хранилище (путь или S3 key) |
-| `"OriginalName"` | VARCHAR(255) NOT NULL | Оригинальное имя файла |
-| `"ContentType"` | VARCHAR(100) NOT NULL | MIME-тип |
-| `"SizeBytes"` | BIGINT NOT NULL | Размер в байтах |
-| `"UploadedBy"` | UUID NOT NULL | ID загрузившего (auth.users) |
-| `"UploadedAt"` | TIMESTAMPTZ NOT NULL | Дата загрузки |
-| `"Category"` | VARCHAR(30) | `Avatar` / `ChatAttachment` / `Document` |
+| `id` | uuid PK | `gen_random_uuid()` |
+| `file_key` | varchar(512) not null | Ключ в хранилище — GUID, никогда не переиспользуется на другой контент |
+| `original_name` | varchar(255) not null | |
+| `content_type` | varchar(100) not null | |
+| `size_bytes` | bigint not null | |
+| `uploaded_by` | uuid not null | FK → `auth.user`, `ON DELETE CASCADE` |
+| `uploaded_at` | timestamptz not null | |
+| `category` | varchar(30) null | `Avatar` / `ChatAttachment` / `GroupAvatar` |
+| `chat_id` | uuid null | Заполнено для `ChatAttachment`/`GroupAvatar`. **Без FK** на `chats.chats` — модули не зависят друг от друга на уровне схемы |
 
-Индексы: `ix_file_uploads_file_key` (unique), `ix_file_uploads_uploaded_by_category`.
+Индексы: `ix_file_upload_file_key` (unique), `ix_file_upload_uploaded_by_category`, `ux_file_upload_avatar_per_user` (unique, частичный — `WHERE category = 'Avatar'`), `ux_file_upload_group_avatar_per_chat` (unique, частичный — `WHERE category = 'GroupAvatar'`). Подробнее про иммутабельность `file_key` и кэширование — [modules/files.md](modules/files.md#кэширование).
 
-## Схема: chats (заглушка)
+## Межсхемные внешние ключи
 
-Таблицы созданы в init.sql, но модуль Chats ещё не реализован в EF.
-
-### `chats.chats`
-`id`, `type` (direct/group), `name`, `avatar_url`, `created_at`
-
-### `chats.members`
-`chat_id`, `user_id`, `role` (owner/admin/member), `joined_at`
-PK: (chat_id, user_id), FK → chats.chats
+Несмотря на изоляцию модулей на уровне кода, в БД есть FK **на `auth.user`** из всех остальных схем (`user_profile.auth_user_id`, `chats.members.user_id`, `messages.message.sender_id`/`forwarded_from_user_id`/`target_user_id`, `files.file_upload.uploaded_by`) — Auth физически первичен, все пользователи существуют только через него. FK **между остальными модулями** (`messages.message.chat_id → chats.chats`) тоже есть — это подстраховка на уровне БД (`ON DELETE CASCADE`), а не замена межмодульного вызова: `DeleteChatCommandHandler` всё равно явно вызывает `IMessagesModule.DeleteAllMessagesInChatAsync` и не полагается на каскад (см. [modules/chats.md — Удаление чата](modules/chats.md#удаление-чата)). Единственная сознательно **не** FK-связь — `files.file_upload.chat_id`, чтобы Files не знал о схеме Chats.
 
 ## EF Core
 
-Каждый модуль регистрирует свой `DbContext`:
+Каждый модуль регистрирует свой `DbContext` с собственной таблицей истории миграций (чтобы модули не путались в чужих миграциях):
 
 ```csharp
 services.AddDbContext<AuthDbContext>(options =>
@@ -128,10 +171,8 @@ services.AddDbContext<AuthDbContext>(options =>
         npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "auth")));
 ```
 
-`IUnitOfWork` — интерфейс-маркер, за которым скрывается `DbContext`. Каждый модуль регистрирует свою реализацию:
+`IUnitOfWork` — не общий тип из `Shared.Kernel`, а **свой маркерный интерфейс в каждом модуле** (`Messenger.Modules.Auth.Application.Abstractions.IUnitOfWork`, `Messenger.Modules.Files.Application.IUnitOfWork` и т.д. — у каждого модуля своя копия с одинаковым именем, но в своём namespace). `Install()` всех модулей регистрирует сервисы в один и тот же общий `IServiceCollection` (`builder.Services`), поэтому если бы `IUnitOfWork` был одним общим типом, пять регистраций подряд по правилам .NET DI схлопнулись бы в одну (побеждает последняя) — и все хендлеры получали бы `DbContext` последнего установленного модуля. Поскольку типы разные (namespace — часть идентичности типа в C#), конфликта нет: `using` в хендлере определяет, чей именно `IUnitOfWork` он видит и с ним резолвится.
 
 ```csharp
 services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AuthDbContext>());
 ```
-
-Пространства имён разные, поэтому конфликта в DI нет.

@@ -54,7 +54,7 @@ export function useGroupMembers(id: string | undefined, isGroupChat: boolean, cu
   const myGroupRole = isGroupChat && currentUserId
     ? (groupMembers.find(m => m.userId === currentUserId)?.role ?? null)
     : null
-  const canDeleteMessages = isGroupChat ? (myGroupRole === 'owner' || myGroupRole === 'admin') : true
+  const isModerator = isGroupChat && (myGroupRole === 'owner' || myGroupRole === 'admin')
 
   return {
     groupMembers,
@@ -63,6 +63,6 @@ export function useGroupMembers(id: string | undefined, isGroupChat: boolean, cu
     updateMemberRoleLocally,
     patchMemberProfile,
     myGroupRole,
-    canDeleteMessages,
+    isModerator,
   }
 }

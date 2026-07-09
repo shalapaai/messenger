@@ -35,10 +35,8 @@ public sealed class DeleteMessageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenRequesterIsNotChatMember_ReturnsForbidden_EvenWhenNotOriginalSender()
+    public async Task Handle_WhenRequesterIsNotChatMember_ReturnsForbidden()
     {
-        // Deletion is allowed for any chat member, not just the sender — so this asserts the
-        // failure comes from the membership check, not from an "only sender" rule like Edit has.
         var senderId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
         var message = Message.Create(Guid.NewGuid(), senderId, "hello").Value!;
@@ -53,15 +51,49 @@ public sealed class DeleteMessageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenAlreadyDeleted_PropagatesAlreadyDeletedFailure()
+    public async Task Handle_WhenMemberButNotSenderAndNotModerator_ReturnsForbidden()
     {
         var senderId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();
         var message = Message.Create(Guid.NewGuid(), senderId, "hello").Value!;
-        message.Delete();
         var command = new DeleteMessageCommand(message.Id.Value, requesterId);
         _messageRepository.GetByIdAsync(message.Id, Arg.Any<CancellationToken>()).Returns(message);
         _membershipChecker.IsMemberAsync(message.ChatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _membershipChecker.CanModerateAsync(message.ChatId, requesterId, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Type.Should().Be(ErrorType.Forbidden);
+        message.Status.Should().Be(MessageStatus.Sent);
+    }
+
+    [Fact]
+    public async Task Handle_WhenModeratorDeletesSomeoneElsesMessage_Succeeds()
+    {
+        var senderId = Guid.NewGuid();
+        var requesterId = Guid.NewGuid();
+        var message = Message.Create(Guid.NewGuid(), senderId, "hello").Value!;
+        var command = new DeleteMessageCommand(message.Id.Value, requesterId);
+        _messageRepository.GetByIdAsync(message.Id, Arg.Any<CancellationToken>()).Returns(message);
+        _membershipChecker.IsMemberAsync(message.ChatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _membershipChecker.CanModerateAsync(message.ChatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        message.Status.Should().Be(MessageStatus.Deleted);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAlreadyDeleted_PropagatesAlreadyDeletedFailure()
+    {
+        var senderId = Guid.NewGuid();
+        var message = Message.Create(Guid.NewGuid(), senderId, "hello").Value!;
+        message.Delete();
+        var command = new DeleteMessageCommand(message.Id.Value, senderId);
+        _messageRepository.GetByIdAsync(message.Id, Arg.Any<CancellationToken>()).Returns(message);
+        _membershipChecker.IsMemberAsync(message.ChatId, senderId, Arg.Any<CancellationToken>()).Returns(true);
 
         var result = await _sut.Handle(command, CancellationToken.None);
 
@@ -70,14 +102,13 @@ public sealed class DeleteMessageCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_OnSuccess_UpdatesRepositoryAndSavesChanges()
+    public async Task Handle_WhenSenderDeletesOwnMessage_UpdatesRepositoryAndSavesChanges()
     {
         var senderId = Guid.NewGuid();
-        var requesterId = Guid.NewGuid();
         var message = Message.Create(Guid.NewGuid(), senderId, "hello").Value!;
-        var command = new DeleteMessageCommand(message.Id.Value, requesterId);
+        var command = new DeleteMessageCommand(message.Id.Value, senderId);
         _messageRepository.GetByIdAsync(message.Id, Arg.Any<CancellationToken>()).Returns(message);
-        _membershipChecker.IsMemberAsync(message.ChatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _membershipChecker.IsMemberAsync(message.ChatId, senderId, Arg.Any<CancellationToken>()).Returns(true);
 
         var result = await _sut.Handle(command, CancellationToken.None);
 
@@ -91,11 +122,10 @@ public sealed class DeleteMessageCommandHandlerTests
     public async Task Handle_WhenSaveChangesThrowsConcurrencyException_ReturnsConflict()
     {
         var senderId = Guid.NewGuid();
-        var requesterId = Guid.NewGuid();
         var message = Message.Create(Guid.NewGuid(), senderId, "hello").Value!;
-        var command = new DeleteMessageCommand(message.Id.Value, requesterId);
+        var command = new DeleteMessageCommand(message.Id.Value, senderId);
         _messageRepository.GetByIdAsync(message.Id, Arg.Any<CancellationToken>()).Returns(message);
-        _membershipChecker.IsMemberAsync(message.ChatId, requesterId, Arg.Any<CancellationToken>()).Returns(true);
+        _membershipChecker.IsMemberAsync(message.ChatId, senderId, Arg.Any<CancellationToken>()).Returns(true);
         _unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<int>(_ => throw new DbUpdateConcurrencyException());
 

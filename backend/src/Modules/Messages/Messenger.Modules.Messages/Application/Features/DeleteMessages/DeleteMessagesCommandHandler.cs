@@ -19,10 +19,15 @@ public sealed class DeleteMessagesCommandHandler(
         if (!await membershipChecker.IsMemberAsync(command.ChatId, command.RequesterId, ct))
             return Result.Failure<List<Guid>>(Error.Forbidden("You are not a member of this chat"));
 
+        var canModerate = await membershipChecker.CanModerateAsync(command.ChatId, command.RequesterId, ct);
+
         var ids = command.MessageIds.Select(MessageId.From).ToList();
         var messages = await messageRepository.GetByIdsAsync(ids, ct);
 
-        var messagesInChat = messages.Where(m => m.ChatId == command.ChatId).ToList();
+        var messagesInChat = messages
+            .Where(m => m.ChatId == command.ChatId)
+            .Where(m => canModerate || m.SenderId == command.RequesterId)
+            .ToList();
         if (messagesInChat.Count == 0)
             return Result.Failure<List<Guid>>(Error.NotFound("Message"));
 

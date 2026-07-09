@@ -9,7 +9,8 @@ export interface ContextMenuState { x: number; y: number; msg: Message; selectio
 
 interface ContextMenuProps {
   state: ContextMenuState
-  canDeleteMessages: boolean
+  isModerator: boolean
+  canBulkDelete: boolean
   currentUser: Sender
   onReply: (msg: Message) => void
   onEdit: (msg: Message) => void
@@ -27,7 +28,7 @@ interface ContextMenuProps {
 }
 
 export function ContextMenu({
-  state, canDeleteMessages, currentUser, onReply, onEdit, onForward, onDelete, onSelect, onReact,
+  state, isModerator, canBulkDelete, currentUser, onReply, onEdit, onForward, onDelete, onSelect, onReact,
   onOpenReactions, onPreviewReactions, onCloseReactionPreview, quickReactions, isGroup, onBulkForward, onBulkDelete,
 }: ContextMenuProps) {
   const { t } = useTranslation()
@@ -94,7 +95,7 @@ export function ContextMenu({
           <button type="button" className={s.contextMenuItem} onClick={onBulkForward}>
             <ForwardIcon />{t('messenger.forwardMessage')}
           </button>
-          {canDeleteMessages && (
+          {canBulkDelete && (
             <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={onBulkDelete}>
               <TrashIcon />{t('messenger.deleteMessage')}
             </button>
@@ -183,7 +184,7 @@ export function ContextMenu({
               <span className={s.contextReactionSummaryArrow}>›</span>
             </button>
           )}
-          {canDeleteMessages && (
+          {(isModerator || msg.own) && (
             <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => onDelete(msg)}>
               <TrashIcon />{t('messenger.deleteMessage')}
             </button>
