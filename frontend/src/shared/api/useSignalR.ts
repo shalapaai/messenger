@@ -23,8 +23,6 @@ export function useSignalR(options: UseSignalROptions = {}) {
   const optionsRef = useRef(options)
   useLayoutEffect(() => { optionsRef.current = options })
 
-  // Группу НЕ покидаем при смене/размонтировании — соединение держится во всех чатах постоянно;
-  // joinChat здесь — подстраховка для чата, которого ещё нет в сторе.
   useEffect(() => {
     const { chatId } = optionsRef.current
     if (!chatId || !signalR.isConnected) return
@@ -32,8 +30,6 @@ export function useSignalR(options: UseSignalROptions = {}) {
     signalR.joinChat(chatId).catch(() => {})
   }, [options.chatId, status])
 
-  // trampoline-колбэки читают actuals из optionsRef — иначе новый объект options на каждый
-  // рендер пересоздавал бы подписки, с окном между off()/on(), где событие могло потеряться.
   useEffect(() => {
     const off = [
       signalR.onReceiveMessage(msg => optionsRef.current.onMessage?.(msg)),

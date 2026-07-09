@@ -5,8 +5,6 @@ using Serilog;
 
 public static class ModuleMigrationExtensions
 {
-    // Skipped in the "Testing" environment — AuthApiFactory runs them explicitly
-    // after the test server starts, so the test DB connection string is in effect.
     public static async Task MigrateModulesWithRetryAsync(this WebApplication app, IModuleInstaller[] modules)
     {
         if (app.Environment.IsEnvironment("Testing"))

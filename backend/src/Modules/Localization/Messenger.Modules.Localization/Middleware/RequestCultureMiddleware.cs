@@ -20,7 +20,6 @@ public sealed class RequestCultureMiddleware(RequestDelegate next)
         CultureInfo.CurrentCulture   = cultureInfo;
         CultureInfo.CurrentUICulture = cultureInfo;
 
-        // Передаём культуру downstream для логов и ответов
         context.Items["RequestCulture"] = culture;
 
         await next(context);

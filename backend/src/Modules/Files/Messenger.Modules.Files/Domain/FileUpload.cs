@@ -21,7 +21,6 @@ public sealed class FileUpload : Entity<Guid>
         UploadedAt   = DateTime.UtcNow;
     }
 
-    // Непрозрачный ключ хранилища — не зависит от провайдера (Local / S3)
     public string FileKey      { get; private set; } = string.Empty;
     public string OriginalName { get; private set; } = string.Empty;
     public string ContentType  { get; private set; } = string.Empty;
@@ -30,7 +29,6 @@ public sealed class FileUpload : Entity<Guid>
     public DateTime UploadedAt { get; private set; }
     public FileCategory Category { get; private set; }
 
-    // ChatAttachment: чат для проверки членства при скачивании. GroupAvatar: ключ поиска текущей аватарки чата.
     public Guid? ChatId { get; private set; }
 
     public static FileUpload Create(

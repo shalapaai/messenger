@@ -10,8 +10,6 @@ export function useMessengerModals() {
   const [newGroupModalOpen, setNewGroupModalOpen] = useState(false)
   const [editGroupModalOpen, setEditGroupModalOpen] = useState(false)
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false)
-  // sourceChatId фиксируется в момент выбора, чтобы пересылка ушла из исходного чата, даже
-  // если пользователь успеет переключиться на другой, пока модалка ещё открыта.
   const [forwardState, setForwardState] = useState<{ sourceChatId: string; messages: Message[] } | null>(null)
 
   useEffect(() => {

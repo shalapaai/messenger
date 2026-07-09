@@ -5,9 +5,6 @@ using Messenger.Shared.Kernel.Abstractions;
 
 public sealed record LoginCommand(string Email, string Password) : ICommand<LoginResultDto>;
 
-// RefreshToken нужен только внутри процесса (AuthEndpoints кладёт его в httpOnly-куку) —
-// [JsonIgnore], чтобы он не попадал в тело ответа вдобавок к куке: иначе он читаем из JS/девтулс
-// даже там, где httpOnly как раз должен был это предотвратить.
 public sealed record TokenPairDto(string AccessToken, [property: JsonIgnore] string RefreshToken, DateTime AccessTokenExpiresAt);
 
 public sealed record LoginResultDto

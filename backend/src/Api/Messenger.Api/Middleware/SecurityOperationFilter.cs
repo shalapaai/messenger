@@ -4,11 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-/// <summary>
-/// Добавляет Bearer security только к защищённым эндпойнтам.
-/// Глобальный AddSecurityRequirement не используется — иначе замок висит на всех роутах,
-/// включая /auth/login, /auth/register и т.д.
-/// </summary>
 public sealed class SecurityOperationFilter : IOperationFilter
 {
     private static readonly OpenApiSecurityRequirement BearerRequirement = new()

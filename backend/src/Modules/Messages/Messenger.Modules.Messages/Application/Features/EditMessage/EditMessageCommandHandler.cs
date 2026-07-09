@@ -18,8 +18,6 @@ public sealed class EditMessageCommandHandler(
         if (message is null)
             return Result.Failure(Error.NotFound("Message"));
 
-        // Отдельно от проверки авторства в Message.Edit(): если автора с тех пор исключили
-        // из группового чата, редактировать сообщение в нём он больше не должен
         if (!await membershipChecker.IsMemberAsync(message.ChatId, command.RequesterId, ct))
             return Result.Failure(Error.Forbidden("You are not a member of this chat"));
 

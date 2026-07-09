@@ -22,7 +22,6 @@ public sealed class ForgotPasswordCommandHandler(
 
         var user = await userRepository.GetByEmailAsync(command.Email, ct);
 
-        // Возвращаем Ok даже если email не найден — не раскрываем существование аккаунта
         if (user is null)
             return Result.Success();
 

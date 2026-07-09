@@ -24,11 +24,7 @@ import { useMessageSelection } from './hooks/useMessageSelection'
 import type { ChatMeta, Message, ModalUser, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
-// должно совпадать с лимитом на бэкенде (Message.Create / Message.Edit) — проверяем длину
-// на клиенте до отправки, чтобы слишком длинное сообщение не превращалось молча в "не отправлено"
 const MESSAGE_MAX_LENGTH = 4096
-// Чисто клиентское ограничение (бэкенд строки не считает) — без него вставка из сотен
-// коротких строк даёт сообщение, укладывающееся в лимит символов, но нечитаемо длинное.
 const MESSAGE_MAX_LINES = 30
 const QUICK_REACTIONS = ['❤️', '😂', '👍', '🔥', '😮', '😢', '👏']
 const REACTION_DETAILS_PANEL_WIDTH = 300
@@ -47,7 +43,6 @@ interface ChatWindowProps {
   chatId: string
   meta: ChatMeta
   messages: Message[]
-  /** момент, до которого собеседник прочитал переписку — null, если ещё не прочитал ничего */
   otherReadAt: string | null
   meSender: Sender
   typingChats: Record<string, boolean>
@@ -68,8 +63,6 @@ interface ChatWindowProps {
   onBulkDelete: (msgs: Message[]) => void
   onForward: (msgs: Message[]) => void
   onTyping: () => void
-  /** Закрыть текущий чат — на десктопе список чатов и так виден, поэтому кнопка просто
-   *  возвращает в начальное состояние страницы без открытого чата (аналог мобильной "назад") */
   onBack: () => void
   onHeaderClick: () => void
   onAvatarClick: (msg: Message) => void
@@ -110,7 +103,6 @@ export function ChatWindow({
   const isOverLines  = lineCount > MESSAGE_MAX_LINES
   const isOverLimit  = isOverLength || isOverLines
 
-  // useLayoutEffect, а не useEffect — пересчитываем высоту textarea синхронно до отрисовки, чтобы не мигало старым размером.
   useLayoutEffect(() => {
     const el = mobileInput.textareaRef.current
     if (!el) return
@@ -144,8 +136,6 @@ export function ChatWindow({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Стабильные ссылки (useCallback) — передаются в мемоизированный MessageList, чтобы
-  // ввод текста в поле сообщения не пересоздавал их и не перерисовывал весь список.
   const scrollToMessage = useCallback((msgId: string) => {
     const el = messagesRef.current?.querySelector(`[data-message-id="${CSS.escape(msgId)}"]`) as HTMLElement | null
     if (!el) return
@@ -153,9 +143,6 @@ export function ChatWindow({
     setHighlightedMsgId(msgId)
     setTimeout(() => setHighlightedMsgId(null), 1200)
   }, [messagesRef])
-
-  // Per-chat состояние не нужно сбрасывать вручную при смене чата — ChatWindow монтируется с
-  // key={chatId}, поэтому React полностью пересоздаёт компонент и state при переключении.
 
   useEffect(() => {
     if (!contextMenu) return
@@ -182,7 +169,6 @@ export function ChatWindow({
   }, [])
 
   const openContextMenu = useCallback((e: MouseEvent, msg: Message) => {
-    // Сообщение без messageId ещё отправляется/не отправилось — меню для него имеет смысл только для удаления черновика.
     if (!msg.messageId && msg.status !== 'failed') return
     e.preventDefault()
     if (selection.selectMode) {
@@ -324,8 +310,6 @@ export function ChatWindow({
   async function send() {
     const trimmed = text.trim()
 
-    // Проверяем лимиты ДО отправки — кнопка отправки уже задизейблена в этом случае (и виден
-    // инлайн-баннер isOverLimit), так что сюда попасть можно только напрямую через Enter.
     if (trimmed.length > MESSAGE_MAX_LENGTH) return
     if (trimmed.split('\n').length > MESSAGE_MAX_LINES) return
 

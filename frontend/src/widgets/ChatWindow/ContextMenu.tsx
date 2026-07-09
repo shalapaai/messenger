@@ -5,8 +5,6 @@ import { AvatarImage } from '../../shared/ui/AvatarImage'
 import type { Message, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
-/** selection: true — открыто правым кликом по уже выделенным сообщениям (режим множественного
- *  выделения), тогда меню показывает только массовые действия над всем выделением. */
 export interface ContextMenuState { x: number; y: number; msg: Message; selection?: boolean }
 
 interface ContextMenuProps {
@@ -36,8 +34,6 @@ export function ContextMenu({
   const { msg, selection } = state
   const reactionRowRef = useRef<HTMLDivElement>(null)
   const [reactionScroll, setReactionScroll] = useState({ left: 0, max: 0, viewport: 1, content: 1 })
-  // Сообщение без messageId ещё не долетело до сервера — доступно только удаление черновика,
-  // не через canDeleteMessages (то право на чужие/групповые сообщения, а тут свой неотправленный).
   const isLocalOnly = !msg.messageId
   const reactions = (msg.reactions ?? []).map((reaction) =>
     reaction.userId === currentUser.senderId

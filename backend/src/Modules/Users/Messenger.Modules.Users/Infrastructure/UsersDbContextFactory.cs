@@ -23,8 +23,6 @@ public sealed class UsersDbContextFactory : IDesignTimeDbContextFactory<UsersDbC
                 npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "users"))
             .Options;
 
-        // Design-time only (dotnet ef migrations) — never calls SaveChangesAsync, so the
-        // mediator dependency (only used there, to publish domain events) is never dereferenced.
         return new UsersDbContext(options, null!);
     }
 

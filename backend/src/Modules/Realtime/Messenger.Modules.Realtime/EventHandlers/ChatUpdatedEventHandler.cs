@@ -7,8 +7,6 @@ using Messenger.Shared.Kernel.Membership;
 using Messenger.Shared.Kernel.Presence;
 using Microsoft.AspNetCore.SignalR;
 
-// Рассылаем в личные группы затронутых пользователей, а не в группу чата — AffectedUserIds
-// уже покрывает всех текущих участников плюс удалённых, группа чата ничего не добавит.
 public sealed class ChatUpdatedEventHandler(
     IHubContext<MessengerHub> hubContext,
     IChatMembershipChecker    membershipChecker,
@@ -26,8 +24,6 @@ public sealed class ChatUpdatedEventHandler(
 
         await Task.WhenAll(tasks);
 
-        // Исключённых из чата принудительно выводим из группы chat:{id}, иначе они продолжат
-        // получать события чата, из которого их только что удалили.
         await EvictRemovedMembersAsync(notification.ChatId, notification.AffectedUserIds, ct);
     }
 

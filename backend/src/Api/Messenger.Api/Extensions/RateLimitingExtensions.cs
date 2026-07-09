@@ -6,10 +6,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 public static class RateLimitingExtensions
 {
-    // Троттлинг по IP на чувствительных auth-эндпойнтах — без этого login/verify-otp/reset-password
-    // можно долбить перебором без каких-либо ограничений (пароль, 6-значный OTP-код, код сброса).
-    // "auth" — обычные попытки входа/регистрации, "auth-strict" — узкие окна с секретом, который
-    // подбирается перебором (OTP, код сброса пароля).
     public static IServiceCollection AddMessengerRateLimiting(this IServiceCollection services)
     {
         services.AddRateLimiter(options =>
@@ -36,9 +32,6 @@ public static class RateLimitingExtensions
                         QueueLimit = 0,
                     }));
 
-            // Эти два — на уже аутентифицированных эндпойнтах, поэтому партиционируем по userId
-            // (не по IP): один аккаунт не может обойти лимит сменой IP, а несколько пользователей
-            // за одним NAT/офисным IP не делят один и тот же лимит.
             options.AddPolicy("messaging", httpContext =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: UserIdOrIp(httpContext),

@@ -4,7 +4,6 @@ export async function deleteMessage(chatId: string, messageId: string): Promise<
   await apiClient.delete(`/chats/${chatId}/messages/${messageId}`)
 }
 
-/** Удаляет несколько сообщений одним запросом вместо отдельного DELETE на каждое. */
 export async function deleteMessages(chatId: string, messageIds: string[]): Promise<void> {
   await apiClient.post(`/chats/${chatId}/messages/delete-bulk`, { messageIds })
 }
@@ -17,8 +16,6 @@ export async function setMessageReaction(chatId: string, messageId: string, emoj
   await apiClient.put(`/chats/${chatId}/messages/${messageId}/reaction`, { emoji })
 }
 
-/** Пересылает сообщения из sourceChatId в targetChatId — копии создаются от имени
- *  текущего пользователя с пометкой "переслано от" оригинального автора. */
 export async function forwardMessages(targetChatId: string, sourceChatId: string, messageIds: string[]): Promise<void> {
   await apiClient.post(`/chats/${targetChatId}/messages/forward`, { sourceChatId, messageIds })
 }
@@ -37,8 +34,6 @@ export interface UploadedMessageResult {
   sentAt: string
 }
 
-/** Один HTTP-запрос на все файлы, не по одному — иначе параллельные запросы на ещё не
- *  созданный чат гонкой создали бы N отдельных чатов вместо одного. */
 export async function uploadChatMessageFiles(
   chatId: string,
   files: File[],

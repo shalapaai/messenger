@@ -33,8 +33,6 @@ services:
       Jwt__SecretKey:                     "dev-secret-key-minimum-256-bits-long-replace-in-prod"
       FileStorage__Type:                  Local
       FileStorage__Local__BasePath:       /app/uploads
-      # Реальные значения — из .env (не коммитится), пусто по умолчанию:
-      # appsettings.Development.json больше не хранит боевой ключ Resend
       Resend__ApiKey:                     ${RESEND_API_KEY:-}
       Resend__FromEmail:                  ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
       TwoFactor__Enabled:                 ${TWO_FACTOR_ENABLED:-false}
@@ -46,9 +44,6 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL:    admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
-
-  # Frontend в dev не запускается через Docker — используй: cd frontend && npm run dev
-  # Vite proxy (/api, /hubs) автоматически перенаправляет на http://localhost:8080
 
 volumes:
   nuget_cache:

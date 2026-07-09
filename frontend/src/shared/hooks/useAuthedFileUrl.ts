@@ -3,8 +3,6 @@ import axios from 'axios'
 import { getAccessToken } from '../lib/auth/authTokens'
 import { acquireFileBlobUrl, releaseFileBlobUrl } from '../lib/fileBlobCache'
 
-// Вложения чатов отдаются не анонимно — обычный <img src="/api/files/..."> получит 401,
-// поэтому качаем файл вручную с токеном и превращаем в blob-URL.
 async function fetchProtectedFileBlob(url: string): Promise<Blob> {
   const res = await axios.get<Blob>(url, {
     responseType: 'blob',
@@ -13,9 +11,6 @@ async function fetchProtectedFileBlob(url: string): Promise<Blob> {
   return res.data
 }
 
-/** Резолвит защищённый fileUrl вложения в blob-URL, переиспользуя уже скачанный blob из
- *  fileBlobCache (иначе пересоздание ChatWindow при смене чата качало бы файлы заново).
- *  Передайте enabled=false, чтобы не загружать сразу. */
 export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = true) {
   const [fileState, setFileState] = useState<{
     fileUrl: string | null
@@ -23,7 +18,6 @@ export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = t
     error: boolean
     progress: number | null
   }>({ fileUrl: null, blobUrl: null, error: false, progress: null })
-  // null — процент неизвестен (сервер не прислал Content-Length) или загрузка ещё не началась.
 
   useEffect(() => {
     if (!fileUrl || !enabled) return
@@ -54,8 +48,6 @@ export function useAuthedFileUrl(fileUrl: string | null | undefined, enabled = t
   }
 }
 
-/** Скачивание "по клику" без предзагрузки на рендере — для карточек не-картиночных файлов,
- *  чтобы не тянуть содержимое каждого вложения в списке сообщений заранее. */
 export async function downloadAuthedFile(fileUrl: string, fileName: string): Promise<void> {
   const blob = await fetchProtectedFileBlob(fileUrl)
   const localUrl = URL.createObjectURL(blob)

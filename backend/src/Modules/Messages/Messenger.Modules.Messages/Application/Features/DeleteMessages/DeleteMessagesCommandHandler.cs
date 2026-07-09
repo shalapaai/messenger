@@ -22,8 +22,6 @@ public sealed class DeleteMessagesCommandHandler(
         var ids = command.MessageIds.Select(MessageId.From).ToList();
         var messages = await messageRepository.GetByIdsAsync(ids, ct);
 
-        // NotFound только если ни один id не относится к этому чату; уже удалённое сообщение —
-        // не ошибка, повторный bulk-delete тех же id должен оставаться идемпотентным.
         var messagesInChat = messages.Where(m => m.ChatId == command.ChatId).ToList();
         if (messagesInChat.Count == 0)
             return Result.Failure<List<Guid>>(Error.NotFound("Message"));
@@ -32,7 +30,7 @@ public sealed class DeleteMessagesCommandHandler(
         foreach (var message in messagesInChat)
         {
             var result = message.Delete();
-            if (result.IsFailure) continue; // уже удалено — пропускаем, не роняем всю пачку
+            if (result.IsFailure) continue; 
 
             messageRepository.Update(message);
             deleted.Add(message.Id.Value);

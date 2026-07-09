@@ -25,8 +25,6 @@ public sealed class Message : AggregateRoot<MessageId>
         SentAt = DateTime.UtcNow;
     }
 
-    // DB identity, монотонно возрастающий — тай-брейкер к SentAt для курсорной пагинации
-    // (несколько сообщений могут получить один SentAt при пересылке пачкой).
     public long Sequence { get; private set; }
 
     public Guid ChatId { get; private set; }
@@ -43,8 +41,6 @@ public sealed class Message : AggregateRoot<MessageId>
     public Guid? ForwardedFromUserId { get; private set; }
     public MessageKind Kind { get; private set; } = MessageKind.Text;
     public SystemEventType? SystemEventType { get; private set; }
-    /// <summary>Только для Kind == System — кого именно добавили/удалили/кто вышел (SenderId
-    /// при этом — тот, кто выполнил действие: сам ушедший для MemberLeft, админ для остальных).</summary>
     public Guid? TargetUserId { get; private set; }
 
     public static Result<Message> Create(Guid chatId, Guid senderId, string content, Guid? replyToMessageId = null)
@@ -61,8 +57,6 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    // Один и тот же путь для одного файла и для батча: без вложений отправить нельзя,
-    // caption необязателен и относится ко всему сообщению, а не к конкретному файлу.
     public static Result<Message> CreateWithAttachments(
         Guid chatId, Guid senderId, IReadOnlyList<MessageAttachment> attachments, string? caption = null)
     {
@@ -79,8 +73,6 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    // Независимая копия в целевом чате; SenderId — тот, кто переслал, ForwardedFrom* — только для
-    // подписи "Переслано от". Вложения копируются с новыми Id — owned-сущность нельзя делить между родителями.
     public static Result<Message> CreateForwarded(
         Guid targetChatId, Guid forwarderId, string content, IReadOnlyList<MessageAttachment> attachments,
         Guid originalMessageId, Guid originalSenderId)
@@ -104,8 +96,6 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success(message);
     }
 
-    // Content не показывается напрямую (клиент локализует из Kind/SystemEventType/TargetUserId),
-    // но должен быть непустым — колонка content в БД NOT NULL.
     public static Message CreateSystem(Guid chatId, Guid actorUserId, Guid targetUserId, SystemEventType eventType)
     {
         var message = new Message(MessageId.New(), chatId, actorUserId, $"system:{eventType}", null)
@@ -140,8 +130,6 @@ public sealed class Message : AggregateRoot<MessageId>
         return Result.Success();
     }
 
-    // Удалить может любой участник чата, не только автор — членство в чате
-    // проверяется на уровне обработчика команды (см. DeleteMessageCommandHandler)
     public Result Delete()
     {
         if (Status == MessageStatus.Deleted)

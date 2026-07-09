@@ -23,8 +23,6 @@ public sealed class FileUploadConfiguration : IEntityTypeConfiguration<FileUploa
         builder.HasIndex(f => new { f.UploadedBy, f.Category })
                .HasDatabaseName("ix_file_upload_uploaded_by_category");
 
-        // Не даёт двум параллельным загрузкам аватара одного пользователя/чата создать вторую
-        // "текущую" запись — без индекса гонка read-old→upload-new→delete-old оставляла бы orphaned-файл.
         builder.HasIndex(f => f.UploadedBy)
                .IsUnique()
                .HasFilter("category = 'Avatar'")

@@ -72,20 +72,16 @@ export interface UserOnlineEvent {
   isOnline: boolean
 }
 
-/** Чат создан / состав участников изменился / переименован — сигнал перезагрузить список чатов. */
 export interface ChatUpdatedEvent {
   chatId: string
 }
 
-/** Имя / аватарка / цвет профиля пользователя изменились — приходит во все чаты, где он состоит. */
 export interface UserProfileUpdatedEvent {
   userId: string
   displayName: string
   avatarUrl: string | null
   avatarColor: string
 }
-
-// ── Клиент ────────────────────────────────────────────────────────────────────
 
 export class SignalRClient {
   private connection: HubConnection
@@ -96,11 +92,9 @@ export class SignalRClient {
   constructor() {
     this.connection = new HubConnectionBuilder()
       .withUrl('/hubs/messenger', {
-        // Токен передаётся через query string — WebSocket не поддерживает заголовки
         accessTokenFactory: () => getAccessToken() ?? '',
       })
       .withAutomaticReconnect({
-        // 0s, 2s, 10s, 30s — потом каждые 30s
         nextRetryDelayInMilliseconds: (ctx) => {
           if (ctx.previousRetryCount < 1) return 0
           if (ctx.previousRetryCount < 2) return 2_000
@@ -111,8 +105,6 @@ export class SignalRClient {
       .configureLogging(LogLevel.Warning)
       .build()
 
-    // Регистрируем один раз; заменяемый колбэк даёт onReconnecting/onReconnected/onDisconnected
-    // заменять обработчик, а не накапливать по одному на каждый вызов.
     this.connection.onreconnecting(() => this._onReconnecting?.())
     this.connection.onreconnected(() => this._onReconnected?.())
     this.connection.onclose(() => this._onDisconnected?.())
@@ -215,5 +207,4 @@ export class SignalRClient {
   }
 }
 
-// Синглтон — одно соединение на всё приложение
 export const signalR = new SignalRClient()

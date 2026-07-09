@@ -6,8 +6,6 @@ import s from './ChatListPanel.module.css'
 const isImageContentType = (contentType: string | null | undefined) =>
   !!contentType?.startsWith('image/')
 
-/** Мини-превью вложения последнего сообщения в строке списка чатов — вложения чатов
- *  отдаются не анонимно (см. useAuthedFileUrl), поэтому обычный <img src> тут не сработает. */
 function PreviewThumbnail({ src, alt }: { src: string; alt: string }) {
   const { blobUrl } = useAuthedFileUrl(src)
   if (!blobUrl) return <span className={s.clPreviewAttachmentIcon}>🖼</span>
@@ -16,8 +14,6 @@ function PreviewThumbnail({ src, alt }: { src: string; alt: string }) {
 
 export function ChatPreview({ chat }: { chat: Chat }) {
   const { t } = useTranslation()
-  // Пустой preview + есть URL/имя вложения → последнее сообщение это вложение без подписи
-  // (например, фото без подписи) — иначе выглядело бы как "нет сообщений".
   const isAttachmentPreview = !chat.preview && !!(chat.previewAttachmentUrl || chat.previewAttachmentFileName)
 
   if (isAttachmentPreview) {

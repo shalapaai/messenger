@@ -41,14 +41,12 @@ public sealed class RegisterCommandHandler(
         if (!twoFactorEnabled)
         {
             user.VerifyEmail();
-            // IssueTokensAsync saves once, persisting the new user and refresh token together
             var tokens = await IssueTokensAsync(user, ct);
             return Result.Success(LoginResultDto.WithTokens(tokens));
         }
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        // Send OTP for email confirmation
         var code = GenerateCode();
         cache.Set(
             CacheKeyPrefix + user.Email,

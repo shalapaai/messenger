@@ -20,8 +20,6 @@ public sealed record AttachmentResult(
     string ContentType,
     long   FileSizeBytes);
 
-// Отправитель не получает своё же сообщение обратно по SignalR — bubble клиент строит
-// локально из этого ответа, не дожидаясь истории.
 public sealed record UploadAndSendMessageResult(
     Guid     MessageId,
     string   Content,

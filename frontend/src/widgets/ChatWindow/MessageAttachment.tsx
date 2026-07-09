@@ -11,8 +11,6 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/** Одно вложение (файл или картинка) сообщения — сообщение может нести несколько,
- *  см. MessageAttachments. */
 function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }: Attachment) {
   const { t } = useTranslation()
   const isImage = fileContentType.startsWith('image/')
@@ -25,9 +23,7 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
     setDownloading(true)
     try {
       await downloadAuthedFile(fileUrl, fileName)
-    } catch {
-      // ignored — файл остаётся доступным для повторной попытки скачивания
-    } finally {
+    } catch { /* ignore */ } finally {
       setDownloading(false)
     }
   }
@@ -101,7 +97,6 @@ interface MessageAttachmentsProps {
   attachments: Attachment[]
 }
 
-/** Все вложения сообщения — одно сообщение может нести несколько файлов, отправленных разом. */
 export function MessageAttachments({ attachments }: MessageAttachmentsProps) {
   if (attachments.length === 0) return null
 

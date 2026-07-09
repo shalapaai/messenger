@@ -35,9 +35,7 @@ function saveRecentEmoji(emoji: string, recentEmojis: string[]) {
       RECENT_EMOJIS_STORAGE_KEY,
       JSON.stringify(nextRecentEmojis),
     )
-  } catch {
-    // localStorage can be unavailable in private mode or restricted environments.
-  }
+  } catch { /* ignore */ }
 
   return nextRecentEmojis
 }

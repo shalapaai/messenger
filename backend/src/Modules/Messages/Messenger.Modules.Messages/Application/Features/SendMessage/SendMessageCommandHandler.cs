@@ -16,8 +16,6 @@ public sealed class SendMessageCommandHandler(
         if (!await membershipChecker.IsMemberAsync(command.ChatId, command.SenderId, ct))
             return Result.Failure<Guid>(Error.Forbidden("You are not a member of this chat"));
 
-        // цитируемое сообщение обязано быть из того же чата — иначе клиент мог бы подставить id
-        // сообщения из чужого чата и получить в ответ его текст/автора через resolved reply-превью
         if (command.ReplyToMessageId is { } replyId)
         {
             var replyTarget = await messageRepository.GetByIdAsync(MessageId.From(replyId), ct);

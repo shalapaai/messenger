@@ -18,7 +18,6 @@ public sealed class DeleteMessageCommandHandler(
         if (message is null)
             return Result.Failure(Error.NotFound("Message"));
 
-        // удалить может любой участник чата, не только автор сообщения
         if (!await membershipChecker.IsMemberAsync(message.ChatId, command.RequesterId, ct))
             return Result.Failure(Error.Forbidden("You are not a member of this chat"));
 

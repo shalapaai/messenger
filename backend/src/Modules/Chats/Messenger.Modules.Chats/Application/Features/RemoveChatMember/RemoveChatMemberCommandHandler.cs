@@ -27,16 +27,12 @@ public sealed class RemoveChatMemberCommandHandler(
         if (result.IsFailure)
             return result;
 
-        // Если это был последний участник — удаляем и сам чат, иначе он навсегда
-        // остаётся в БД пустым и недоступным (добавить участника нельзя, не будучи им).
         var chatDeleted = chat.IsEmpty;
         if (chatDeleted)
             chatRepository.Delete(chat);
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        // Чат целиком удалён — сообщения каскадно исчезнут вместе с ним, показывать
-        // системное сообщение больше некому
         if (!chatDeleted)
         {
             var eventType = command.RequesterId == command.UserId

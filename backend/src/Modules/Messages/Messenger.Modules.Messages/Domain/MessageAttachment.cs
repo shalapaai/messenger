@@ -1,7 +1,5 @@
 namespace Messenger.Modules.Messages.Domain;
 
-// Owned-сущность Message — своей identity вне родителя не имеет смысла (никогда не
-// запрашивается и не изменяется отдельно от сообщения), поэтому не AggregateRoot
 public sealed class MessageAttachment
 {
     private MessageAttachment() { } // EF Core

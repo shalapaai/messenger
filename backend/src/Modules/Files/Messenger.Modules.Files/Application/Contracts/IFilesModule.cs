@@ -15,8 +15,6 @@ public interface IFilesModule
         Guid        chatId,
         CancellationToken ct = default);
 
-    /// <summary>Загружает аватарку группового чата, удаляя предыдущую (дедуп по chatId, не по uploadedBy —
-    /// иначе загрузка админом аватарки группы затирала бы его личный аватар).</summary>
     Task<Result<string>> UploadGroupAvatarAsync(
         Stream      content,
         string      fileName,
@@ -26,11 +24,7 @@ public interface IFilesModule
         Guid        chatId,
         CancellationToken ct = default);
 
-    /// <summary>Компенсирующее удаление уже загруженного вложения, если последующий шаг
-    /// того же запроса провалился и файл иначе остался бы orphaned.</summary>
     Task DeleteChatAttachmentAsync(string fileKey, CancellationToken ct = default);
 
-    /// <summary>Удаляет текущую аватарку группового чата (если есть) — вызывается ДО очистки
-    /// Chat.AvatarUrl на стороне Chats-модуля, тем же порядком, что и UploadGroupAvatarAsync.</summary>
     Task DeleteGroupAvatarAsync(Guid chatId, CancellationToken ct = default);
 }

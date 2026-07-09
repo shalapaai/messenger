@@ -25,15 +25,11 @@ public sealed class MessageRepository(MessagesDbContext dbContext) : IMessageRep
 
         if (before is not null)
         {
-            // Курсор ищем только внутри этого же чата — иначе можно узнать про существование
-            // и SentAt чужого сообщения из чата, в котором не состоишь (утечка через тайминг).
             var cursorSequence = await dbContext.Messages
                 .Where(m => m.Id == MessageId.From(before.Value) && m.ChatId == chatId)
                 .Select(m => (long?)m.Sequence)
                 .FirstOrDefaultAsync(ct);
 
-            // Sequence, а не SentAt — несколько сообщений могут получить одинаковый SentAt
-            // (пересылка пачкой), и сортировка по времени может пропустить/задвоить на границе страницы.
             if (cursorSequence is not null)
                 query = query.Where(m => m.Sequence < cursorSequence);
         }

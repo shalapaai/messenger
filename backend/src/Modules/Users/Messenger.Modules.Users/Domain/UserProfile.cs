@@ -81,8 +81,6 @@ public sealed class UserProfile : AggregateRoot<Guid>
         UpdatedAt   = DateTime.UtcNow;
     }
 
-    /// <summary>Рассылается явно из хендлеров после Update/SetAvatarUrl/SetAvatarColor —
-    /// не автоматически при каждом сеттере, чтобы batch-изменения профиля не плодили события.</summary>
     public void NotifyProfileUpdated() =>
         RaiseDomainEvent(new UserProfileUpdatedDomainEvent(AuthUserId, DisplayName, AvatarUrl, AvatarColor));
 }

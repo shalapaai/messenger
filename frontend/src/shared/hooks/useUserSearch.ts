@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchUsers, type UserSearchResult } from '../api/usersApi'
 
-/** Debounced-поиск пользователей с защитой от гонки ответов — если более старый запрос
- *  (например "al") отвечает позже более нового ("alex"), его результат игнорируется. */
 export function useUserSearch(isOpen: boolean) {
   const [query,   setQuery]   = useState('')
   const [results, setResults] = useState<UserSearchResult[]>([])

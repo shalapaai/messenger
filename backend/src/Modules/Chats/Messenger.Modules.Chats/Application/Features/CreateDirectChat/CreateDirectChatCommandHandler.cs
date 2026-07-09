@@ -32,8 +32,6 @@ public sealed class CreateDirectChatCommandHandler(
         }
         catch (DbUpdateException)
         {
-            // TOCTOU: параллельный запрос уже создал этот чат — второй SaveChangesAsync падает
-            // на ux_chats_direct_pair. Возвращаем уже существующий чат, а не 500.
             var existingAfterConflict = await chatRepository.FindDirectChatIdAsync(command.CurrentUserId, command.OtherUserId, ct);
             if (existingAfterConflict is not null)
                 return Result.Success(existingAfterConflict.Value);

@@ -35,8 +35,6 @@ function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[]
   let lastDateKey = ''
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
-    // Группируем по языконезависимому ключу дня, не по переведённой метке — иначе смена языка
-    // интерфейса развела бы сообщения одного дня по разным группам ("Сегодня" vs "Today").
     const key = dateKey(msg.sentAt)
     if (key !== lastDateKey) { rendered.push({ type: 'sep', label: formatDateLabel(msg.sentAt) }); lastDateKey = key }
 
@@ -45,8 +43,6 @@ function buildRenderedItems(messages: Message[], meta: ChatMeta): RenderedItem[]
       continue
     }
 
-    // Системные сообщения не должны считаться "соседями" для группировки аватарок/имени —
-    // ищем ближайшее НЕ системное сообщение по обе стороны, а не просто messages[i ± 1]
     let prev: Message | undefined
     for (let j = i - 1; j >= 0; j--) { if (messages[j].kind !== 'System') { prev = messages[j]; break } }
     let next: Message | undefined
@@ -119,11 +115,9 @@ interface MessageListProps {
   messages: Message[]
   meta: ChatMeta
   meSender: Sender
-  /** момент, до которого собеседник прочитал переписку — null, если ещё не прочитал ничего */
   otherReadAt: string | null
   selectMode: boolean
   selectedIds: Set<number>
-  /** messageId сообщения, которое сейчас подсвечивается (после перехода по цитате-ответу) */
   highlightedMsgId: string | null
   onToggleSelect: (msg: Message) => void
   onAvatarClick: (msg: Message) => void
@@ -134,8 +128,6 @@ interface MessageListProps {
   onForwardedUserClick?: (userId: string, name: string) => void
 }
 
-// Мемоизирован: text-состояние поля ввода живёт в ChatWindow и меняется на каждое нажатие
-// клавиши — без memo это перестраивало бы весь список сообщений при вводе текста.
 export const MessageList = memo(function MessageList({
   messages, meta, meSender, otherReadAt, selectMode, selectedIds, highlightedMsgId,
   onToggleSelect, onAvatarClick, onContextMenu, onRetry, onScrollToMessage, onReact, onForwardedUserClick,
@@ -164,8 +156,6 @@ export const MessageList = memo(function MessageList({
         ) : item.type === 'system' ? (() => {
           const i18nKey = systemMessageKey(item.msg.systemEventType)
           if (!i18nKey) return null
-          // Если сообщение обо мне самом — берём живое имя (meSender), а не замороженное
-          // targetUserName: иначе переименование не отразилось бы в уже показанных событиях.
           const targetName = item.msg.targetUserId === meSender.senderId
             ? meSender.senderName
             : (item.msg.targetUserName ?? '')

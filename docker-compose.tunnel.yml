@@ -10,8 +10,6 @@ services:
   api:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-    # Наружу не торчит — cloudflared достаёт до frontend по внутренней
-    # docker-сети, публичный доступ идёт только через туннель Cloudflare
     ports: !reset []
 
   frontend:
@@ -21,8 +19,6 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: messenger-cloudflared
     restart: unless-stopped
-    # protocol http2 — принудительно TCP+TLS вместо QUIC/UDP: часть провайдеров
-    # душит/рвёт именно QUIC, из-за чего туннель постоянно переподключался
     command: tunnel --no-autoupdate --protocol http2 run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - messenger-network

@@ -11,7 +11,6 @@ import type { UserProfile } from '../../../shared/types/user'
 import s from './EditProfileModal.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
-// должно совпадать с лимитами на бэкенде (UpdateUserProfileCommandValidator)
 const DISPLAY_NAME_MAX_LENGTH = 100
 const STATUS_MAX_LENGTH = 200
 const PHONE_MAX_LENGTH = 20
@@ -69,9 +68,6 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
       setFormError(t('profileSetup.errors.avatarInvalidType'))
       return
     }
-    // Проверяем исходный файл, не дожидаясь обрезки — она пересжимает и обычно уменьшает
-    // размер, так что проверка только итогового файла легко пропустила бы изначально
-    // огромный файл, если кроп-область оказалась небольшой.
     if (file.size > MAX_AVATAR_SIZE_BYTES) {
       setFormError(t('profileSetup.errors.avatarTooLarge'))
       return
@@ -98,8 +94,6 @@ function EditProfileModalContent({ profile, onClose, onSave }: EditProfileModalP
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     setHasTriedSubmit(true)
-    // Ни один запрос не уходит, пока хоть одно поле (даже необязательное) невалидно —
-    // иначе бэкенд может успеть сохранить часть полей до того, как найдёт невалидное
     if (!displayName.trim() || isNameTooLong || !trimmedLogin || isLoginBadFmt || hasOptionalFieldError) return
     if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
       setFormError(t('profileSetup.errors.avatarTooLarge'))

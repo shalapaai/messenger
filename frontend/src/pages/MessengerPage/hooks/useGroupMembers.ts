@@ -6,8 +6,6 @@ export function useGroupMembers(id: string | undefined, isGroupChat: boolean, cu
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
   const [groupMembersLoading, setGroupMembersLoading] = useState(false)
 
-  // Защищает от гонки ответов: устаревший ответ по ранее открытой группе не должен затереть
-  // уже показанных участников группы, открытой следом.
   const requestedGroupChatIdRef = useRef<string | null>(null)
 
   async function loadGroupMembers(chatId: string) {
@@ -18,8 +16,6 @@ export function useGroupMembers(id: string | undefined, isGroupChat: boolean, cu
       if (requestedGroupChatIdRef.current !== chatId) return
       setGroupMembers(prev => {
         if (prev.length === 0) return fresh
-        // Preserve existing display order: update data in-place, then append new members,
-        // drop removed ones — so a role change never moves anyone in the list
         const freshMap = new Map(fresh.map(m => [m.userId, m]))
         const merged = prev
           .filter(m => freshMap.has(m.userId))

@@ -26,8 +26,6 @@ public sealed class DeleteChatCommandHandler(
         chatRepository.Delete(chat);
         await unitOfWork.SaveChangesAsync(ct);
 
-        // Явный вызов, а не FK CASCADE — Chats не должен зависеть от схемы хранения Messages.
-        // Best-effort после коммита: худший случай — orphaned-сообщения, а не потеря чата.
         try
         {
             await messagesModule.DeleteAllMessagesInChatAsync(command.ChatId, ct);

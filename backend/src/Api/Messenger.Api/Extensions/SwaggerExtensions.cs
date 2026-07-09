@@ -25,7 +25,6 @@ public static class SwaggerExtensions
                 In           = ParameterLocation.Header,
                 Description  = "Вставьте access token (без префикса Bearer)"
             });
-            // Замок добавляется только на защищённые эндпойнты; анонимные (login/register/...) открыты
             opts.OperationFilter<SecurityOperationFilter>();
         });
 

@@ -1,23 +1,12 @@
--- Инициализация БД: схемы, расширения и таблицы.
--- Запускается ОДИН РАЗ при первом старте контейнера PostgreSQL.
--- EnsureCreatedAsync / MigrateAsync в модулях увидят эти таблицы и пропустят создание.
--- Соглашение: snake_case. Chats: множественное число (chats.chats, chats.members), остальные — единственное.
-
--- ── Схемы ─────────────────────────────────────────────────────────────────────
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE SCHEMA IF NOT EXISTS users;
 CREATE SCHEMA IF NOT EXISTS chats;
 CREATE SCHEMA IF NOT EXISTS messages;
 CREATE SCHEMA IF NOT EXISTS files;
 
--- ── Расширения ────────────────────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "btree_gin";
-
--- ══════════════════════════════════════════════════════════════════════════════
---  СХЕМА: auth
--- ══════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS auth.user (
     id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -48,10 +37,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_refresh_token_token
 CREATE INDEX IF NOT EXISTS ix_refresh_token_user_id
     ON auth.refresh_token (user_id);
 
--- ══════════════════════════════════════════════════════════════════════════════
---  СХЕМА: users
--- ══════════════════════════════════════════════════════════════════════════════
-
 CREATE TABLE IF NOT EXISTS users.user_profile (
     id           UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
     auth_user_id UUID          NOT NULL,
@@ -81,10 +66,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_user_profile_login
     ON users.user_profile (login)
     WHERE login IS NOT NULL;
 
--- ══════════════════════════════════════════════════════════════════════════════
---  СХЕМА: chats
--- ══════════════════════════════════════════════════════════════════════════════
-
 CREATE TABLE IF NOT EXISTS chats.chats (
     id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     type             VARCHAR(10)  NOT NULL,
@@ -92,9 +73,6 @@ CREATE TABLE IF NOT EXISTS chats.chats (
     avatar_url       VARCHAR(512) DEFAULT NULL,
     avatar_color     VARCHAR(7)   DEFAULT NULL,
     created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    -- Заполнены только для type='direct', всегда в каноническом порядке (меньший uuid первым) —
-    -- основа уникального индекса ux_chats_direct_pair ниже, не позволяющего гонке из двух
-    -- одновременных запросов создать два разных direct-чата между одной и той же парой.
     direct_user_id_1 UUID         DEFAULT NULL,
     direct_user_id_2 UUID         DEFAULT NULL,
 
@@ -126,16 +104,8 @@ CREATE TABLE IF NOT EXISTS chats.members (
 
 CREATE INDEX IF NOT EXISTS idx_chats_members_user_id ON chats.members (user_id);
 
--- ══════════════════════════════════════════════════════════════════════════════
---  СХЕМА: messages
--- ══════════════════════════════════════════════════════════════════════════════
-
 CREATE TABLE IF NOT EXISTS messages.message (
     id                        UUID          PRIMARY KEY,
-    -- Монотонно возрастающий identity — тай-брейкер к sent_at для курсорной пагинации
-    -- (несколько сообщений могут получить одинаковый sent_at, например при пересылке
-    -- пачки сообщений подряд; чистая сортировка по времени в этом случае может
-    -- пропустить или задвоить сообщение на границе страницы).
     sequence                  BIGINT        GENERATED ALWAYS AS IDENTITY,
     chat_id                   UUID          NOT NULL,
     sender_id                 UUID          NOT NULL,
@@ -147,12 +117,8 @@ CREATE TABLE IF NOT EXISTS messages.message (
     reply_to_message_id       UUID          DEFAULT NULL,
     forwarded_from_message_id UUID          DEFAULT NULL,
     forwarded_from_user_id    UUID          DEFAULT NULL,
-    -- 'Text' | 'System' — системные сообщения о смене состава группы (добавили/вышел/удалили).
     message_type              VARCHAR(10)   NOT NULL DEFAULT 'Text',
-    -- Заполнено только для message_type = 'System': 'MemberAdded' | 'MemberLeft' | 'MemberRemoved'.
     system_event_type         VARCHAR(20)   DEFAULT NULL,
-    -- Заполнено только для message_type = 'System' — кого добавили/удалили/кто вышел
-    -- (sender_id при этом — кто выполнил действие: сам ушедший для MemberLeft, админ для остальных).
     target_user_id            UUID          DEFAULT NULL,
 
     CONSTRAINT uq_message_sequence UNIQUE (sequence),
@@ -166,8 +132,6 @@ CREATE TABLE IF NOT EXISTS messages.message (
     CONSTRAINT fk_message_reply_to_message_id
         FOREIGN KEY (reply_to_message_id) REFERENCES messages.message (id) ON DELETE SET NULL,
 
-    -- пересланное сообщение — независимая копия; если оригинал/автор удалён, копия остаётся,
-    -- просто пропадает подпись "Переслано от"
     CONSTRAINT fk_message_forwarded_from_message_id
         FOREIGN KEY (forwarded_from_message_id) REFERENCES messages.message (id) ON DELETE SET NULL,
 
@@ -187,9 +151,6 @@ CREATE INDEX IF NOT EXISTS ix_message_chat_id_sequence
 CREATE INDEX IF NOT EXISTS ix_message_sender_id
     ON messages.message (sender_id);
 
--- Одно сообщение может нести несколько вложений (несколько файлов, отправленных разом,
--- одним сообщением) — отдельная таблица вместо колонок на message; sort_order сохраняет
--- порядок, в котором пользователь выбрал файлы
 CREATE TABLE IF NOT EXISTS messages.message_attachment (
     id                UUID          PRIMARY KEY,
     message_id        UUID          NOT NULL,
@@ -206,10 +167,6 @@ CREATE TABLE IF NOT EXISTS messages.message_attachment (
 CREATE INDEX IF NOT EXISTS ix_message_attachment_message_id
     ON messages.message_attachment (message_id);
 
--- ══════════════════════════════════════════════════════════════════════════════
---  СХЕМА: files
--- ══════════════════════════════════════════════════════════════════════════════
-
 CREATE TABLE IF NOT EXISTS files.file_upload (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     file_key      VARCHAR(512) NOT NULL,
@@ -219,9 +176,6 @@ CREATE TABLE IF NOT EXISTS files.file_upload (
     uploaded_by   UUID         NOT NULL,
     uploaded_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     category      VARCHAR(30)  DEFAULT NULL,
-    -- Заполнено для ChatAttachment (проверка членства в чате при скачивании) и для
-    -- GroupAvatar (поиск текущей аватарки группы при замене). Без FK на chats.chat:
-    -- модули не должны зависеть друг от друга на уровне схемы.
     chat_id       UUID         DEFAULT NULL,
 
     CONSTRAINT fk_file_upload_uploaded_by
@@ -234,9 +188,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_file_upload_file_key
 CREATE INDEX IF NOT EXISTS ix_file_upload_uploaded_by_category
     ON files.file_upload (uploaded_by, category);
 
--- Не даёт двум одновременным загрузкам аватара от одного пользователя (или для одного и
--- того же чата — аватара группы) создать по второй "текущей" записи (см. UploadAvatarCommandHandler
--- / FilesModuleApi.UploadGroupAvatarAsync — оба ловят конфликт и возвращают 409).
 CREATE UNIQUE INDEX IF NOT EXISTS ux_file_upload_avatar_per_user
     ON files.file_upload (uploaded_by)
     WHERE category = 'Avatar';

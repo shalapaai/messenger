@@ -11,7 +11,6 @@ interface UserProfileModalProps {
   user: ModalUser | null
   onClose: () => void
   onDeleteChat?: () => void
-  /** Открыть/создать личный чат с этим пользователем — undefined для собственного профиля */
   onMessage?: () => void
 }
 

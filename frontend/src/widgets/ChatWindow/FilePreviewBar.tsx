@@ -11,7 +11,6 @@ interface FilePreviewBarProps {
   onClearAll: () => void
 }
 
-/** Прогресс общий на весь запрос, а не по файлу — все вложения уходят одним HTTP-запросом. */
 export function FilePreviewBar({
   queuedFiles, fileUploading, uploadProgress, onRemove, onClearAll,
 }: FilePreviewBarProps) {

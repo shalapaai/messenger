@@ -5,11 +5,6 @@ using Microsoft.AspNetCore.Http;
 
 public static class ClaimsPrincipalExtensions
 {
-    // .NET 8+ uses JsonWebTokenHandler with MapInboundClaims = false by default.
-    // Claims written as ClaimTypes.* are serialised to short JWT names ("nameid", "email"),
-    // and come back unchanged — not remapped to the long ClaimTypes URIs.
-    // Fallback chain covers both old (mapped) and new (unmapped) behaviour.
-
     public static Guid GetUserId(this HttpContext context)
     {
         var claim = context.User.FindFirst(ClaimTypes.NameIdentifier)

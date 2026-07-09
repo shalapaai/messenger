@@ -78,7 +78,6 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddMessengerRateLimiting();
 
-// Health checks для Docker HEALTHCHECK и load balancer
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("MessengerDb")!, "SELECT 1;", name: "postgres")
     .AddRedis(redisConnectionString, "redis");
@@ -112,11 +111,10 @@ app.UseSerilogRequestLogging(opts =>
         diag.Set("UserAgent", ctx.Request.Headers.UserAgent.ToString());
     };
 });
-app.UseLocalizationModule();     // культура из Accept-Language / ?lang=
+app.UseLocalizationModule();     
 app.UseAuthentication();
 app.UseAuthorization();
-// В "Testing" все запросы идут через один и тот же in-process TestServer с одним "IP" —
-// лимиты по IP/пользователю иначе душили бы параллельные тестовые сценарии ложным 429.
+
 if (!app.Environment.IsEnvironment("Testing"))
     app.UseRateLimiter();
 app.UseExceptionHandler();
@@ -130,9 +128,8 @@ app.MapChatsModule();
 app.MapMessagesModule();
 app.MapFilesModule();
 app.MapNotificationsModule();
-app.MapRealtimeModule();         // /hubs/messenger
+app.MapRealtimeModule();         
 
 app.Run();
 
-// Экспортируем для интеграционных тестов
 public partial class Program;

@@ -8,7 +8,6 @@ using Messenger.Modules.Realtime.Hubs;
 using Messenger.Modules.Users.Application.Contracts;
 using Microsoft.AspNetCore.SignalR;
 
-// Межмодульная связь через MediatR INotification — не прямой вызов
 public sealed class MessageSentEventHandler(
     IHubContext<MessengerHub> hubContext,
     IUsersModule usersModule,
@@ -18,10 +17,8 @@ public sealed class MessageSentEventHandler(
 {
     public async Task Handle(MessageSentDomainEvent notification, CancellationToken ct)
     {
-        // не зависит от резолва превью/имён ниже — запускаем сразу, дожидаемся только перед использованием
         var membersTask = chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
 
-        // превью цитируемого сообщения — для карточки "в ответ на" на клиенте
         MessagePreviewDto? replyTo = null;
         if (notification.ReplyToMessageId is { } replyId)
         {
@@ -80,13 +77,10 @@ public sealed class MessageSentEventHandler(
             targetUserName     = targetUser?.DisplayName,
         };
 
-        // Рассылаем в группу чата всем подписанным участникам
         await hubContext.Clients
             .Group(MessengerHub.ChatGroup(notification.ChatId))
             .SendAsync("ReceiveMessage", payload, ct);
 
-        // Дублируем в личные группы всех участников, включая отправителя: его список чатов
-        // не имеет optimistic-пути и тоже полагается на это событие. Дубли клиент дедуплицирует.
         await ChatFallback.BroadcastToMembersAsync(
             hubContext, membersTask, "ReceiveMessage", payload, ct);
     }

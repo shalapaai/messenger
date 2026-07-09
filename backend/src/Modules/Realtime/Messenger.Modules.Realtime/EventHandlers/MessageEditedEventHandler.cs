@@ -21,7 +21,6 @@ public sealed class MessageEditedEventHandler(
             editedAt   = notification.OccurredOn
         };
 
-        // Fallback-рассылка не зависит от группового send — запускаем параллельно, а не после.
         var membersTask = chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
 
         var groupSendTask = hubContext.Clients

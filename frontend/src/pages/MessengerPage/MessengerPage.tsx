@@ -112,12 +112,9 @@ export function MessengerPage() {
     send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage, setMessageReaction,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
-    // Если markChatRead упал, локальный unread уже обнулён — перезапрашиваем чаты,
-    // чтобы не продвинувшийся серверный unreadCount не остался замаскирован навсегда.
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => loadChats()),
   })
 
-  // Чат открыт/выбран (включая повторный заход в уже загруженный чат) — отмечаем прочитанным
   useEffect(() => {
     if (id) markChatRead(id).catch(() => loadChats())
   }, [id, loadChats])
@@ -158,8 +155,6 @@ export function MessengerPage() {
     },
     onUserProfileUpdated: (event) => {
       handleUserProfileUpdated(event)
-      // Карточка группы могла уже подгрузить участников — обновляем и её, иначе
-      // открытая сейчас карточка так и покажет старые имя/аватар до повторного открытия.
       patchMemberProfile(event.userId, {
         name: event.displayName,
         initials: getInitials(event.displayName),
@@ -174,7 +169,6 @@ export function MessengerPage() {
     stopTypingRef.current = stopTyping
   }, [startTyping, stopTyping])
 
-  // Ref — иначе IntersectionObserver держит устаревший loadMoreHistory и молча игнорирует повторные скроллы вверх.
   const loadMoreHistoryRef = useRef(loadMoreHistory)
   useEffect(() => {
     loadMoreHistoryRef.current = loadMoreHistory
@@ -216,7 +210,6 @@ export function MessengerPage() {
   }
 
   async function handleSendFiles(files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) {
-    // Один createDirectChat на все файлы, а не по одному на файл — иначе гонка параллельных вызовов.
     if (newUserId) {
       const newChatId = await createDirectChat(newUserId)
       await sendFiles(newChatId, files, caption, meSender, onUploadProgress)
@@ -236,8 +229,6 @@ export function MessengerPage() {
 
   async function handleDeleteMessage(msg: Message) {
     if (!id) return
-    // Сообщение без messageId (не отправилось / ещё отправляется) не существует на сервере —
-    // удаляем локально, без запроса
     if (!msg.messageId) { removeLocalMessage(id, msg); return }
     try {
       await deleteMessage(id, msg)
@@ -287,7 +278,6 @@ export function MessengerPage() {
     }
   }
 
-  // createDirectChat идемпотентен — если чат с этим пользователем уже есть, просто вернёт его id
   async function handleOpenDirectChat(userId: string) {
     setModalUser(null)
     try {
@@ -482,7 +472,6 @@ export function MessengerPage() {
               onTyping={typingIndicator.handleOwnTyping}
               onBack={() => { discardInputHistoryLayer(); navigate('/chats') }}
               onHeaderClick={() => {
-                // Перезапрашиваем участников: groupMembers не обновляется сам, если кто-то поменял имя/аватар, не меняя состав чата.
                 if (meta.group) { setGroupModalOpen(true); if (id) loadGroupMembers(id); return }
                 if (meta.otherUserId) { setModalUserIsChatPartner(true); openUserModal(meta.otherUserId, meta.name, meta.online) }
               }}

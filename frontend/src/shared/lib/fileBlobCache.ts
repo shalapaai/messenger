@@ -1,10 +1,6 @@
 import axios from 'axios'
 import { getAccessToken } from './auth/authTokens'
 
-// Вложения чатов отдаются не анонимно (бэкенд проверяет членство в чате), поэтому
-// их нельзя грузить через обычный <img src>, а нужно качать с Bearer-токеном и
-// превращать в blob-URL. Без этого кэша каждое переключение чата (ChatWindow
-// пересоздаётся с key={chatId}) заново скачивало те же файлы с нуля.
 async function fetchProtectedFileBlob(url: string, onProgress?: (percent: number | null) => void): Promise<Blob> {
   const res = await axios.get<Blob>(url, {
     responseType: 'blob',
@@ -21,16 +17,12 @@ interface CacheEntry {
   refCount: number
   lastReleasedAt: number
   loadingPromise: Promise<string> | null
-  // null — процент неизвестен (бэкенд не отдал Content-Length, см. FilesEndpoints.cs), а не "не начали".
   progress: number | null
   progressListeners: Set<ProgressListener>
 }
 
 const cache = new Map<string, CacheEntry>()
 
-// Ограничивает число одновременно живых blob-URL (каждый держит декодированные
-// байты файла в памяти вкладки) — как только лишние чаты вытесняются из этого
-// лимита, самые давно отпущенные записи освобождаются первыми.
 const MAX_ENTRIES = 150
 
 function evictIfNeeded() {
@@ -46,12 +38,6 @@ function evictIfNeeded() {
   }
 }
 
-/** Возвращает blob-URL файла, переиспользуя уже скачанные данные при повторных
- *  обращениях (в т.ч. из разных компонентов). Каждый вызов увеличивает refCount —
- *  парный releaseFileBlobUrl обязателен (обычно в cleanup эффекта). onProgress,
- *  если передан, получает текущий % загрузки (null — сервер не отдал длину файла,
- *  см. Content-Length в FilesEndpoints.cs) и подписывается на дальнейшие обновления,
- *  пока идёт (возможно, уже начатая кем-то другим) загрузка. */
 export function acquireFileBlobUrl(fileUrl: string, onProgress?: ProgressListener): Promise<string> {
   const existing = cache.get(fileUrl)
   if (existing) {
@@ -93,10 +79,6 @@ export function acquireFileBlobUrl(fileUrl: string, onProgress?: ProgressListene
   return entry.loadingPromise
 }
 
-/** Парная к acquireFileBlobUrl — не отзывает blob-URL сразу, а лишь помечает его
- *  свободным для вытеснения, чтобы возврат в тот же чат брал файл из кэша.
- *  Передайте тот же onProgress, что и в acquireFileBlobUrl, чтобы отписать его
- *  (иначе размонтированный компонент останется в progressListeners до конца загрузки). */
 export function releaseFileBlobUrl(fileUrl: string, onProgress?: ProgressListener) {
   const entry = cache.get(fileUrl)
   if (!entry) return
@@ -108,8 +90,6 @@ export function releaseFileBlobUrl(fileUrl: string, onProgress?: ProgressListene
   }
 }
 
-/** Отзывает все blob-URL и очищает кэш — вызывать при логауте, чтобы данные
- *  вышедшего пользователя не оставались в памяти вкладки. */
 export function clearFileBlobCache() {
   for (const entry of cache.values()) {
     if (entry.blobUrl) URL.revokeObjectURL(entry.blobUrl)

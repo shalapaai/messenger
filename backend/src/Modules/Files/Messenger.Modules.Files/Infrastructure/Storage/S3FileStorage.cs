@@ -5,8 +5,6 @@ using Amazon.S3.Transfer;
 using Messenger.Modules.Files.Application.Abstractions;
 using Microsoft.Extensions.Options;
 
-// Prod-реализация. Включить через FileStorage:Type=S3 в appsettings.
-// Пакет: AWSSDK.S3
 public sealed class S3FileStorage(IAmazonS3 s3Client, IOptions<S3StorageOptions> options) : IFileStorage
 {
     private readonly S3StorageOptions _opts = options.Value;

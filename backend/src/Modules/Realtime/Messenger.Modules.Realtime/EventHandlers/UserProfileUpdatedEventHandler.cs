@@ -6,8 +6,6 @@ using Messenger.Modules.Realtime.Hubs;
 using Messenger.Modules.Users.Domain.Events;
 using Microsoft.AspNetCore.SignalR;
 
-// Имя/аватарка/цвет профиля изменились — рассылаем во все чаты пользователя, чтобы уже
-// отрисованные список чатов и история сообщений обновили резолвленные данные отправителя.
 public sealed class UserProfileUpdatedEventHandler(
     IHubContext<MessengerHub> hubContext,
     IChatsModule              chatsModule)

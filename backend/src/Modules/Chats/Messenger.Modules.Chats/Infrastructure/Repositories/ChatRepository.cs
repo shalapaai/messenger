@@ -12,8 +12,6 @@ public sealed class ChatRepository(ChatsDbContext dbContext) : IChatRepository
 
     public async Task<Guid?> FindDirectChatIdAsync(Guid userId1, Guid userId2, CancellationToken ct = default)
     {
-        // Тот же канонический порядок, что и Chat.CreateDirect — бьёт напрямую в ux_chats_direct_pair,
-        // без join через members в обе стороны.
         var (first, second) = userId1.CompareTo(userId2) <= 0 ? (userId1, userId2) : (userId2, userId1);
 
         return await dbContext.Chats

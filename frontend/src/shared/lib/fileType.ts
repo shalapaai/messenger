@@ -5,8 +5,6 @@ export interface FileTypeInfo {
   color: string
 }
 
-// та же палитра, что уже используется для цвета аватарок — чтобы цветные иконки файлов
-// не выглядели чужеродно рядом с остальным интерфейсом
 const [BLUE, VIOLET, GREEN, ORANGE, RED, CYAN, PURPLE] = AVATAR_COLORS
 const GRAY = '#8A94A6'
 
@@ -34,8 +32,6 @@ const EXTENSION_INFO: Record<string, FileTypeInfo> = {
 
 const DEFAULT_INFO: FileTypeInfo = { label: 'FILE', color: GRAY }
 
-/** Подпись + цвет иконки файла — сперва по расширению имени, затем по общей категории
- *  content-type (на случай отсутствующего/незнакомого расширения), иначе — нейтральный дефолт. */
 export function getFileTypeInfo(fileName: string | null | undefined, contentType: string | null | undefined): FileTypeInfo {
   const ext = fileName?.split('.').pop()?.toLowerCase()
   if (ext && EXTENSION_INFO[ext]) return EXTENSION_INFO[ext]
@@ -51,8 +47,6 @@ export function getFileTypeInfo(fileName: string | null | undefined, contentType
   return DEFAULT_INFO
 }
 
-// По расширению, а не File.type — на некоторых ОС браузер не знает MIME для .rar/.7z/.docx.
-// Должно соответствовать AllowedAttachmentMimeTypes на бэкенде.
 export const ALLOWED_ATTACHMENT_EXTENSIONS = new Set([
   'jpg', 'jpeg', 'png', 'webp', 'gif',
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv',
@@ -66,14 +60,10 @@ export const MAX_ATTACHMENT_SIZE_BYTES = 25 * 1024 * 1024
 export function isAllowedAttachment(file: File): boolean {
   const ext = file.name.split('.').pop()?.toLowerCase()
   if (ext && ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) return true
-  // файл без расширения (или с незнакомым) — доверяем MIME-типу, если браузер его распознал;
-  // SVG исключаем явно (может нести <script>, см. ALLOWED_ATTACHMENT_EXTENSIONS)
   return (file.type.startsWith('image/') && file.type !== 'image/svg+xml')
     || file.type.startsWith('audio/') || file.type.startsWith('video/') || file.type === 'application/pdf'
 }
 
-// Без SVG (в отличие от вложений чата) — аватарки рендерятся как <img src>, и растровый набор
-// безопаснее, чем SVG с потенциальным script/onload. Должно соответствовать бэкенду.
 const ALLOWED_AVATAR_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif'])
 
 export const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024

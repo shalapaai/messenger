@@ -138,8 +138,19 @@ ctx.GetUserId()    // → Guid
 ctx.GetUserEmail() // → string
 ```
 
+Оба хелпера ищут claim по нескольким именам подряд (`ClaimTypes.NameIdentifier` / `"nameid"` / `"sub"`), а не по одному — начиная с .NET 8, `JwtBearer` по умолчанию использует `JsonWebTokenHandler` с `MapInboundClaims = false`: claims, записанные как `ClaimTypes.*`, сериализуются в короткие имена из самого JWT (`"nameid"`, `"email"`) и возвращаются как есть, не перемапливаясь обратно в длинные URI `ClaimTypes.*`. Цепочка фолбэков покрывает и старое (перемапленное), и новое (неперемапленное) поведение одним кодом.
+
 ## Горизонтальное масштабирование
 
 - **API** — stateless, можно запускать несколько инстансов
 - **SignalR** — Redis backplane синхронизирует broadcast между инстансами
 - **PostgreSQL** — shared, соединения через connection pool
+
+## Продакшн-деплой
+
+Два независимых варианта, не комбинируются одновременно:
+
+- **`docker-compose.prod.yml`** — свой VPS с публичным IP, TLS терминирует Caddy. Наружу торчит только Caddy; `api` и `frontend` доступны лишь по внутренней docker-сети, всё идёт через `frontend` (nginx), который проксирует `/api` и `/hubs` — сам API снаружи не нужен. `pgAdmin` в проде выключен (`replicas: 0`), Redis не пробрасывает порт наружу.
+- **`docker-compose.tunnel.yml`** — без своего публичного IP/VPS, через Cloudflare Tunnel (`cloudflared`). Публичный доступ идёт только через туннель; `cloudflared` принудительно использует `--protocol http2` (TCP+TLS), а не QUIC/UDP по умолчанию — часть провайдеров душит/рвёт именно QUIC, из-за чего туннель постоянно переподключался.
+
+В обоих случаях healthcheck API использует `wget`, не `curl` — в runtime-образе (`aspnet:9.0`, debian-slim) `curl` не установлен, только `wget`.

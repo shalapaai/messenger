@@ -59,8 +59,6 @@ function EditGroupModalContent({ chatId, currentName, currentAvatarUrl, currentC
     setSaving(true)
     setError(null)
 
-    // Если аватарка уже сохранилась/удалилась, а переименование упадёт — очищаем черновик
-    // файла сразу, чтобы повторное "Сохранить" не залило его снова.
     let avatarAlreadySaved = false
     try {
       if (avatarCrop.croppedAvatarFile) {

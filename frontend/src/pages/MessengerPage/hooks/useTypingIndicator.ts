@@ -9,7 +9,6 @@ export function useTypingIndicator(startTyping: () => void, stopTyping: () => vo
   const handleUserTyping = useCallback((event: TypingEvent) => {
     setTypingChats(prev => ({ ...prev, [event.chatId]: true }))
     clearTimeout(clearTimers.current[event.chatId])
-    // подстраховка на случай если StopTyping не придёт (обрыв связи и т.п.)
     clearTimers.current[event.chatId] = setTimeout(() => {
       setTypingChats(prev => ({ ...prev, [event.chatId]: false }))
     }, 3000)
@@ -21,8 +20,6 @@ export function useTypingIndicator(startTyping: () => void, stopTyping: () => vo
   }, [])
 
   const handleOwnTyping = useCallback(() => {
-    // Шлём StartTyping на каждое нажатие, а не только при первом — иначе после паузы
-    // (дебаунс уже сбросил ownDebounce) вызов зависел бы от устаревшего состояния.
     startTyping()
     if (ownDebounce.current) clearTimeout(ownDebounce.current)
     ownDebounce.current = setTimeout(() => {

@@ -8,8 +8,6 @@ public sealed record UserSummaryDto(
     string? AvatarUrl,
     string  AvatarColor);
 
-// Публичный API модуля для межмодульного взаимодействия.
-// Chats вызывает этот интерфейс — не зависит от внутренностей модуля.
 public interface IUsersModule
 {
     Task<Result<Dictionary<Guid, UserSummaryDto>>> GetSummariesByAuthUserIdsAsync(

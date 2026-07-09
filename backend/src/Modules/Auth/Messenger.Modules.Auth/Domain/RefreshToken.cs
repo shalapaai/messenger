@@ -18,8 +18,6 @@ public sealed class RefreshToken : Entity<Guid>
     }
 
     public Guid UserId { get; private set; }
-    /// <summary>SHA-256 хэш токена, а не сам токен — при утечке БД хранящиеся здесь значения
-    /// нельзя использовать напрямую как рабочий refresh-токен.</summary>
     public string Token { get; private set; } = string.Empty;
     public DateTime ExpiresAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -32,9 +30,6 @@ public sealed class RefreshToken : Entity<Guid>
 
     public void Revoke() => IsRevoked = true;
 
-    /// <summary>Токен — 64 случайных байта (см. JwtTokenService.GenerateRefreshToken), уже
-    /// достаточно высокоэнтропийный, поэтому быстрый SHA-256 достаточен: в отличие от паролей
-    /// здесь не нужен медленный KDF (bcrypt/argon2) для защиты от подбора.</summary>
     public static string Hash(string plainTextToken) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(plainTextToken)));
 }

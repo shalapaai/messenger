@@ -18,7 +18,6 @@ public sealed class MessengerHub(
     IPresenceTracker        presence,
     ILogger<MessengerHub>   logger) : Hub
 {
-    // ── Подписка на чат ───────────────────────────────────────────────────────
     public async Task JoinChat(Guid chatId)
     {
         var userId = Guid.Parse(Context.UserIdentifier!);
@@ -32,8 +31,6 @@ public sealed class MessengerHub(
     public async Task LeaveChat(Guid chatId) =>
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, ChatGroup(chatId));
 
-    // ── Отправка сообщения через WebSocket ────────────────────────────────────
-    // Альтернатива HTTP POST — меньше latency, особенно на мобильных
     public async Task<SendMessageResult> SendMessage(SendMessageRequest request)
     {
         var userId = Guid.Parse(Context.UserIdentifier!);
@@ -43,11 +40,9 @@ public sealed class MessengerHub(
         if (result.IsFailure)
             throw new HubException(result.Error.Description);
 
-        // ReceiveMessage рассылается автоматически через MessageSentEventHandler
         return new SendMessageResult(result.Value);
     }
 
-    // ── Typing indicator ──────────────────────────────────────────────────────
     public async Task StartTyping(Guid chatId)
     {
         var userId = Context.UserIdentifier!;
@@ -68,9 +63,6 @@ public sealed class MessengerHub(
             .SendAsync("UserStoppedTyping", new { UserId = userId, ChatId = chatId });
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-    // Presence — счётчик подключений на пользователя: онлайн/оффлайн только на переходе 0 ↔ 1.
-    // UserOnline шлём в группы чатов пользователя, а не в "user:{id}" — там никто не подписан.
     public override async Task OnConnectedAsync()
     {
         var userId = Context.UserIdentifier!;
@@ -90,8 +82,6 @@ public sealed class MessengerHub(
         var userId = Context.UserIdentifier!;
         long connectionCount;
 
-        // presence.DisconnectAsync должен выполниться, даже если удаление из группы упадёт —
-        // иначе счётчик онлайн-соединений навсегда останется в неверном состоянии.
         try
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, UserGroup(userId));
@@ -122,7 +112,6 @@ public sealed class MessengerHub(
         await Task.WhenAll(tasks);
     }
 
-    // ── Группы ───────────────────────────────────────────────────────────────
     public static string ChatGroup(Guid chatId)   => $"chat:{chatId}";
     public static string UserGroup(string userId) => $"user:{userId}";
 }

@@ -32,8 +32,6 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
 
         builder.HasAlternateKey(m => m.Sequence);
 
-        // Оптимистичная блокировка через системную колонку Postgres xmin (не требует своей миграции) —
-        // при конфликте параллельного редактирования EF Core бросает DbUpdateConcurrencyException.
         builder.Property<uint>("xmin")
             .HasColumnName("xmin")
             .IsRowVersion();

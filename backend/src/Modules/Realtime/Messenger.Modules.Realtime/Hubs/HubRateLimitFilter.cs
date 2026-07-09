@@ -4,8 +4,6 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 
-// Встроенный RateLimiting middleware не покрывает вызовы хаб-методов (WebSocket, а не
-// отдельные HTTP-запросы) — лимитируем дорогие методы вручную через IHubFilter.
 public sealed class HubRateLimitFilter(IMemoryCache cache) : IHubFilter
 {
     private static readonly Dictionary<string, (int Permits, TimeSpan Window)> Limits = new()
@@ -23,7 +21,6 @@ public sealed class HubRateLimitFilter(IMemoryCache cache) : IHubFilter
             var userId   = invocationContext.Context.UserIdentifier ?? invocationContext.Context.ConnectionId;
             var cacheKey = $"hub-rl:{invocationContext.HubMethodName}:{userId}";
 
-            // Sliding-expiration в кэше, не статический словарь — неактивные лимитеры вычищаются сами.
             var limiter = cache.GetOrCreate(cacheKey, entry =>
             {
                 entry.SlidingExpiration = limit.Window * 2;

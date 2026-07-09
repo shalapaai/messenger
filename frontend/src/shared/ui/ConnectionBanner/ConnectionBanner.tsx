@@ -14,7 +14,6 @@ export function ConnectionBanner() {
   useEffect(() => {
     if (status === 'connected') {
       if (wasConnected.current) {
-        // восстановление после обрыва — показываем "Подключено"
         setJustConnected(true)
         setVisible(true)
         const t = setTimeout(() => setVisible(false), 2000)
@@ -22,7 +21,6 @@ export function ConnectionBanner() {
       }
       wasConnected.current = true
     } else {
-      // показываем только если раньше уже были подключены
       if (wasConnected.current) {
         setJustConnected(false)
         setVisible(true)

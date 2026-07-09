@@ -14,7 +14,6 @@ services:
           memory: 512M
     environment:
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-    # pgAdmin отключён в prod
     healthcheck:
       start_period: 60s
 
@@ -35,7 +34,6 @@ services:
         --bind 0.0.0.0
         --protected-mode yes
         --loglevel notice
-    # Не пробрасываем порт Redis наружу в prod
     ports: !reset []
 
   api:
@@ -49,22 +47,16 @@ services:
           memory: 256M
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-    # healthcheck для load balancer — wget, не curl: в runtime-образе (aspnet:9.0,
-    # debian-slim) curl не установлен, только wget, см. базовый healthcheck в docker-compose.yml
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
-    # Наружу торчит только Caddy — API снаружи напрямую не нужен, всё идёт
-    # через frontend-nginx (/api, /hubs), который проксирует Caddy
     ports: !reset []
 
   frontend:
     restart: always
-    # Наружу торчит только Caddy (терминирует TLS) — сам frontend доступен
-    # только по внутренней docker-сети
     ports: !reset []
 
   caddy:
@@ -83,7 +75,6 @@ services:
     networks:
       - messenger-network
 
-  # pgAdmin полностью убран в prod
   pgadmin:
     deploy:
       replicas: 0

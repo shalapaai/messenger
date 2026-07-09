@@ -38,12 +38,6 @@ export function useScrollRestore() {
       top: el.scrollHeight,
       behavior: bottomSmooth.current ? 'smooth' : 'auto',
     })
-    // messages НЕ в зависимостях специально: этот эффект должен скроллить только когда его
-    // явно попросили (scrollToBottomNow → bottomSignal), а не при любом изменении messages
-    // (например реакция на старое сообщение) — иначе чат дёргает в низ посреди чтения истории.
-    // setChatMessages и scrollToBottomNow всегда вызываются синхронно друг за другом
-    // (см. useChatMessages.ts), так что React их батчит в один коммит — к моменту, когда
-    // bottomSignal меняется, messagesRef уже отражает обновлённый DOM.
   }, [bottomSignal])
 
   useLayoutEffect(() => {

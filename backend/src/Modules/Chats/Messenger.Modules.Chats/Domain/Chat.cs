@@ -20,12 +20,9 @@ public sealed class Chat : AggregateRoot<ChatId>
     public ChatType Type { get; private set; }
     public string? Name { get; private set; }
     public string? AvatarUrl { get; private set; }
-    /// <summary>Только для Group — цвет фолбэк-аватарки, выбранный при создании группы (пока нет
-    /// загруженной картинки). Direct-чаты берут цвет из профиля собеседника, а не отсюда.</summary>
     public string? AvatarColor { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Только для Direct-чатов, всегда в каноническом порядке — основа уникального индекса (см. ChatsDbContext).
     public Guid? DirectUserId1 { get; private set; }
     public Guid? DirectUserId2 { get; private set; }
 
@@ -57,8 +54,6 @@ public sealed class Chat : AggregateRoot<ChatId>
             _members.Add(new ChatMember(Id, userId, role));
     }
 
-    /// <summary>Рассылается всем текущим участникам, а не только новому, иначе те не увидят обновлённый
-    /// ростер в реальном времени. Вызывается явно, а не из AddMember, чтобы не плодить события при создании группы.</summary>
     public void NotifyMembershipChanged() =>
         RaiseDomainEvent(new ChatUpdatedDomainEvent(Id.Value, _members.Select(m => m.UserId).ToList()));
 
@@ -90,8 +85,6 @@ public sealed class Chat : AggregateRoot<ChatId>
         return Result.Success();
     }
 
-    /// <summary>Явно очищает аватарку (в отличие от UpdateInfo, где avatarUrl: null означает
-    /// "не менять") — после этого фолбэк-цвет AvatarColor снова становится видимым в списке чатов.</summary>
     public Result ClearAvatar(Guid requesterId)
     {
         var requester = _members.FirstOrDefault(m => m.UserId == requesterId);
@@ -120,7 +113,6 @@ public sealed class Chat : AggregateRoot<ChatId>
         {
             if (requester.Role == ChatMemberRole.Owner)
             {
-                // Transfer ownership: prefer an existing admin, otherwise pick any member
                 var newOwner = _members
                     .Where(m => m.UserId != userId)
                     .OrderByDescending(m => (int)m.Role)
@@ -146,8 +138,6 @@ public sealed class Chat : AggregateRoot<ChatId>
         return Result.Success();
     }
 
-    /// <summary>Уведомляет оставшихся участников (чтобы обновить ростер) И самого удалённого
-    /// (чтобы у него этот чат сразу пропал из списка) — на момент вызова removedUserId уже не в _members.</summary>
     private void NotifyMemberRemoved(Guid removedUserId) =>
         RaiseDomainEvent(new ChatUpdatedDomainEvent(Id.Value, _members.Select(m => m.UserId).Append(removedUserId).ToList()));
 

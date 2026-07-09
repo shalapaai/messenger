@@ -1,7 +1,5 @@
 namespace Messenger.Modules.Files.Application.Abstractions;
 
-// Абстракция хранилища. Dev → LocalFileStorage, Prod → S3FileStorage.
-// Смена провайдера: только изменить DI-регистрацию в FilesModule.cs.
 public interface IFileStorage
 {
     Task<FileUploadResult> UploadAsync(

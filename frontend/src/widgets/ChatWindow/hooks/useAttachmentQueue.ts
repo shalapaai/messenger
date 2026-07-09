@@ -6,7 +6,6 @@ import { isAllowedAttachment, MAX_ATTACHMENT_SIZE_BYTES } from '../../../shared/
 const MAX_ATTACHMENT_COUNT = 10
 
 export interface QueuedFile {
-  /** стабильный локальный ключ — для React-списка и удаления конкретного файла из очереди */
   key: number
   file: File
   previewUrl: string | null
@@ -16,7 +15,6 @@ interface UseAttachmentQueueOptions {
   onSendFiles: (files: File[], caption: string | undefined, onUploadProgress?: (percent: number) => void) => Promise<void>
 }
 
-/** Отправка всей очереди уходит одним запросом — одно сообщение с несколькими вложениями, а не по файлу за раз. */
 export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
   const { t } = useTranslation()
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([])
@@ -26,16 +24,12 @@ export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const nextFileKeyRef = useRef(0)
 
-  // ChatWindow размонтируется целиком при смене чата (key={chatId}) — если пользователь выбрал
-  // файлы, но не отправил и ушёл в другой чат, blob-URL превью иначе никогда не освободятся
   const queuedFilesRef = useRef(queuedFiles)
   useLayoutEffect(() => { queuedFilesRef.current = queuedFiles })
   useEffect(() => () => {
     queuedFilesRef.current.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl) })
   }, [])
 
-  // Всё-или-ничего: если хоть один файл не проходит проверку, не добавляем в очередь ни одного —
-  // иначе можно случайно отправить часть альбома, не заметив, что один файл отсеялся.
   function selectFiles(files: File[]) {
     setAttachmentError(null)
 
@@ -70,8 +64,6 @@ export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
     if (files.length > 0) selectFiles(files)
   }
 
-  // dragenter/dragleave всплывают с дочерних элементов — считаем "глубину" входов, иначе
-  // оверлей мигал бы от dragleave при движении над дочерними узлами.
   const [isDraggingFile, setIsDraggingFile] = useState(false)
   const dragCounterRef = useRef(0)
 
@@ -120,8 +112,6 @@ export function useAttachmentQueue({ onSendFiles }: UseAttachmentQueueOptions) {
     setAttachmentError(null)
   }
 
-  /** Атомарно: либо уходит вся очередь, либо сервер отклоняет всё. Возвращает true при успехе,
-   *  чтобы вызывающий мог очистить текст сообщения. */
   async function sendQueuedFiles(caption: string | undefined): Promise<boolean> {
     const filesToSend = queuedFiles.map(f => f.file)
     setFileUploading(true)

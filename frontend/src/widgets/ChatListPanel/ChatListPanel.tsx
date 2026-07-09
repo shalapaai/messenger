@@ -76,8 +76,6 @@ export function ChatListPanel({
         return
       }
 
-      // Защита от гонки ответов: устаревший запрос ("al"), ответивший позже нового ("alex"),
-      // не должен затереть уже показанный актуальный список.
       const requestId = ++searchRequestIdRef.current
       setUserSearchLoading(true)
       searchUsers(q)

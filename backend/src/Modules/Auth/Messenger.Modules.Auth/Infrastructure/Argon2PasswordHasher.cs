@@ -2,7 +2,6 @@ namespace Messenger.Modules.Auth.Infrastructure;
 
 using Messenger.Modules.Auth.Application.Abstractions;
 
-// BCrypt как альтернатива Argon2 — production-ready, встроен в BCrypt.Net-Next
 public sealed class BcryptPasswordHasher : IPasswordHasher
 {
     private const int WorkFactor = 12;

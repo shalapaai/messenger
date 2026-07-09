@@ -7,7 +7,6 @@ interface FileTypeIconProps {
   size?: number
 }
 
-/** Цветной бейдж-иконка формата файла — один силуэт + подпись расширения вместо уникальной пиктограммы под каждый тип. */
 export function FileTypeIcon({ fileName, contentType, size = 40 }: FileTypeIconProps) {
   const { label, color } = getFileTypeInfo(fileName, contentType)
 

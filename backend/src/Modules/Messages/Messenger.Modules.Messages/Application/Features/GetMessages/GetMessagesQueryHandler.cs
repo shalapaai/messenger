@@ -25,7 +25,6 @@ public sealed class GetMessagesQueryHandler(
         var hasMore = raw.Count > limit;
         var items = hasMore ? raw.Take(limit).ToList() : raw;
 
-        // сообщения-источники цитат (reply) — подгружаем одним запросом, а не по одному на каждое
         var replyIds = items.Where(m => m.ReplyToMessageId.HasValue).Select(m => m.ReplyToMessageId!.Value).Distinct().ToList();
         var replySources = replyIds.Count > 0
             ? await messageRepository.GetByIdsAsync(replyIds.Select(MessageId.From).ToList(), ct)

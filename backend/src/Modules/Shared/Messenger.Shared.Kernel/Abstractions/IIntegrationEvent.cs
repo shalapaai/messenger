@@ -1,6 +1,6 @@
 namespace Messenger.Shared.Kernel.Abstractions;
 
-// Контракт для событий между модулями (in-process или через брокер при выносе в микросервисы)
+// Контракт для событий между модулями
 public interface IIntegrationEvent
 {
     Guid Id { get; }

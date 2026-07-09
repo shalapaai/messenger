@@ -18,19 +18,14 @@ public sealed class UploadAndSendMessageCommandHandler(
         if (!await membershipChecker.IsMemberAsync(command.ChatId, command.SenderId, ct))
             return Result.Failure<UploadAndSendMessageResult>(Error.Forbidden("You are not a member of this chat"));
 
-        // Проверяем лимит до загрузки — иначе большой батч уйдёт в storage и БД по файлу,
-        // прежде чем Message.CreateWithAttachments всё равно откатит всё целиком.
         if (command.Files.Count > Message.MaxAttachmentsPerMessage)
             return Result.Failure<UploadAndSendMessageResult>(
                 Error.Validation("Attachments", $"Cannot attach more than {Message.MaxAttachmentsPerMessage} files to a single message"));
 
-        // Последовательно, не параллельно: Files-модуль пишет через тот же scoped DbContext (см. ForwardMessages).
         var attachments = new List<MessageAttachment>();
         var uploadedKeys = new List<string>();
         var sortOrder = 0;
 
-        // Если загрузка любого файла или сохранение сообщения провалится — подчищаем уже
-        // загруженные файлы, иначе они остаются в хранилище/БД никем не удаляемым мусором.
         try
         {
             foreach (var file in command.Files)
@@ -54,7 +49,7 @@ public sealed class UploadAndSendMessageCommandHandler(
             messageRepository.Add(message);
             await unitOfWork.SaveChangesAsync(ct);
 
-            uploadedKeys.Clear(); // всё сохранилось успешно — подчищать нечего
+            uploadedKeys.Clear(); 
             return Result.Success(new UploadAndSendMessageResult(
                 message.Id.Value, message.Content,
                 attachments.Select(a => new AttachmentResult(a.FileUrl, a.FileName, a.ContentType, a.FileSizeBytes)).ToList(),

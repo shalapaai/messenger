@@ -29,10 +29,6 @@ function getInitialMobileInputLayerHeight() {
   return DEFAULT_MOBILE_INPUT_LAYER_HEIGHT
 }
 
-/**
- * Мобильный ввод и эмодзи-пикер живут в одном "слое" с синтетической history-записью, чтобы
- * аппаратная кнопка "назад" его закрывала; высота слоя синхронизируется с visualViewport.
- */
 export function useMobileInputLayer() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
   const [isInputLayerActive, setIsInputLayerActive] = useState(false)
@@ -84,9 +80,7 @@ export function useMobileInputLayer() {
     mobileInputLayerHeightRef.current = roundedHeight
     try {
       window.localStorage.setItem(MOBILE_INPUT_LAYER_HEIGHT_STORAGE_KEY, String(roundedHeight))
-    } catch {
-      // localStorage может быть недоступен в приватном режиме; это не должно ломать ввод.
-    }
+    } catch { /* ignore */ }
     setMobileInputLayerHeight(roundedHeight)
   }
 
@@ -216,8 +210,6 @@ export function useMobileInputLayer() {
     }
   }, [clearKeyboardCloseWait, isEmojiPickerOpen])
 
-  // Пока открыт эмодзи-пикер на мобильном — блокируем overscroll/скролл страницы под ним,
-  // иначе жест внутри панели эмодзи мог утянуть за собой скролл всей страницы
   useEffect(() => {
     if (!isEmojiPickerOpen || !isMobileInputMode()) return
 

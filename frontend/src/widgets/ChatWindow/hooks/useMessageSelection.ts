@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Message } from '../../../shared/types/messenger'
 
-/** Владеет режимом множественного выбора сообщений (для bulk-пересылки/удаления). */
 export function useMessageSelection() {
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())

@@ -20,8 +20,6 @@ function ToastRow({ id, message }: { id: number; message: string }) {
   )
 }
 
-/** Стек лёгких тостов для ошибок действий (удаление сообщения, выход из группы и т.п.) —
- *  единственная замена убранному модальному ErrorModal для этого класса ошибок. */
 export function Toast() {
   const toasts = useToastStore((st) => st.toasts)
 

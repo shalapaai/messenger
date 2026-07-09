@@ -16,8 +16,6 @@ public sealed class ForwardMessagesCommandHandler(
         if (command.MessageIds.Count == 0)
             return Result.Failure<List<Guid>>(Error.Validation("MessageIds", "Select at least one message"));
 
-        // Не Task.WhenAll: оба вызова идут через один scoped DbContext, а EF Core не поддерживает
-        // параллельные операции на одном инстансе.
         if (!await membershipChecker.IsMemberAsync(command.SourceChatId, command.RequesterId, ct))
             return Result.Failure<List<Guid>>(Error.Forbidden("You are not a member of the source chat"));
 
@@ -27,7 +25,6 @@ public sealed class ForwardMessagesCommandHandler(
         var ids = command.MessageIds.Select(MessageId.From).ToList();
         var originals = await messageRepository.GetByIdsAsync(ids, ct);
 
-        // хронологический порядок в исходном чате, а не порядок id в запросе
         var ordered = originals
             .Where(m => m.ChatId == command.SourceChatId && m.Status != MessageStatus.Deleted)
             .OrderBy(m => m.SentAt)
@@ -39,13 +36,11 @@ public sealed class ForwardMessagesCommandHandler(
         var forwarded = new List<Message>();
         foreach (var original in ordered)
         {
-            // если пересылают уже пересланное сообщение — показываем оригинального автора, а не форвардера
             var originalAuthorId = original.ForwardedFromUserId ?? original.SenderId;
             var result = Message.CreateForwarded(
                 command.TargetChatId, command.RequesterId, original.Content, original.Attachments,
                 original.Id.Value, originalAuthorId);
 
-            // пустой контент без вложения — пропускаем эту копию, не роняем всю пачку
             if (result.IsSuccess)
                 forwarded.Add(result.Value!);
         }

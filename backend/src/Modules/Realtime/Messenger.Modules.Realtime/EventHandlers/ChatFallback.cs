@@ -4,8 +4,6 @@ using Messenger.Modules.Realtime.Hubs;
 using Messenger.Shared.Kernel.Results;
 using Microsoft.AspNetCore.SignalR;
 
-// Фоллбэк для клиента, ещё не вступившего в chat:{id} (например, чат только что стал видимым).
-// Вызывающие стартуют membersTask заранее, параллельно с групповой рассылкой.
 internal static class ChatFallback
 {
     public static async Task BroadcastToMembersAsync(

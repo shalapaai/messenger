@@ -14,7 +14,7 @@ public sealed class LogoutCommandHandler(
         var token = await refreshTokenRepository.GetByTokenAsync(command.RefreshToken, ct);
 
         if (token is null || !token.IsActive)
-            return Result.Success(); // Idempotent: already revoked or never existed
+            return Result.Success(); 
 
         token.Revoke();
         await unitOfWork.SaveChangesAsync(ct);

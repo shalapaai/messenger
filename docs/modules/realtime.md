@@ -35,6 +35,8 @@ WebSocket URL: ws://host/hubs/messenger
 
 `JoinChat`/`StartTyping`/`StopTyping` проверяют членство через `IChatMembershipChecker` напрямую в хабе (они не идут через MediatR-команды Messages-модуля, поэтому проверка здесь не наследуется автоматически).
 
+**Rate limiting для Hub-методов.** Встроенный `RateLimiting` middleware ASP.NET Core покрывает только обычные HTTP-запросы — вызовы методов хаба идут поверх уже установленного WebSocket-соединения, а не отдельными HTTP-запросами, и middleware их не видит. Дорогие методы (`SendMessage` и т.п.) лимитируются вручную через `IHubFilter` (`HubRateLimitFilter`) с тем же смыслом, что и HTTP-политики (см. [Auth — Rate limiting](auth.md#rate-limiting)). Лимитеры на пользователя живут в кэше со sliding-expiration, а не в статическом словаре — неактивные вычищаются сами, без утечки памяти на давно отключившихся пользователей.
+
 ## Фронтенд: клиент SignalR
 
 - `frontend/src/shared/api/signalrClient.ts` — синглтон-обёртка над `@microsoft/signalr`; каждое серверное событие — отдельный метод `on<Event>(handler) → () => void` (отписка), включая `onMessageEdited`, `onMessageDeleted`, `onMessagesRead`

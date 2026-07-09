@@ -1,6 +1,5 @@
 namespace Messenger.Modules.Files.Application;
 
-// Проверка "magic bytes" — защита от подмены Content-Type (например, exe с заголовком application/pdf).
 internal static class FileSignatureValidator
 {
     private static readonly Dictionary<string, Func<byte[], bool>> Signatures =
@@ -47,11 +46,6 @@ internal static class FileSignatureValidator
     private static bool IsEbml(byte[] b) => b.Length >= 4 && b[0] == 0x1A && b[1] == 0x45 && b[2] == 0xDF && b[3] == 0xA3;
     private static bool IsIsoBmff(byte[] b) => b.Length >= 8 && b[4] == 'f' && b[5] == 't' && b[6] == 'y' && b[7] == 'p';
 
-    // text/plain, text/csv намеренно без сигнатуры — текстовые форматы без magic number;
-    // безопасно, т.к. вложения отдаются как application/octet-stream + attachment.
-
-    /// <summary>Сверяет заголовок потока с сигнатурой для Content-Type (true, если сигнатуры нет).
-    /// Перематывает поток на исходную позицию перед возвратом.</summary>
     public static bool IsPlausible(Stream stream, string contentType)
     {
         if (!Signatures.TryGetValue(contentType, out var check))

@@ -3,8 +3,6 @@ namespace Messenger.Modules.Auth.Domain;
 using Messenger.Shared.Kernel.Primitives;
 using Messenger.Shared.Kernel.Results;
 
-// Aggrgate Auth-модуля — хранит только данные аутентификации
-// Профиль пользователя (имя, аватар и т.д.) — в модуле Users
 public sealed class UserAuth : AggregateRoot<Guid>
 {
     private UserAuth() { } // EF Core

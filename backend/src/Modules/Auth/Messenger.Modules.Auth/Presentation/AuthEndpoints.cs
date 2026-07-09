@@ -47,8 +47,6 @@ public static class AuthEndpoints
             .RequireRateLimiting("auth")
             .AllowAnonymous();
 
-        // "auth-strict" — узкое окно: и OTP, и код сброса пароля — короткие цифровые
-        // секреты, которые иначе можно перебрать за разумное время без троттлинга
         group.MapPost("/verify-otp", VerifyOtp)
             .WithName("VerifyOtp")
             .WithSummary("Подтверждение кода из письма")
@@ -174,11 +172,6 @@ public static class AuthEndpoints
 
         if (result.IsFailure)
         {
-            // Токен из cookie стал невалиден (истёк, отозван, либо — типичное дело в dev —
-            // база пересоздана и такой строки в refresh_token больше нет). Сама эта cookie
-            // httpOnly, клиент не может стереть её через JS, поэтому без явного Delete здесь
-            // она осталась бы в браузере навсегда и каждый следующий /refresh падал бы с той
-            // же ошибкой, пока пользователь не почистит cookies вручную.
             RefreshTokenCookie.Delete(httpContext.Response, environment);
             return result.Error.ToHttpResult();
         }

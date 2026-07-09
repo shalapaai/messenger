@@ -47,8 +47,6 @@ public sealed class ChatsDbContext(DbContextOptions<ChatsDbContext> options, IMe
                 .HasForeignKey(m => m.ChatId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Не даёт двум параллельным запросам создать два direct-чата для одной пары (TOCTOU);
-            // пара хранится прямо на Chat, а не индексом по members, где её не выразить без агрегатного запроса.
             b.HasIndex(c => new { c.DirectUserId1, c.DirectUserId2 })
                 .IsUnique()
                 .HasFilter("type = 'direct'")

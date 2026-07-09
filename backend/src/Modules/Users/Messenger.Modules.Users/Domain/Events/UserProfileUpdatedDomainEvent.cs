@@ -2,8 +2,6 @@ namespace Messenger.Modules.Users.Domain.Events;
 
 using Messenger.Shared.Kernel.Primitives;
 
-/// <summary>Имя / аватарка / цвет профиля изменились — сигнал разослать по всем чатам
-/// пользователя, чтобы уже отрисованные списки/история обновили резолвленные данные отправителя.</summary>
 public sealed record UserProfileUpdatedDomainEvent(
     Guid Id,
     DateTime OccurredOn,

@@ -75,8 +75,6 @@ internal sealed class MessagesModuleApi(
 
         var chatIds = lastReadAtByChatId.Keys.ToList();
 
-        // Чаты без last_read_at нуждаются в полной истории, но остальные всё равно можно
-        // отсечь по самой ранней ИЗ ИЗВЕСТНЫХ точек отсчёта, не тянуть заведомо прочитанное.
         var neverReadChatIds = lastReadAtByChatId
             .Where(kv => kv.Value is null)
             .Select(kv => kv.Key)
@@ -94,7 +92,6 @@ internal sealed class MessagesModuleApi(
             .Select(m => new { m.ChatId, m.SentAt })
             .ToListAsync(ct);
 
-        // Один линейный проход вместо пересчёта Count() по всему candidates для каждого чата.
         var countsByChat = candidates
             .Where(m => lastReadAtByChatId[m.ChatId] is not { } since || m.SentAt > since)
             .GroupBy(m => m.ChatId)

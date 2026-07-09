@@ -14,7 +14,6 @@ import { randomAvatarColor } from '../../../shared/lib/avatarColors'
 import styles from './ProfileSetupForm.module.css'
 
 const LOGIN_REGEX = /^[a-zA-Z0-9_]{3,30}$/
-// должно совпадать с лимитами на бэкенде (CreateUserProfileCommandValidator)
 const DISPLAY_NAME_MAX_LENGTH = 100
 const STATUS_MAX_LENGTH = 200
 const PHONE_MAX_LENGTH = 20
@@ -69,9 +68,6 @@ function ProfileSetupForm() {
       setError(t('profileSetup.errors.avatarInvalidType'))
       return
     }
-    // Проверяем исходный файл, не дожидаясь обрезки: сама обрезка пересжимает и обычно
-    // уменьшает размер (canvas.toBlob), так что проверка только итогового файла легко
-    // пропустила бы изначально огромный файл, если кроп-область оказалась небольшой.
     if (file.size > MAX_AVATAR_SIZE_BYTES) {
       setError(t('profileSetup.errors.avatarTooLarge'))
       return
@@ -102,8 +98,6 @@ function ProfileSetupForm() {
     event.preventDefault()
     setHasTriedSubmit(true)
 
-    // Ни один запрос не уходит, пока хоть одно поле (даже необязательное) невалидно —
-    // иначе бэкенд может успеть сохранить часть полей до того, как найдёт невалидное
     if (!displayName.trim() || isDisplayNameTooLong || !LOGIN_REGEX.test(trimmedLogin) || hasOptionalFieldError) return
 
     if (croppedAvatarFile && croppedAvatarFile.size > MAX_AVATAR_SIZE_BYTES) {
@@ -116,8 +110,6 @@ function ProfileSetupForm() {
     setIsLoading(true)
 
     try {
-      // Создаём профиль одним атомарным запросом (все поля сразу, включая необязательные) —
-      // 409 ProfileAlreadyExists означает, что он уже был создан в прошлой успешной попытке
       try {
         await profileApi.create({
           displayName: displayName.trim(),

@@ -18,7 +18,6 @@ public sealed class UploadUserAvatarCommandHandler(
         if (profile is null)
             return Result.Failure<string>(Error.NotFound("UserProfile"));
 
-        // Делегируем загрузку/удаление старого файла в Files модуль
         var uploadResult = await sender.Send(
             new UploadAvatarCommand(
                 command.AuthUserId,
