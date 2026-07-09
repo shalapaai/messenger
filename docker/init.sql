@@ -206,6 +206,29 @@ CREATE TABLE IF NOT EXISTS messages.message_attachment (
 CREATE INDEX IF NOT EXISTS ix_message_attachment_message_id
     ON messages.message_attachment (message_id);
 
+-- Одна реакция (эмодзи) от одного пользователя на одно сообщение — уникальный индекс
+-- ниже не даёт поставить вторую реакцию поверх первой, только заменить существующую.
+CREATE TABLE IF NOT EXISTS messages.message_reaction (
+    id         UUID        PRIMARY KEY,
+    message_id UUID        NOT NULL,
+    user_id    UUID        NOT NULL,
+    emoji      VARCHAR(16) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+
+    CONSTRAINT fk_message_reaction_message_message_id
+        FOREIGN KEY (message_id) REFERENCES messages.message (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_message_reaction_message_id_user_id
+    ON messages.message_reaction (message_id, user_id);
+
+CREATE INDEX IF NOT EXISTS ix_message_reaction_message_id
+    ON messages.message_reaction (message_id);
+
+CREATE INDEX IF NOT EXISTS ix_message_reaction_user_id
+    ON messages.message_reaction (user_id);
+
 -- ══════════════════════════════════════════════════════════════════════════════
 --  СХЕМА: files
 -- ══════════════════════════════════════════════════════════════════════════════
