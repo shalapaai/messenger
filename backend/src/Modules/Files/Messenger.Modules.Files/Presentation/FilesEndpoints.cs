@@ -90,5 +90,3 @@ public static class FilesEndpoints
         return Results.Stream(stream, record.ContentType, record.OriginalName);
     }
 }
-
-public sealed record AvatarUploadResponse(string Url);
