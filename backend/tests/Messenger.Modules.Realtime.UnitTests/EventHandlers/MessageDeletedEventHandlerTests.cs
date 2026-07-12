@@ -27,18 +27,6 @@ public sealed class MessageDeletedEventHandlerTests
     }
 
     [Fact]
-    public async Task Handle_SendsMessageDeletedToChatGroup()
-    {
-        var chatId = Guid.NewGuid();
-        var notification = new MessageDeletedDomainEvent(Guid.NewGuid(), chatId);
-
-        await _sut.Handle(notification, CancellationToken.None);
-
-        _hubClients.Received(1).Group(MessengerHub.ChatGroup(chatId));
-        await _clientProxy.Received(1).SendCoreAsync("MessageDeleted", Arg.Any<object?[]>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task Handle_SendsToMembers_ViaFallback()
     {
         var chatId    = Guid.NewGuid();
@@ -53,11 +41,14 @@ public sealed class MessageDeletedEventHandlerTests
 
         _hubClients.Received(1).Group(MessengerHub.UserGroup(memberOne.ToString()));
         _hubClients.Received(1).Group(MessengerHub.UserGroup(memberTwo.ToString()));
+        await _clientProxy.Received(2).SendCoreAsync("MessageDeleted", Arg.Any<object?[]>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_WhenMembersLookupFails_StillSendsToChatGroup()
+    public async Task Handle_WhenMembersLookupFails_SendsNothing()
     {
+        // MessageDeleted больше не дублируется через chat:{id}-группу — единственный путь доставки
+        // это ChatFallback, который зависит от успешного GetMemberIdsAsync.
         var chatId = Guid.NewGuid();
         _chatsModule.GetMemberIdsAsync(chatId, Arg.Any<CancellationToken>())
             .Returns(Result.Failure<List<Guid>>(Error.NotFound("Chat")));
@@ -66,6 +57,7 @@ public sealed class MessageDeletedEventHandlerTests
 
         await _sut.Handle(notification, CancellationToken.None);
 
-        await _clientProxy.Received(1).SendCoreAsync("MessageDeleted", Arg.Any<object?[]>(), Arg.Any<CancellationToken>());
+        await _clientProxy.DidNotReceive().SendCoreAsync(
+            "MessageDeleted", Arg.Any<object?[]>(), Arg.Any<CancellationToken>());
     }
 }
