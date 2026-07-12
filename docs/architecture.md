@@ -32,7 +32,7 @@ Messenger — **модульный монолит** на .NET 9. Каждый м
 | WebSocket | SignalR (с Redis backplane) |
 | Аутентификация | JWT (HS256) + Refresh Tokens |
 | Документация API | Swagger / OpenAPI |
-| Хранилище файлов | Local filesystem или AWS S3 |
+| Хранилище файлов | Local filesystem |
 | Фронтенд | React 19 + Vite |
 | Контейнеризация | Docker + Docker Compose |
 | Логирование | Serilog |

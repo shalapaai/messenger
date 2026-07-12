@@ -31,7 +31,7 @@
 | Авторизация | JWT Bearer токены |
 | Валидация | FluentValidation |
 | Команды/Запросы | MediatR (CQRS паттерн) |
-| Хранение файлов | Локальная папка (dev) / Amazon S3 (prod) |
+| Хранение файлов | Локальная папка |
 
 Запуск и переменные окружения — см. [getting-started.md](getting-started.md).
 

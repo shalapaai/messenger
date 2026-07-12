@@ -31,7 +31,6 @@ services:
       ConnectionStrings__MessengerDb:     "Host=postgres;Port=5432;Database=messenger;Username=messenger;Password=messenger_dev;Include Error Detail=true"
       Redis__ConnectionString:            "redis:6379,password=redis_dev,abortConnect=false"
       Jwt__SecretKey:                     "dev-secret-key-minimum-256-bits-long-replace-in-prod"
-      FileStorage__Type:                  Local
       FileStorage__Local__BasePath:       /app/uploads
       Resend__ApiKey:                     ${RESEND_API_KEY:-}
       Resend__FromEmail:                  ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
