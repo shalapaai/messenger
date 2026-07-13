@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { Attachment, Message } from '../../../shared/types/messenger'
 import { useAuthedFileUrl, downloadAuthedFile } from '../../../shared/hooks/useAuthedFileUrl'
 import { FileTypeIcon } from '../../../shared/ui/FileTypeIcon'
+import { Skeleton } from '../../../shared/ui/Skeleton'
 import { formatDateLabel } from '../../../shared/lib/formatDateTime'
 import s from './ChatSharedContent.module.css'
 
@@ -37,6 +38,8 @@ interface ChatSharedContentProps {
 
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/gi
 const TRAILING_PUNCTUATION = /[.,!?;:)\]}]+$/
+const MEDIA_SKELETON_COUNT = 6
+const LIST_SKELETON_COUNT = 4
 
 function isMediaAttachment(attachment: Attachment): boolean {
   return attachment.fileContentType.startsWith('image/') || attachment.fileContentType.startsWith('video/')
@@ -91,7 +94,7 @@ function MediaTile({ item }: { item: SharedAttachment }) {
           ? <video src={blobUrl} className={s.mediaVideo} muted playsInline preload="metadata" />
           : <img src={blobUrl} alt={attachment.fileName} className={s.mediaImage} loading="lazy" />
         )}
-        {!error && !blobUrl && <span className={s.mediaPlaceholder}>{t('sharedContent.loading')}</span>}
+        {!error && !blobUrl && <MediaTileSkeleton />}
         {isVideo && <span className={s.mediaBadge}>VID</span>}
       </button>
 
@@ -113,6 +116,42 @@ function MediaTile({ item }: { item: SharedAttachment }) {
           <button type="button" className={s.lightboxClose} onClick={() => setLightboxOpen(false)}>✕</button>
         </div>
       )}
+    </>
+  )
+}
+
+function MediaTileSkeleton() {
+  return <Skeleton as="span" className={s.mediaSkeleton} />
+}
+
+function MediaGridSkeleton({ count = MEDIA_SKELETON_COUNT }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <MediaTileSkeleton key={index} />
+      ))}
+    </>
+  )
+}
+
+function SharedRowSkeleton({ variant }: { variant: 'file' | 'link' }) {
+  return (
+    <div className={s.rowSkeleton} aria-hidden="true">
+      <Skeleton className={variant === 'file' ? s.fileIconSkeleton : s.linkIconSkeleton} />
+      <span className={s.rowSkeletonInfo}>
+        <Skeleton className={s.rowSkeletonTitle} />
+        <Skeleton className={s.rowSkeletonMeta} />
+      </span>
+    </div>
+  )
+}
+
+function SharedListSkeleton({ variant, count = LIST_SKELETON_COUNT }: { variant: 'file' | 'link'; count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <SharedRowSkeleton key={index} variant={variant} />
+      ))}
     </>
   )
 }
@@ -198,6 +237,7 @@ export function ChatSharedContent({
   const activeSharedTab = activeTab as SharedTab
   const hasItems = activeExtraTab ? true : countByTab[activeSharedTab] > 0
   const tabCount = extraTabs.length + sharedTabs.length
+  const isLoadingSharedTab = loadingHistory && hasMoreHistory && !activeExtraTab
 
   const updateTabScroll = useCallback(() => {
     const row = tabsRef.current
@@ -262,20 +302,35 @@ export function ChatSharedContent({
         {activeExtraTab?.content}
 
         {activeTab === 'media' && (
-          media.length > 0
-            ? <div className={s.mediaGrid}>{media.map(item => <MediaTile key={`${item.message.messageId}-${item.attachment.fileUrl}`} item={item} />)}</div>
+          media.length > 0 || isLoadingSharedTab
+            ? (
+              <div className={s.mediaGrid}>
+                {media.map(item => <MediaTile key={`${item.message.messageId}-${item.attachment.fileUrl}`} item={item} />)}
+                {isLoadingSharedTab && <MediaGridSkeleton />}
+              </div>
+            )
             : <div className={s.empty}>{t('sharedContent.empty.media')}</div>
         )}
 
         {activeTab === 'files' && (
-          files.length > 0
-            ? <div className={s.list}>{files.map(item => <FileRow key={`${item.message.messageId}-${item.attachment.fileUrl}`} item={item} />)}</div>
+          files.length > 0 || isLoadingSharedTab
+            ? (
+              <div className={s.list}>
+                {files.map(item => <FileRow key={`${item.message.messageId}-${item.attachment.fileUrl}`} item={item} />)}
+                {isLoadingSharedTab && <SharedListSkeleton variant="file" />}
+              </div>
+            )
             : <div className={s.empty}>{t('sharedContent.empty.files')}</div>
         )}
 
         {activeTab === 'links' && (
-          links.length > 0
-            ? <div className={s.list}>{links.map((item, index) => <LinkRow key={`${item.message.messageId}-${item.url}-${index}`} item={item} />)}</div>
+          links.length > 0 || isLoadingSharedTab
+            ? (
+              <div className={s.list}>
+                {links.map((item, index) => <LinkRow key={`${item.message.messageId}-${item.url}-${index}`} item={item} />)}
+                {isLoadingSharedTab && <SharedListSkeleton variant="link" />}
+              </div>
+            )
             : <div className={s.empty}>{t('sharedContent.empty.links')}</div>
         )}
 
