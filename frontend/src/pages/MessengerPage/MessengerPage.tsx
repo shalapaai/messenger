@@ -514,8 +514,9 @@ export function MessengerPage() {
         <ProfilePanel
           isOpen={profileOpen}
           profile={profile}
+          totalUnread={totalUnread}
           onClose={() => setProfileOpen(false)}
-          onEdit={() => { setProfileOpen(false); setEditOpen(true) }}
+          onEdit={() => setEditOpen(true)}
           onChats={() => navigate('/chats')}
         />
       )}

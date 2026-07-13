@@ -10,12 +10,6 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@supports (height: 100svh) {
-  .root {
-    height: 100svh;
-  }
-}
-
 .body {
   display: flex;
   flex: 1;
