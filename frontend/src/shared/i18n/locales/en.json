@@ -16,6 +16,7 @@
   },
   "common": {
     "cancel": "Cancel",
+    "close": "Close",
     "save": "Save",
     "saving": "Saving...",
     "retry": "Retry",
@@ -186,6 +187,10 @@
     "openChatFailed": "Could not open the chat.",
     "search": "Search",
     "searchOrNewChat": "Search or new chat",
+    "chatSearchButton": "Search in chat",
+    "chatSearchPlaceholder": "Search in conversation",
+    "chatSearchEmpty": "No matches found",
+    "chatSearchFailed": "Search failed",
     "newUsers": "New users",
     "searching": "Searching…",
     "searchFailed": "Could not search",

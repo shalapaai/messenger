@@ -6,6 +6,7 @@ public interface IMessageRepository
     Task<List<Message>> GetByIdsAsync(IEnumerable<MessageId> ids, CancellationToken ct = default);
     Task<List<Message>> GetByChatIdCursorAsync(Guid chatId, Guid? before, int limit, CancellationToken ct = default);
     Task<int> CountByChatIdAsync(Guid chatId, CancellationToken ct = default);
+    Task<List<(MessageId Id, Guid SenderId, string Content, DateTime SentAt)>> GetSearchableByChatIdAsync(Guid chatId, CancellationToken ct = default);
     void Add(Message message);
     void Update(Message message);
 }

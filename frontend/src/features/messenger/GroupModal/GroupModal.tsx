@@ -41,10 +41,18 @@ export function GroupModal({
   const canManage = members.some(m => m.userId === currentUserId && m.role !== 'member')
   const isOwner   = members.some(m => m.userId === currentUserId && m.role === 'owner')
   const membersInSeparateField = members.length > 3
+  const addMemberRow = canManage && (
+    <button type="button" className={`${s.umMemberRow} ${s.umMemberRowClickable} ${s.umAddMemberRow}`} onClick={onAddMember}>
+      <span className={s.umAddMemberIcon}>+</span>
+      <span className={s.umMemberName}>{t('group.addMember')}</span>
+    </button>
+  )
   const membersList = membersLoading && members.length === 0 ? (
     <UserListSkeleton count={4} showMeta />
   ) : (
-    members.map(member => (
+    <>
+      {addMemberRow}
+      {members.map(member => (
       <div
         key={member.userId}
         className={`${s.umMemberRow} ${s.umMemberRowClickable}`}
@@ -82,18 +90,12 @@ export function GroupModal({
           </button>
         )}
       </div>
-    ))
+      ))}
+    </>
   )
   const membersField = (
     <div className={s.umMemberList}>
       {membersList}
-    </div>
-  )
-  const membersHeader = canManage && (
-    <div className={s.umMembersFieldActions}>
-      <button type="button" className={s.umAddMemberInlineBtn} onClick={onAddMember}>
-        {t('group.addMember')}
-      </button>
     </div>
   )
 
@@ -115,9 +117,6 @@ export function GroupModal({
               <>
                 <div className={s.umSectionRow}>
                   <span className={s.umSection}>{t('group.members', { count: members.length })}</span>
-                  {canManage && (
-                    <button type="button" className={s.umAddMemberBtn} onClick={onAddMember} title={t('group.addMember')}>+</button>
-                  )}
                 </div>
                 <div className={s.umMemberList}>
                   {membersList}
@@ -134,7 +133,6 @@ export function GroupModal({
                 id: 'members',
                 label: t('group.members', { count: members.length }),
                 content: membersField,
-                headerContent: membersHeader,
               }] : undefined}
               initialTab={membersInSeparateField ? 'members' : undefined}
             />

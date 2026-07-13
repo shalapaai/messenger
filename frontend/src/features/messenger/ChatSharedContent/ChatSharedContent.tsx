@@ -5,6 +5,7 @@ import { useAuthedFileUrl, downloadAuthedFile } from '../../../shared/hooks/useA
 import { FileTypeIcon } from '../../../shared/ui/FileTypeIcon'
 import { Skeleton } from '../../../shared/ui/Skeleton'
 import { formatDateLabel } from '../../../shared/lib/formatDateTime'
+import { matchUrls } from '../../../shared/lib/linkify'
 import s from './ChatSharedContent.module.css'
 
 type SharedTab = 'media' | 'files' | 'links'
@@ -36,8 +37,6 @@ interface ChatSharedContentProps {
   initialTab?: string
 }
 
-const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/gi
-const TRAILING_PUNCTUATION = /[.,!?;:)\]}]+$/
 const MEDIA_SKELETON_COUNT = 6
 const LIST_SKELETON_COUNT = 4
 
@@ -56,8 +55,7 @@ function formatSharedDate(iso: string): string {
 }
 
 function extractLinks(message: Message): SharedLink[] {
-  const matches = message.text.match(URL_PATTERN) ?? []
-  return matches.map(rawUrl => rawUrl.replace(TRAILING_PUNCTUATION, '')).map(url => {
+  return matchUrls(message.text).map(url => {
     try {
       return { message, url, host: new URL(url).hostname.replace(/^www\./, '') }
     } catch {

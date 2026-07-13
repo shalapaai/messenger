@@ -4,6 +4,7 @@ import { AvatarImage } from '../../shared/ui/AvatarImage'
 import { MessageAttachments } from './MessageAttachment'
 import { CheckIcon } from './icons'
 import { dateKey, formatDateLabel } from '../../shared/lib/formatDateTime'
+import { linkifyText } from '../../shared/lib/linkify'
 import type { ChatMeta, Message, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -264,7 +265,7 @@ export const MessageList = memo(function MessageList({
                     {item.msg.attachments && item.msg.attachments.length > 0 && (
                       <MessageAttachments attachments={item.msg.attachments} />
                     )}
-                    {item.msg.text}
+                    {linkifyText(item.msg.text)}
                   </div>
 
                   {reactionGroups.length > 0 && (

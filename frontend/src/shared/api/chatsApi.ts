@@ -2,7 +2,7 @@ import { apiClient } from './apiClient'
 import { getMyUserId } from '../lib/auth/authTokens'
 import i18n from '../i18n'
 import { formatChatListTime, formatMessageTime } from '../lib/formatDateTime'
-import type { Chat, Message, GroupMember } from '../types/messenger'
+import type { Chat, Message, GroupMember, MessageSearchResult } from '../types/messenger'
 
 interface LastMessageDto {
   messageId: string; senderId: string; content: string; sentAt: string
@@ -19,6 +19,7 @@ interface AttachmentDto  { fileUrl: string; fileName: string; contentType: strin
 interface MessageReactionDto { userId: string; userName: string; userAvatarUrl: string | null; userAvatarColor: string; emoji: string }
 interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; attachments: AttachmentDto[]; status: string; sentAt: string; editedAt: string | null; replyToMessageId: string | null; replyToSenderName: string | null; replyToContent: string | null; forwardedFromUserId: string | null; forwardedFromUserName: string | null; kind: 'Text' | 'System'; systemEventType: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved' | null; targetUserId: string | null; targetUserName: string | null; reactions: MessageReactionDto[] }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
+interface MessageSearchResultDto { messageId: string; senderId: string; senderName: string; content: string; sentAt: string }
 
 const COLORS = ['#2C5BF0', '#7A5BF0', '#22B07D', '#F0902C', '#E0556E', '#2CA6C9', '#9B59B6']
 
@@ -112,6 +113,13 @@ export async function fetchMessages(
     }))
 
   return { messages, nextCursor: res.data.nextCursor }
+}
+
+export async function searchMessages(chatId: string, query: string): Promise<MessageSearchResult[]> {
+  const res = await apiClient.get<MessageSearchResultDto[]>(`/chats/${chatId}/messages/search`, {
+    params: { q: query },
+  })
+  return res.data
 }
 
 export async function markChatRead(chatId: string): Promise<void> {

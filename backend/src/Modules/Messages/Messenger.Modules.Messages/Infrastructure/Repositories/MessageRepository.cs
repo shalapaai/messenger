@@ -40,6 +40,17 @@ public sealed class MessageRepository(MessagesDbContext dbContext) : IMessageRep
             .ToListAsync(ct);
     }
 
+    public async Task<List<(MessageId Id, Guid SenderId, string Content, DateTime SentAt)>> GetSearchableByChatIdAsync(
+        Guid chatId, CancellationToken ct = default)
+    {
+        var rows = await dbContext.Messages
+            .Where(m => m.ChatId == chatId && m.Status != MessageStatus.Deleted && m.Kind == MessageKind.Text)
+            .Select(m => new { m.Id, m.SenderId, m.Content, m.SentAt })
+            .ToListAsync(ct);
+
+        return rows.Select(r => (r.Id, r.SenderId, r.Content, r.SentAt)).ToList();
+    }
+
     public void Add(Message message) => dbContext.Messages.Add(message);
     public void Update(Message message) => dbContext.Messages.Update(message);
 }

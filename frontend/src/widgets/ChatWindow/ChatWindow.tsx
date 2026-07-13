@@ -17,7 +17,8 @@ import { MessagesSkeleton } from './MessagesSkeleton'
 import { MessageList } from './MessageList'
 import { FilePreviewBar } from './FilePreviewBar'
 import { ContextMenu, type ContextMenuState } from './ContextMenu'
-import { AttachIcon, ForwardIcon, TrashIcon } from './icons'
+import { ChatSearchPanel } from './ChatSearchPanel'
+import { AttachIcon, ForwardIcon, TrashIcon, SearchIcon } from './icons'
 import { useAttachmentQueue } from './hooks/useAttachmentQueue'
 import { useMobileInputLayer } from './hooks/useMobileInputLayer'
 import { useMessageSelection } from './hooks/useMessageSelection'
@@ -69,6 +70,9 @@ interface ChatWindowProps {
   onForwardedUserClick?: (userId: string, name: string) => void
   shouldAutoFocus?: boolean
   isModerator?: boolean
+  jumpToMessageId?: string | null
+  onJumpHandled?: () => void
+  onRequestJump?: (messageId: string) => void
 }
 
 export function ChatWindow({
@@ -77,6 +81,7 @@ export function ChatWindow({
   messagesRef, topSentinelRef, bottomRef,
   onSend, onSendFiles, onRetry, onDelete, onEdit, onReact, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
   onForwardedUserClick, shouldAutoFocus, isModerator = false,
+  jumpToMessageId, onJumpHandled, onRequestJump,
 }: ChatWindowProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -90,6 +95,7 @@ export function ChatWindow({
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [reactionDetails, setReactionDetails] = useState<ReactionDetailsState | null>(null)
   const reactionPreviewCloseTimerRef = useRef<number | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const attachments = useAttachmentQueue({ onSendFiles })
   const mobileInput = useMobileInputLayer()
@@ -143,6 +149,19 @@ export function ChatWindow({
     setHighlightedMsgId(msgId)
     setTimeout(() => setHighlightedMsgId(null), 1200)
   }, [messagesRef])
+
+  // Сообщение из поиска может быть ещё не подгружено (найдено на сервере среди всей истории
+  // чата, а на клиенте загружены только последние страницы) — MessengerPage в этом случае
+  // сам дозагружает историю постранично; здесь просто ждём, пока целевое сообщение не появится
+  // среди messages, и тогда прокручиваем и подсвечиваем его.
+  useEffect(() => {
+    if (!jumpToMessageId) return
+    const el = messagesRef.current?.querySelector(`[data-message-id="${CSS.escape(jumpToMessageId)}"]`)
+    if (!el) return
+    scrollToMessage(jumpToMessageId)
+    onJumpHandled?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpToMessageId, messages])
 
   useEffect(() => {
     if (!contextMenu) return
@@ -463,7 +482,27 @@ export function ChatWindow({
               </div>
             </div>
           </button>
+          <button
+            type="button"
+            className={s.chatHeaderSearchBtn}
+            onClick={() => setSearchOpen(true)}
+            aria-label={t('messenger.chatSearchButton')}
+            title={t('messenger.chatSearchButton')}
+          >
+            <SearchIcon />
+          </button>
         </div>
+      )}
+
+      {searchOpen && (
+        <ChatSearchPanel
+          chatId={chatId}
+          onClose={() => setSearchOpen(false)}
+          onResultClick={(messageId) => {
+            setSearchOpen(false)
+            onRequestJump?.(messageId)
+          }}
+        />
       )}
 
       {loadingInitial ? (

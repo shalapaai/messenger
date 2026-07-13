@@ -135,6 +135,20 @@ export function MessengerPage() {
     scrollToBottomNow(false)
   }, [chatId, loadingInitial, hasLoadedMessages, scrollToBottomNow])
 
+  // Переход к сообщению из поиска: само сообщение может быть за пределами уже
+  // подгруженной истории (поиск идёт по всему чату на сервере). Пока оно не появится
+  // среди messages, дозагружаем более старые страницы — ChatWindow подхватит его
+  // своим эффектом и проскроллит, как только оно окажется в DOM.
+  const [jumpTarget, setJumpTarget] = useState<string | null>(null)
+  useEffect(() => { setJumpTarget(null) }, [id])
+
+  useEffect(() => {
+    if (!jumpTarget) return
+    if (messages.some(m => m.messageId === jumpTarget)) return
+    if (historyLoaded) { setJumpTarget(null); return }
+    loadMoreHistory(() => undefined, () => undefined)
+  }, [jumpTarget, messages, historyLoaded, loadMoreHistory])
+
   const typingIndicator = useTypingIndicator(
     () => startTypingRef.current(),
     () => stopTypingRef.current(),
@@ -479,6 +493,9 @@ export function MessengerPage() {
               onForwardedUserClick={(userId, name) => { setModalUserIsChatPartner(false); openUserModal(userId, name, onlineStatuses[userId] ?? false) }}
               shouldAutoFocus={focusInput}
               isModerator={isModerator}
+              jumpToMessageId={jumpTarget}
+              onJumpHandled={() => setJumpTarget(null)}
+              onRequestJump={setJumpTarget}
             />
           ) : (
             <div className={s.placeholder}>

@@ -164,6 +164,89 @@
 
 .typingText { color: var(--color-success); font-weight: 600; font-size: 13px; }
 
+.chatHeaderSearchBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.chatHeaderSearchBtn:hover { background: var(--color-border); }
+
+/* ── Поиск по чату ────────────────────────────────────────────────────────── */
+.searchPanel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 60%;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.searchPanelBar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
+.searchPanelIcon { display: flex; color: var(--color-text-faint); flex-shrink: 0; }
+
+.searchPanelInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--color-text);
+}
+.searchPanelInput::placeholder { color: var(--color-text-faint); }
+
+.searchPanelClose {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.searchPanelClose:hover { background: var(--color-border); }
+
+.searchPanelResults { overflow-y: auto; border-top: 1px solid var(--color-border-soft); }
+.searchPanelHint { padding: 16px; text-align: center; font-size: 13px; color: var(--color-text-faint); }
+
+.searchResultRow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-border-soft);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.searchResultRow:last-child { border-bottom: none; }
+.searchResultRow:hover { background: var(--color-surface-muted); }
+
+.searchResultTop { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.searchResultSender { font-size: 13px; font-weight: 700; color: var(--color-text); }
+.searchResultTime { font-size: 11px; color: var(--color-text-faint); flex-shrink: 0; }
+.searchResultText { font-size: 13px; color: var(--color-text-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* ── Messages ─────────────────────────────────────────────────────────────── */
 .messagesOuter {
   flex: 1;
@@ -286,6 +369,9 @@
 .bubbleOther { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .bubbleTail { border-bottom-left-radius: 4px; }
 .messageTextContent { display: block; min-width: 0; max-width: 100%; }
+.messageTextContent a { text-decoration: underline; word-break: break-all; }
+.bubbleOwn .messageTextContent a { color: inherit; }
+.bubbleOther .messageTextContent a { color: var(--color-primary); }
 .messageStack { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
 .messageStackOwn { align-items: flex-end; }
 .reactionBar { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 4px; width: fit-content; max-width: 100%; margin-top: 8px; }

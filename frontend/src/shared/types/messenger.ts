@@ -98,3 +98,11 @@ export interface ModalUser {
 }
 
 export type Filter = 'all' | 'direct' | 'group'
+
+export interface MessageSearchResult {
+  messageId: string
+  senderId: string
+  senderName: string
+  content: string
+  sentAt: string
+}

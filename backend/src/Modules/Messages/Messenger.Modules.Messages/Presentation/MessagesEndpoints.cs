@@ -6,6 +6,7 @@ using Messenger.Modules.Messages.Application.Features.DeleteMessages;
 using Messenger.Modules.Messages.Application.Features.EditMessage;
 using Messenger.Modules.Messages.Application.Features.ForwardMessages;
 using Messenger.Modules.Messages.Application.Features.GetMessages;
+using Messenger.Modules.Messages.Application.Features.SearchMessages;
 using Messenger.Modules.Messages.Application.Features.SendMessage;
 using Messenger.Modules.Messages.Application.Features.SetMessageReaction;
 using Messenger.Modules.Messages.Application.Features.UploadAndSendMessage;
@@ -34,6 +35,12 @@ public static class MessagesEndpoints
             .WithSummary("История сообщений чата")
             .WithDescription("Возвращает сообщения чата с cursor-пагинацией. Передай nextCursor из предыдущего ответа как before для загрузки следующей страницы.")
             .Produces<MessagesPageDto>();
+
+        group.MapGet("/search", SearchMessages)
+            .WithName("SearchMessages")
+            .WithSummary("Поиск сообщений в чате по словам")
+            .WithDescription("Ищет по совпадению слов (не по произвольной подстроке) — 'поход' найдёт 'походы', но не 'выход'.")
+            .Produces<List<MessageSearchResultDto>>();
 
         group.MapPost("/upload", UploadAndSendMessage)
             .WithName("UploadAndSendMessage")
@@ -108,6 +115,21 @@ public static class MessagesEndpoints
     {
         var userId = httpContext.GetUserId();
         var result = await sender.Send(new GetMessagesQuery(chatId, userId, before, limit), ct);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : result.Error.ToHttpResult();
+    }
+
+    private static async Task<IResult> SearchMessages(
+        Guid              chatId,
+        HttpContext       httpContext,
+        ISender           sender,
+        CancellationToken ct,
+        string            q = "")
+    {
+        var userId = httpContext.GetUserId();
+        var result = await sender.Send(new SearchMessagesQuery(chatId, userId, q), ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)

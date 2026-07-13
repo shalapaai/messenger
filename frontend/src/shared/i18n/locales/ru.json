@@ -16,6 +16,7 @@
   },
   "common": {
     "cancel": "Отмена",
+    "close": "Закрыть",
     "save": "Сохранить",
     "saving": "Сохраняем...",
     "retry": "Повторить",
@@ -186,6 +187,10 @@
     "openChatFailed": "Не удалось открыть чат.",
     "search": "Поиск",
     "searchOrNewChat": "Поиск или новый чат",
+    "chatSearchButton": "Поиск по чату",
+    "chatSearchPlaceholder": "Поиск по переписке",
+    "chatSearchEmpty": "Ничего не найдено",
+    "chatSearchFailed": "Не удалось выполнить поиск",
     "newUsers": "Новые пользователи",
     "searching": "Поиск…",
     "searchFailed": "Не удалось выполнить поиск",
