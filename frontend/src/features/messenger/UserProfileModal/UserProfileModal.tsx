@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { profileApi, type PublicUserProfile } from '../../../shared/api/profileApi'
 import { initials as getInitials, colorFromId } from '../../../shared/api/chatsApi'
-import type { ModalUser } from '../../../shared/types/messenger'
+import type { Message, ModalUser } from '../../../shared/types/messenger'
 import { AvatarImage } from '../../../shared/ui/AvatarImage'
+import { ChatSharedContent } from '../ChatSharedContent'
 import { UserProfileSkeleton } from './UserProfileSkeleton'
 import s from './UserProfileModal.module.css'
 
@@ -12,9 +13,16 @@ interface UserProfileModalProps {
   onClose: () => void
   onDeleteChat?: () => void
   onMessage?: () => void
+  sharedMessages?: Message[]
+  hasMoreHistory?: boolean
+  loadingHistory?: boolean
+  onLoadMoreHistory?: () => void
 }
 
-export function UserProfileModal({ user, onClose, onDeleteChat, onMessage }: UserProfileModalProps) {
+export function UserProfileModal({
+  user, onClose, onDeleteChat, onMessage,
+  sharedMessages, hasMoreHistory = false, loadingHistory = false, onLoadMoreHistory,
+}: UserProfileModalProps) {
   const { t } = useTranslation()
   const [full, setFull] = useState<PublicUserProfile | null>(null)
   const [loading, setLoading] = useState(false)
@@ -60,40 +68,75 @@ export function UserProfileModal({ user, onClose, onDeleteChat, onMessage }: Use
   const city       = full?.city
 
   const hasContact = !!(phone || email || department || city || login || status)
+  const hasSharedContent = !!sharedMessages && !!onLoadMoreHistory
+  const contactContent = (
+    <div className={s.contactTab}>
+      {hasContact ? (
+        <>
+          {login      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.login')}</span><span className={s.umFieldValue}>{login}</span></div>}
+          {status     && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.status')}</span><span className={s.umFieldValue}>{status}</span></div>}
+          {email      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.email')}</span><span className={s.umFieldValue}>{email}</span></div>}
+          {phone      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.phone')}</span><span className={s.umFieldValue}>{phone}</span></div>}
+          {city       && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.city')}</span><span className={s.umFieldValue}>{city}</span></div>}
+          {department && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.department')}</span><span className={s.umFieldValue}>{department}</span></div>}
+        </>
+      ) : (
+        <div className={s.contactEmpty}>{t('profile.noContactInfo')}</div>
+      )}
+    </div>
+  )
 
   return (
     <>
     <div className={s.modalOverlay} onClick={onClose}>
-      <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
+      <div className={`${s.modalPanel} ${hasSharedContent ? s.modalPanelShared : ''}`} onClick={e => e.stopPropagation()}>
         <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
 
-        {avatarUrl
-          ? <AvatarImage src={avatarUrl} alt={name} className={s.umAvatarImg} />
-          : <div className={s.umAvatar} style={{ background: color }}>{initials}</div>
-        }
-
-        <div className={s.umName}>{name}</div>
-        <div className={s.umStatus}>
-          {user.online
-            ? <><span className={s.umStatusDot} />{t('common.online')}</>
-            : t('common.recently')
+        <div className={s.modalHeader}>
+          {avatarUrl
+            ? <AvatarImage src={avatarUrl} alt={name} className={s.umAvatarImg} />
+            : <div className={s.umAvatar} style={{ background: color }}>{initials}</div>
           }
+
+          <div className={s.umName}>{name}</div>
+          <div className={s.umStatus}>
+            {user.online
+              ? <><span className={s.umStatusDot} />{t('common.online')}</>
+              : t('common.recently')
+            }
+          </div>
         </div>
 
-        {loading && <UserProfileSkeleton />}
+        <div className={hasSharedContent ? s.modalContent : undefined}>
+          {loading && <UserProfileSkeleton />}
 
-        {!loading && hasContact && (
-          <>
-            <div className={s.umDivider} />
-            <div className={s.umSection}>{t('profile.contact')}</div>
-            {login      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.login')}</span><span className={s.umFieldValue}>{login}</span></div>}
-            {status     && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.status')}</span><span className={s.umFieldValue}>{status}</span></div>}
-            {email      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.email')}</span><span className={s.umFieldValue}>{email}</span></div>}
-            {phone      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.phone')}</span><span className={s.umFieldValue}>{phone}</span></div>}
-            {city       && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.city')}</span><span className={s.umFieldValue}>{city}</span></div>}
-            {department && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.department')}</span><span className={s.umFieldValue}>{department}</span></div>}
-          </>
-        )}
+          {!hasSharedContent && !loading && hasContact && (
+            <>
+              <div className={s.umDivider} />
+              <div className={s.umSection}>{t('profile.contact')}</div>
+              {login      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.login')}</span><span className={s.umFieldValue}>{login}</span></div>}
+              {status     && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.status')}</span><span className={s.umFieldValue}>{status}</span></div>}
+              {email      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.email')}</span><span className={s.umFieldValue}>{email}</span></div>}
+              {phone      && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.phone')}</span><span className={s.umFieldValue}>{phone}</span></div>}
+              {city       && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.city')}</span><span className={s.umFieldValue}>{city}</span></div>}
+              {department && <div className={s.umField}><span className={s.umFieldLabel}>{t('common.department')}</span><span className={s.umFieldValue}>{department}</span></div>}
+            </>
+          )}
+          {hasSharedContent && (
+            <ChatSharedContent
+              messages={sharedMessages}
+              hasMoreHistory={hasMoreHistory}
+              loadingHistory={loadingHistory}
+              onLoadMoreHistory={onLoadMoreHistory}
+              extraTabs={[{
+                id: 'contact',
+                label: t('profile.contact'),
+                content: contactContent,
+              }]}
+              initialTab="contact"
+            />
+          )}
+        </div>
         {onMessage && (
           <button
             type="button"

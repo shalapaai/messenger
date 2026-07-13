@@ -21,6 +21,21 @@
   box-shadow: var(--shadow-panel);
 }
 
+.modalPanelShared {
+  display: flex;
+  flex-direction: column;
+  height: min(780px, calc(100dvh - 40px));
+  max-height: none;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .modalPanelShared {
+    max-width: 640px;
+    padding: 36px 40px;
+  }
+}
+
 .modalClose {
   position: absolute;
   top: 16px;
@@ -41,6 +56,19 @@
 
 .modalClose:hover { background: var(--color-border); }
 
+.modalHeader {
+  flex-shrink: 0;
+}
+
+.modalContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-right: 4px;
+}
+
 .umAvatar { width: 80px; height: 80px; border-radius: 50%; color: var(--color-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 28px; margin: 0 auto 16px; }
 .umAvatarImg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; display: block; }
 .umName { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
@@ -51,6 +79,8 @@
 .umField { display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px; }
 .umFieldLabel { font-size: 12px; font-weight: 600; color: var(--color-text-faint); }
 .umFieldValue { font-size: 15px; font-weight: 600; color: var(--color-text); }
+.contactTab { padding: 6px 0; }
+.contactEmpty { color: var(--color-text-subtle); font-size: 14px; font-weight: 600; padding: 22px 12px; text-align: center; }
 
 .umMessageBtn {
   width: 100%;
