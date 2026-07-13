@@ -88,7 +88,6 @@ services:
       WebPush__Subject:                   ${WEB_PUSH_SUBJECT:-mailto:dev@example.com}
       WebPush__PublicKey:                 ${WEB_PUSH_PUBLIC_KEY:-}
       WebPush__PrivateKey:                ${WEB_PUSH_PRIVATE_KEY:-}
-      FileStorage__Type:                  ${FILE_STORAGE_TYPE:-Local}
       FileStorage__Local__BasePath:       /app/uploads
       Localization__DefaultCulture:       en
       Resend__ApiKey:                     ${RESEND_API_KEY:-}

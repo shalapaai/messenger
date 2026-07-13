@@ -22,12 +22,6 @@ public sealed class ChatReadEventHandler(
 
         var membersTask = chatsModule.GetMemberIdsAsync(notification.ChatId, ct);
 
-        var groupSendTask = hubContext.Clients
-            .Group(MessengerHub.ChatGroup(notification.ChatId))
-            .SendAsync("MessagesRead", payload, ct);
-
-        await Task.WhenAll(
-            groupSendTask,
-            ChatFallback.BroadcastToMembersAsync(hubContext, membersTask, "MessagesRead", payload, ct));
+        await ChatFallback.BroadcastToMembersAsync(hubContext, membersTask, "MessagesRead", payload, ct);
     }
 }

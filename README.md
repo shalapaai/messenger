@@ -170,7 +170,7 @@ messenger/
 │       ├── Users/              ← профили
 │       ├── Chats/              ← личные и групповые чаты
 │       ├── Messages/           ← сообщения
-│       ├── Files/              ← загрузка файлов (Local / S3)
+│       ├── Files/              ← загрузка файлов
 │       ├── Realtime/           ← SignalR
 │       ├── Notifications/      ← push-уведомления
 │       ├── Localization/       ← ru / en

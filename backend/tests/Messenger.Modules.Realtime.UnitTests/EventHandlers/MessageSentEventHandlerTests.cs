@@ -25,7 +25,7 @@ public sealed class MessageSentEventHandlerTests
         _hubContext.Clients.Returns(_hubClients);
 
         _chatsModule.GetMemberIdsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success(new List<Guid>()));
+            .Returns(Result.Success(new List<Guid> { Guid.NewGuid() }));
         _usersModule.GetSummariesByAuthUserIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Result.Success(new Dictionary<Guid, UserSummaryDto>()));
 
@@ -33,15 +33,36 @@ public sealed class MessageSentEventHandlerTests
     }
 
     [Fact]
-    public async Task Handle_SendsReceiveMessageToChatGroup()
+    public async Task Handle_SendsReceiveMessageToMembersViaFallback()
     {
-        var chatId = Guid.NewGuid();
+        var chatId   = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        _chatsModule.GetMemberIdsAsync(chatId, Arg.Any<CancellationToken>())
+            .Returns(Result.Success(new List<Guid> { memberId }));
+
         var notification = new MessageSentDomainEvent(Guid.NewGuid(), chatId, Guid.NewGuid(), "hello");
 
         await _sut.Handle(notification, CancellationToken.None);
 
-        _hubClients.Received(1).Group(MessengerHub.ChatGroup(chatId));
+        _hubClients.Received(1).Group(MessengerHub.UserGroup(memberId.ToString()));
         await _clientProxy.Received(1).SendCoreAsync("ReceiveMessage", Arg.Any<object?[]>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenMembersLookupFails_SendsNothing()
+    {
+        // ReceiveMessage больше не дублируется через chat:{id}-группу — единственный путь доставки
+        // это ChatFallback, который зависит от успешного GetMemberIdsAsync. Если он падает,
+        // событие не долетает ни до кого (сообщение уже сохранено в БД, догонит клиента при след. синхронизации).
+        _chatsModule.GetMemberIdsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Failure<List<Guid>>(Error.NotFound("Chat")));
+
+        var notification = new MessageSentDomainEvent(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "hello");
+
+        await _sut.Handle(notification, CancellationToken.None);
+
+        await _clientProxy.DidNotReceive().SendCoreAsync(
+            "ReceiveMessage", Arg.Any<object?[]>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

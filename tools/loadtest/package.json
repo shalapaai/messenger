@@ -1,0 +1,12 @@
+{
+  "name": "messenger-ws-loadtest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node ws-loadtest.mjs"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^8.0.7"
+  }
+}

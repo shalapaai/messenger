@@ -28,20 +28,9 @@ public sealed class FilesModule : IModuleInstaller
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<FilesDbContext>());
         services.AddScoped<IFileRepository, FileRepository>();
 
-        var storageType = configuration["FileStorage:Type"] ?? "Local";
-
-        if (storageType.Equals("S3", StringComparison.OrdinalIgnoreCase))
-        {
-            services.Configure<S3StorageOptions>(
-                configuration.GetSection(S3StorageOptions.SectionName));
-            services.AddScoped<IFileStorage, S3FileStorage>();
-        }
-        else
-        {
-            services.Configure<LocalStorageOptions>(
-                configuration.GetSection(LocalStorageOptions.SectionName));
-            services.AddScoped<IFileStorage, LocalFileStorage>();
-        }
+        services.Configure<LocalStorageOptions>(
+            configuration.GetSection(LocalStorageOptions.SectionName));
+        services.AddScoped<IFileStorage, LocalFileStorage>();
 
         services.AddScoped<IFilesModule, FilesModuleApi>();
 

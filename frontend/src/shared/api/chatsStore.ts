@@ -13,8 +13,6 @@ interface ChatsState {
   chats: Chat[]
   chatsLoaded: boolean
   chatsError: boolean
-  activeChatId: string | null
-  setActiveChatId: (chatId: string | null) => void
   loadChats: () => Promise<void>
   handleNewMessage: (msg: IncomingMessage, activeChatId: string | null) => void
   handleMessagesRead: (chatId: string, readerId: string, readAt: string) => void
@@ -22,6 +20,7 @@ interface ChatsState {
   handleUserProfileUpdated: (event: UserProfileUpdatedEvent) => void
   resetUnread: (chatId: string) => void
   removeChat: (chatId: string) => void
+  reset: () => void
 }
 
 let loadChatsInFlight: Promise<void> | null = null
@@ -30,9 +29,6 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
   chats: [],
   chatsLoaded: false,
   chatsError: false,
-  activeChatId: null,
-
-  setActiveChatId: (chatId) => set({ activeChatId: chatId }),
 
   loadChats: () => {
     if (loadChatsInFlight) return loadChatsInFlight
@@ -40,14 +36,10 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
     loadChatsInFlight = (async () => {
       set({ chatsError: false })
       try {
-        const { activeChatId } = get()
         const fetched = await fetchChats()
-        const chats = activeChatId
-          ? fetched.map(c => c.id === activeChatId ? { ...c, unread: 0 } : c)
-          : fetched
-        set({ chats, chatsLoaded: true })
+        set({ chats: fetched, chatsLoaded: true })
         const { setOnline } = useOnlineStore.getState()
-        chats.forEach(chat => {
+        fetched.forEach(chat => {
           if (chat.otherUserId) setOnline(chat.otherUserId, chat.online)
         })
       } catch {
@@ -105,7 +97,13 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
   },
 
   handleMessagesRead: (chatId, readerId, readAt) => set((state) => {
-    if (readerId === getMyUserId()) return state
+    if (readerId === getMyUserId()) {
+      return {
+        chats: state.chats.map(chat =>
+          chat.id === chatId ? { ...chat, unread: 0 } : chat
+        ),
+      }
+    }
     return {
       chats: state.chats.map(chat => {
         if (chat.id !== chatId) return chat
@@ -139,4 +137,9 @@ export const useChatsStore = create<ChatsState>((set, get) => ({
   removeChat: (chatId) => set((state) => ({
     chats: state.chats.filter(chat => chat.id !== chatId),
   })),
+
+  reset: () => {
+    loadChatsInFlight = null
+    set({ chats: [], chatsLoaded: false, chatsError: false })
+  },
 }))

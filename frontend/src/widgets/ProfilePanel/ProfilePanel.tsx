@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../../features/auth/api/authApi'
 import { clearAuthTokens } from '../../shared/lib/auth/authTokens'
+import { useChatsStore } from '../../shared/api/chatsStore'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useTheme } from '../../shared/context/useTheme'
 import { accentColors, type AccentColor } from '../../shared/context/themeContextValue'
@@ -22,6 +23,7 @@ import s from './ProfilePanel.module.css'
 interface ProfilePanelProps {
   isOpen: boolean
   profile: UserProfile
+  totalUnread: number
   onClose: () => void
   onEdit: () => void
   onChats: () => void
@@ -37,7 +39,7 @@ function formatDate(isoDate: string, locale: string): string {
   return new Date(isoDate).toLocaleDateString(locale, { year: 'numeric', month: 'long' })
 }
 
-export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: ProfilePanelProps) {
+export function ProfilePanel({ isOpen, profile, totalUnread, onClose, onEdit, onChats }: ProfilePanelProps) {
   const { i18n, t } = useTranslation()
   const navigate = useNavigate()
   const { clearProfile } = useUserProfile()
@@ -54,6 +56,7 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
     } finally {
       clearAuthTokens()
       clearProfile()
+      useChatsStore.getState().reset()
       navigate('/login')
     }
   }
@@ -146,7 +149,7 @@ export function ProfilePanel({ isOpen, profile, onClose, onEdit, onChats }: Prof
 
         <nav className={s.ppBottomNav}>
           <button className={s.bnItem} onClick={() => { onClose(); onChats() }}>
-            <span className={s.bnGlyph}>💬</span>
+            <span className={s.bnGlyph}>💬{totalUnread > 0 && <span className={s.bnBadge}>{totalUnread}</span>}</span>
             <span>{t('profile.chats')}</span>
           </button>
           <button className={`${s.bnItem} ${s.bnItemActive}`}>

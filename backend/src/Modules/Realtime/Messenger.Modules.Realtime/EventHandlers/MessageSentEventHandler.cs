@@ -77,10 +77,6 @@ public sealed class MessageSentEventHandler(
             targetUserName     = targetUser?.DisplayName,
         };
 
-        await hubContext.Clients
-            .Group(MessengerHub.ChatGroup(notification.ChatId))
-            .SendAsync("ReceiveMessage", payload, ct);
-
         await ChatFallback.BroadcastToMembersAsync(
             hubContext, membersTask, "ReceiveMessage", payload, ct);
     }

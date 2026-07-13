@@ -52,8 +52,7 @@ JWT_EXPIRY_MINUTES=15
 # Refresh Tokens
 REFRESH_TOKEN_EXPIRY_DAYS=7
 
-# Файловое хранилище (Local или S3)
-FILE_STORAGE_TYPE=Local
+# Файловое хранилище
 FILE_STORAGE_LOCAL_BASE_PATH=/app/uploads
 
 # pgAdmin

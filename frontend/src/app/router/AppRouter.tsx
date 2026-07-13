@@ -45,7 +45,6 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   const chats            = useChatsStore((s) => s.chats)
   const chatsLoaded      = useChatsStore((s) => s.chatsLoaded)
   const loadChats        = useChatsStore((s) => s.loadChats)
-  const setActiveChatId  = useChatsStore((s) => s.setActiveChatId)
   const status           = useConnectionStore((s) => s.status)
   const chatIdsKey       = chats.map((c) => c.id).join(',')
   const joinedChatIdsRef = useRef<Set<string>>(new Set())
@@ -53,10 +52,6 @@ function ConnectedLayout({ children }: { children: ReactNode }) {
   const activeChatId = getActiveChatIdFromPathname(pathname)
   const activeDirectUserId = chats.find(chat => isSameNotificationId(chat.id, activeChatId))?.otherUserId
     ?? getDraftDirectUserIdFromPathname(pathname)
-
-  useEffect(() => {
-    setActiveChatId(activeChatId)
-  }, [activeChatId, setActiveChatId])
 
   useEffect(() => {
     if (status !== 'connected') return
