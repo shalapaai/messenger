@@ -537,6 +537,10 @@ export function MessengerPage() {
         onMessage={modalUser?.userId && modalUser.userId !== profile?.userId
           ? () => handleOpenDirectChat(modalUser.userId!)
           : undefined}
+        sharedMessages={id && modalUserIsChatPartner ? messages : undefined}
+        hasMoreHistory={!historyLoaded}
+        loadingHistory={loadingHistory}
+        onLoadMoreHistory={() => loadMoreHistory(() => undefined, () => undefined)}
       />
 
       {id && meta && (
@@ -554,6 +558,10 @@ export function MessengerPage() {
           onEditGroup={() => setEditGroupModalOpen(true)}
           onRemoveMember={handleRemoveMember}
           onSetMemberRole={handleSetMemberRole}
+          sharedMessages={messages}
+          hasMoreHistory={!historyLoaded}
+          loadingHistory={loadingHistory}
+          onLoadMoreHistory={() => loadMoreHistory(() => undefined, () => undefined)}
         />
       )}
 

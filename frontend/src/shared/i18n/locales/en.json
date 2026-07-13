@@ -172,7 +172,8 @@
     "profile": "Profile",
     "editTitle": "Edit profile",
     "saveFailed": "Could not save profile. Please try again.",
-    "contact": "Contact"
+    "contact": "Contact",
+    "noContactInfo": "No contact details yet."
   },
   "messenger": {
     "messages": "Messages",
@@ -266,6 +267,23 @@
     "deleteChatFailed": "Could not delete chat.",
     "leaveGroupFailed": "Could not leave group.",
     "setMemberRoleFailed": "Could not change member role."
+  },
+  "sharedContent": {
+    "title": "Chat materials",
+    "tabs": {
+      "media": "Media {{count}}",
+      "files": "Files {{count}}",
+      "links": "Links {{count}}"
+    },
+    "empty": {
+      "media": "No media in loaded history yet.",
+      "files": "No files in loaded history yet.",
+      "links": "No links in loaded history yet."
+    },
+    "loading": "Loading",
+    "loadMore": "Show older messages",
+    "loadingHistory": "Loading history...",
+    "moreHint": "You can load older messages and check them too."
   },
   "group": {
     "members_one": "Member ({{count}})",

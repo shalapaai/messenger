@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ChatMeta, GroupMember, ModalUser } from '../../../shared/types/messenger'
+import type { ChatMeta, GroupMember, Message, ModalUser } from '../../../shared/types/messenger'
 import { AvatarImage } from '../../../shared/ui/AvatarImage'
 import { UserListSkeleton } from '../UserListSkeleton'
+import { ChatSharedContent } from '../ChatSharedContent'
 import s from './GroupModal.module.css'
 
 interface GroupModalProps {
@@ -19,9 +20,17 @@ interface GroupModalProps {
   onEditGroup: () => void
   onRemoveMember: (userId: string, name: string) => void
   onSetMemberRole: (userId: string, role: 'admin' | 'member') => void
+  sharedMessages: Message[]
+  hasMoreHistory: boolean
+  loadingHistory: boolean
+  onLoadMoreHistory: () => void
 }
 
-export function GroupModal({ isOpen, chatId, meta, members, membersLoading, currentUserId, onClose, onMemberClick, onLeave, onAddMember, onEditGroup, onRemoveMember, onSetMemberRole }: GroupModalProps) {
+export function GroupModal({
+  isOpen, chatId, meta, members, membersLoading, currentUserId,
+  onClose, onMemberClick, onLeave, onAddMember, onEditGroup, onRemoveMember, onSetMemberRole,
+  sharedMessages, hasMoreHistory, loadingHistory, onLoadMoreHistory,
+}: GroupModalProps) {
   const { t } = useTranslation()
   const [confirmRemove, setConfirmRemove] = useState<{ userId: string; name: string } | null>(null)
   const [confirmLeave, setConfirmLeave] = useState(false)
@@ -31,68 +40,104 @@ export function GroupModal({ isOpen, chatId, meta, members, membersLoading, curr
 
   const canManage = members.some(m => m.userId === currentUserId && m.role !== 'member')
   const isOwner   = members.some(m => m.userId === currentUserId && m.role === 'owner')
+  const membersInSeparateField = members.length > 3
+  const membersList = membersLoading && members.length === 0 ? (
+    <UserListSkeleton count={4} showMeta />
+  ) : (
+    members.map(member => (
+      <div
+        key={member.userId}
+        className={`${s.umMemberRow} ${s.umMemberRowClickable}`}
+        onClick={() => onMemberClick({ userId: member.userId, name: member.name, initials: member.initials, color: member.color, avatarUrl: member.avatarUrl, online: member.online })}
+      >
+        <div className={s.umMemberAvatarWrap}>
+          {member.avatarUrl
+            ? <AvatarImage src={member.avatarUrl} alt={member.name} className={s.umMemberAvatarImg} />
+            : <div className={s.umMemberAvatar} style={{ background: member.color }}>{member.initials}</div>
+          }
+          {member.online && <span className={s.umMemberOnlineDot} />}
+        </div>
+        <span className={s.umMemberName}>{member.name}</span>
+        <span className={`${s.umRoleBadge} ${member.role !== 'member' ? s.umRoleBadgeAdmin : ''}`}>
+          {t(`group.roles.${member.role}`)}
+        </span>
+        {isOwner && member.role !== 'owner' && member.userId !== currentUserId && (
+          <button
+            type="button"
+            className={`${s.umRoleToggleBtn} ${member.role === 'admin' ? s.umRoleToggleBtnDemote : s.umRoleToggleBtnPromote}`}
+            title={member.role === 'admin' ? t('group.demoteFromAdmin') : t('group.promoteToAdmin')}
+            onClick={e => { e.stopPropagation(); onSetMemberRole(member.userId, member.role === 'admin' ? 'member' : 'admin') }}
+          >
+            {member.role === 'admin' ? '−' : '+'}
+          </button>
+        )}
+        {canManage && member.role !== 'owner' && member.userId !== currentUserId && (isOwner || member.role === 'member') && (
+          <button
+            type="button"
+            className={s.umRemoveMemberBtn}
+            title={t('group.removeMember')}
+            onClick={e => { e.stopPropagation(); setConfirmRemove({ userId: member.userId, name: member.name }) }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    ))
+  )
+  const membersField = (
+    <div className={s.umMemberList}>
+      {membersList}
+    </div>
+  )
+  const membersHeader = canManage && (
+    <div className={s.umMembersFieldActions}>
+      <button type="button" className={s.umAddMemberInlineBtn} onClick={onAddMember}>
+        {t('group.addMember')}
+      </button>
+    </div>
+  )
 
   return (
     <>
       <div className={s.modalOverlay} onClick={onClose}>
         <div className={s.modalPanel} onClick={e => e.stopPropagation()}>
           <button type="button" className={s.modalClose} onClick={onClose}>✕</button>
-          <div className={s.umAvatar} style={meta.avatarUrl ? undefined : { background: meta.color }}>
-            {meta.avatarUrl ? <AvatarImage src={meta.avatarUrl} alt={meta.name} className={s.umAvatarImg} /> : meta.initials}
+          <div className={s.modalHeader}>
+            <div className={s.umAvatar} style={meta.avatarUrl ? undefined : { background: meta.color }}>
+              {meta.avatarUrl ? <AvatarImage src={meta.avatarUrl} alt={meta.name} className={s.umAvatarImg} /> : meta.initials}
+            </div>
+            <div className={s.umName}>{meta.name}</div>
+            <div className={s.umStatus}>{t('group.memberCount', { count: members.length })}</div>
           </div>
-          <div className={s.umName}>{meta.name}</div>
-          <div className={s.umStatus}>{t('group.memberCount', { count: members.length })}</div>
           <div className={s.umDivider} />
-          <div className={s.umSectionRow}>
-            <span className={s.umSection}>{t('group.members', { count: members.length })}</span>
-            {canManage && (
-              <button type="button" className={s.umAddMemberBtn} onClick={onAddMember} title={t('group.addMember')}>+</button>
-            )}
-          </div>
-          <div className={s.umMemberList}>
-            {membersLoading && members.length === 0 ? (
-              <UserListSkeleton count={4} showMeta />
-            ) : (
-              members.map(member => (
-                <div
-                  key={member.userId}
-                  className={`${s.umMemberRow} ${s.umMemberRowClickable}`}
-                  onClick={() => onMemberClick({ userId: member.userId, name: member.name, initials: member.initials, color: member.color, avatarUrl: member.avatarUrl, online: member.online })}
-                >
-                  <div className={s.umMemberAvatarWrap}>
-                    {member.avatarUrl
-                      ? <AvatarImage src={member.avatarUrl} alt={member.name} className={s.umMemberAvatarImg} />
-                      : <div className={s.umMemberAvatar} style={{ background: member.color }}>{member.initials}</div>
-                    }
-                    {member.online && <span className={s.umMemberOnlineDot} />}
-                  </div>
-                  <span className={s.umMemberName}>{member.name}</span>
-                  <span className={`${s.umRoleBadge} ${member.role !== 'member' ? s.umRoleBadgeAdmin : ''}`}>
-                    {t(`group.roles.${member.role}`)}
-                  </span>
-                  {isOwner && member.role !== 'owner' && member.userId !== currentUserId && (
-                    <button
-                      type="button"
-                      className={`${s.umRoleToggleBtn} ${member.role === 'admin' ? s.umRoleToggleBtnDemote : s.umRoleToggleBtnPromote}`}
-                      title={member.role === 'admin' ? t('group.demoteFromAdmin') : t('group.promoteToAdmin')}
-                      onClick={e => { e.stopPropagation(); onSetMemberRole(member.userId, member.role === 'admin' ? 'member' : 'admin') }}
-                    >
-                      {member.role === 'admin' ? '−' : '+'}
-                    </button>
-                  )}
-                  {canManage && member.role !== 'owner' && member.userId !== currentUserId && (isOwner || member.role === 'member') && (
-                    <button
-                      type="button"
-                      className={s.umRemoveMemberBtn}
-                      title={t('group.removeMember')}
-                      onClick={e => { e.stopPropagation(); setConfirmRemove({ userId: member.userId, name: member.name }) }}
-                    >
-                      ✕
-                    </button>
+          <div className={s.modalContent}>
+            {!membersInSeparateField && (
+              <>
+                <div className={s.umSectionRow}>
+                  <span className={s.umSection}>{t('group.members', { count: members.length })}</span>
+                  {canManage && (
+                    <button type="button" className={s.umAddMemberBtn} onClick={onAddMember} title={t('group.addMember')}>+</button>
                   )}
                 </div>
-              ))
+                <div className={s.umMemberList}>
+                  {membersList}
+                </div>
+              </>
             )}
+            <ChatSharedContent
+              key={membersInSeparateField ? 'with-members' : 'shared-only'}
+              messages={sharedMessages}
+              hasMoreHistory={hasMoreHistory}
+              loadingHistory={loadingHistory}
+              onLoadMoreHistory={onLoadMoreHistory}
+              extraTabs={membersInSeparateField ? [{
+                id: 'members',
+                label: t('group.members', { count: members.length }),
+                content: membersField,
+                headerContent: membersHeader,
+              }] : undefined}
+              initialTab={membersInSeparateField ? 'members' : undefined}
+            />
           </div>
           <div className={s.umGroupActions}>
             {canManage && (

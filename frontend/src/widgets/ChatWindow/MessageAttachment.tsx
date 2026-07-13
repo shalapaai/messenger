@@ -14,7 +14,9 @@ function formatFileSize(bytes: number): string {
 function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }: Attachment) {
   const { t } = useTranslation()
   const isImage = fileContentType.startsWith('image/')
-  const { blobUrl, error, progress } = useAuthedFileUrl(fileUrl, isImage)
+  const isVideo = fileContentType.startsWith('video/')
+  const isPreviewableMedia = isImage || isVideo
+  const { blobUrl, error, progress } = useAuthedFileUrl(fileUrl, isPreviewableMedia)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
@@ -28,15 +30,33 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
     }
   }
 
-  if (isImage) {
+  if (isPreviewableMedia) {
     if (error) {
       return <div className={s.attachmentError}>{t('messenger.attachmentLoadFailed')}</div>
     }
     return (
       <>
-        <div className={s.attachmentImageWrap} onClick={() => blobUrl && setLightboxOpen(true)}>
+        <div
+          className={s.attachmentImageWrap}
+          onClick={() => blobUrl && setLightboxOpen(true)}
+        >
           {blobUrl
-            ? <img src={blobUrl} alt={fileName} className={s.attachmentImage} />
+            ? (
+              isVideo
+                ? (
+                  <div className={s.attachmentVideoPreview}>
+                    <video
+                      src={blobUrl}
+                      className={s.attachmentVideo}
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                    <span className={s.attachmentVideoBadge}>▶</span>
+                  </div>
+                )
+                : <img src={blobUrl} alt={fileName} className={s.attachmentImage} />
+            )
             : (
               <div className={s.attachmentImageLoading}>
                 <div className={s.attachmentProgress}>
@@ -52,7 +72,10 @@ function MessageAttachment({ fileUrl, fileName, fileContentType, fileSizeBytes }
         </div>
         {lightboxOpen && blobUrl && (
           <div className={s.lightboxOverlay} onClick={() => setLightboxOpen(false)}>
-            <img src={blobUrl} alt={fileName} className={s.lightboxImage} />
+            {isVideo
+              ? <video src={blobUrl} className={s.lightboxVideo} controls autoPlay onClick={(e) => e.stopPropagation()} />
+              : <img src={blobUrl} alt={fileName} className={s.lightboxImage} />
+            }
             <button
               type="button"
               className={`${s.lightboxClose} ${s.lightboxDownload}`}

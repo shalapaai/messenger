@@ -1,0 +1,1 @@
+export { ChatSharedContent } from './ChatSharedContent'

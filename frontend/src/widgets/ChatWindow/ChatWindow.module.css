@@ -319,6 +319,9 @@
 .attachmentsGroup { display: flex; flex-direction: column; gap: 4px; }
 .attachmentImageWrap { cursor: pointer; margin: -2px -6px 4px; border-radius: 14px; overflow: hidden; max-width: 280px; }
 .attachmentImage { display: block; width: 100%; max-height: 320px; object-fit: cover; }
+.attachmentVideoPreview { position: relative; background: #000; }
+.attachmentVideo { display: block; width: 100%; max-height: 320px; object-fit: cover; }
+.attachmentVideoBadge { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 50%; background: rgba(0, 0, 0, 0.58); color: #fff; font-size: 18px; line-height: 1; padding-left: 3px; pointer-events: none; }
 .attachmentImageLoading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 220px; height: 160px; background: var(--color-surface-muted); animation: attachmentPulse 1.4s ease-in-out infinite; }
 @keyframes attachmentPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 .attachmentError { font-size: 13px; font-style: italic; opacity: 0.8; }
@@ -361,6 +364,7 @@
   padding: 24px;
 }
 .lightboxImage { max-width: 100%; max-height: 100%; border-radius: 8px; }
+.lightboxVideo { max-width: 100%; max-height: 100%; border-radius: 8px; background: #000; }
 .lightboxClose {
   position: absolute;
   top: 20px;
