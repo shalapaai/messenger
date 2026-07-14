@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
+import { initials } from '../../shared/api/chatsApi'
 import type { Poll, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -58,7 +59,7 @@ export function PollMessage({ question, poll, meSender, onVote, onRetractVote }:
                     {option.voters.slice(0, 5).map(voter => (
                       voter.userAvatarUrl
                         ? <AvatarImage key={voter.userId} src={voter.userAvatarUrl} alt={voter.userName} className={s.pollVoterAvatarImg} />
-                        : <span key={voter.userId} className={s.pollVoterAvatar} style={{ background: voter.userAvatarColor }}>{voter.userName.slice(0, 1).toUpperCase()}</span>
+                        : <span key={voter.userId} className={s.pollVoterAvatar} style={{ background: voter.userAvatarColor }}>{initials(voter.userName)}</span>
                     ))}
                   </span>
                   <span className={s.pollVotersCount}>{t('poll.votes', { count })}</span>
@@ -71,7 +72,7 @@ export function PollMessage({ question, poll, meSender, onVote, onRetractVote }:
                     <div key={voter.userId} className={s.pollVoterRow}>
                       {voter.userAvatarUrl
                         ? <AvatarImage src={voter.userAvatarUrl} alt={voter.userName} className={s.pollVoterAvatarImg} />
-                        : <span className={s.pollVoterAvatar} style={{ background: voter.userAvatarColor }}>{voter.userName.slice(0, 1).toUpperCase()}</span>
+                        : <span className={s.pollVoterAvatar} style={{ background: voter.userAvatarColor }}>{initials(voter.userName)}</span>
                       }
                       <span className={s.pollVoterName}>{voter.userName}</span>
                     </div>
