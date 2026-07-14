@@ -11,9 +11,10 @@ interface PollMessageProps {
   meSender: Sender
   onVote: (optionId: string) => void
   onRetractVote: () => void
+  onVoterClick?: (userId: string, name: string) => void
 }
 
-export function PollMessage({ question, poll, meSender, onVote, onRetractVote }: PollMessageProps) {
+export function PollMessage({ question, poll, meSender, onVote, onRetractVote, onVoterClick }: PollMessageProps) {
   const { t } = useTranslation()
   const [expandedOptionId, setExpandedOptionId] = useState<string | null>(null)
 
@@ -69,7 +70,11 @@ export function PollMessage({ question, poll, meSender, onVote, onRetractVote }:
               {isExpanded && (
                 <div className={s.pollVotersList}>
                   {option.voters.map(voter => (
-                    <div key={voter.userId} className={s.pollVoterRow}>
+                    <div
+                      key={voter.userId}
+                      className={`${s.pollVoterRow} ${onVoterClick ? s.pollVoterRowClickable : ''}`}
+                      onClick={onVoterClick ? (e) => { e.stopPropagation(); onVoterClick(voter.userId, voter.userName) } : undefined}
+                    >
                       {voter.userAvatarUrl
                         ? <AvatarImage src={voter.userAvatarUrl} alt={voter.userName} className={s.pollVoterAvatarImg} />
                         : <span className={s.pollVoterAvatar} style={{ background: voter.userAvatarColor }}>{initials(voter.userName)}</span>

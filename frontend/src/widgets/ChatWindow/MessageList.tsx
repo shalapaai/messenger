@@ -275,6 +275,7 @@ export const MessageList = memo(function MessageList({
                         meSender={meSender}
                         onVote={optionId => onVote(item.msg, optionId)}
                         onRetractVote={() => onRetractVote(item.msg)}
+                        onVoterClick={onForwardedUserClick}
                       />
                     ) : (
                       linkifyText(item.msg.text)

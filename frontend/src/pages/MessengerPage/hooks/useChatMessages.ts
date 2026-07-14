@@ -184,21 +184,42 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
       const next: typeof prev = {}
       for (const [chatId, msgs] of Object.entries(prev)) {
         next[chatId] = msgs.map(m => {
-          if (m.senderId === event.userId) {
+          let patched = m
+
+          if (patched.senderId === event.userId) {
             changed = true
-            return {
-              ...m,
+            patched = {
+              ...patched,
               senderName:      event.displayName,
               senderInitials:  initials(event.displayName),
               senderColor:     event.avatarColor,
               senderAvatarUrl: event.avatarUrl,
             }
           }
-          if (m.forwardedFromUserId === event.userId) {
+
+          if (patched.forwardedFromUserId === event.userId) {
             changed = true
-            return { ...m, forwardedFromUserName: event.displayName }
+            patched = { ...patched, forwardedFromUserName: event.displayName }
           }
-          return m
+
+          if (patched.poll?.options.some(o => o.voters.some(v => v.userId === event.userId))) {
+            changed = true
+            patched = {
+              ...patched,
+              poll: {
+                options: patched.poll.options.map(o => ({
+                  ...o,
+                  voters: o.voters.map(v =>
+                    v.userId === event.userId
+                      ? { ...v, userName: event.displayName, userAvatarUrl: event.avatarUrl, userAvatarColor: event.avatarColor }
+                      : v
+                  ),
+                })),
+              },
+            }
+          }
+
+          return patched
         })
       }
       return changed ? next : prev

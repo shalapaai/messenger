@@ -1316,8 +1316,10 @@
   border-radius: 10px;
   background: color-mix(in srgb, currentColor 6%, transparent);
 }
-.pollVoterRow { display: flex; align-items: center; gap: 8px; }
+.pollVoterRow { display: flex; align-items: center; gap: 8px; border-radius: 8px; padding: 3px 4px; margin: 0 -4px; }
 .pollVoterRow .pollVoterAvatar, .pollVoterRow .pollVoterAvatarImg { margin-left: 0; }
+.pollVoterRowClickable { cursor: pointer; }
+.pollVoterRowClickable:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
 .pollVoterName { font-size: 13px; font-weight: 600; }
 
 .pollTotalVotes { font-size: 12px; opacity: 0.7; }
