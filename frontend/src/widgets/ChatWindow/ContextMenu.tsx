@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ReplyIcon, EditIcon, ForwardIcon, TrashIcon, SelectIcon } from './icons'
+import { ReplyIcon, EditIcon, ForwardIcon, TrashIcon, SelectIcon, CloseIcon } from './icons'
 import { AvatarImage } from '../../shared/ui/AvatarImage'
 import type { Message, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
@@ -18,6 +18,7 @@ interface ContextMenuProps {
   onDelete: (msg: Message) => void
   onSelect: (msg: Message) => void
   onReact: (msg: Message, emoji: string) => void
+  onRetractVote: (msg: Message) => void
   onOpenReactions: (msg: Message, anchor: DOMRect) => void
   onPreviewReactions: (msg: Message, anchor: DOMRect) => void
   onCloseReactionPreview: () => void
@@ -29,13 +30,16 @@ interface ContextMenuProps {
 
 export function ContextMenu({
   state, isModerator, canBulkDelete, currentUser, onReply, onEdit, onForward, onDelete, onSelect, onReact,
-  onOpenReactions, onPreviewReactions, onCloseReactionPreview, quickReactions, isGroup, onBulkForward, onBulkDelete,
+  onRetractVote, onOpenReactions, onPreviewReactions, onCloseReactionPreview, quickReactions, isGroup, onBulkForward, onBulkDelete,
 }: ContextMenuProps) {
   const { t } = useTranslation()
   const { msg, selection } = state
   const reactionRowRef = useRef<HTMLDivElement>(null)
   const [reactionScroll, setReactionScroll] = useState({ left: 0, max: 0, viewport: 1, content: 1 })
   const isLocalOnly = !msg.messageId
+  const myPollOptionId = msg.kind === 'Poll'
+    ? msg.poll?.options.find(o => o.voters.some(v => v.userId === currentUser.senderId))?.id
+    : undefined
   const reactions = (msg.reactions ?? []).map((reaction) =>
     reaction.userId === currentUser.senderId
       ? {
@@ -52,7 +56,7 @@ export function ContextMenu({
     ? 88
     : isLocalOnly
       ? 56
-      : (msg.own ? 246 : 210) + (showReactionDetails ? 46 : 0)
+      : (msg.own ? 246 : 210) + (showReactionDetails ? 46 : 0) + (myPollOptionId ? 46 : 0)
   const menuMaxWidth = window.innerWidth <= 480 ? 200 : 240
   const menuWidth = Math.min(menuMaxWidth, window.innerWidth - 16)
   const left = Math.max(8, Math.min(state.x, window.innerWidth - menuWidth - 8))
@@ -182,6 +186,11 @@ export function ContextMenu({
                 ))}
               </span>
               <span className={s.contextReactionSummaryArrow}>›</span>
+            </button>
+          )}
+          {myPollOptionId && (
+            <button type="button" className={`${s.contextMenuItem} ${s.contextMenuItemDanger}`} onClick={() => onRetractVote(msg)}>
+              <CloseIcon />{t('poll.retractVote')}
             </button>
           )}
           {(isModerator || msg.own) && (

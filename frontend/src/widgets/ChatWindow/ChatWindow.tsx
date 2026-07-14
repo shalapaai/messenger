@@ -637,7 +637,13 @@ export function ChatWindow({
             multiple
             className={s.hiddenFileInput}
             accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,audio/*,video/*"
-            onChange={attachments.handleFileSelect}
+            onChange={(e) => {
+              attachments.handleFileSelect(e)
+              // Клик по кнопке-скрепке оставляет фокус на самой кнопке (input скрыт через
+              // display:none и фокус вообще не принимает) — Enter после выбора файлов бил бы
+              // по кнопке и заново открывал проводник вместо отправки сообщения.
+              mobileInput.textareaRef.current?.focus()
+            }}
           />
           <div
             className={s.attachMenuWrap}
@@ -774,6 +780,7 @@ export function ChatWindow({
           onDelete={requestDelete}
           onSelect={enterSelectMode}
           onReact={handleReactionSelect}
+          onRetractVote={(msg) => { onRetractVote(msg); setContextMenu(null) }}
           onOpenReactions={openReactionDetails}
           onPreviewReactions={previewReactionDetails}
           onCloseReactionPreview={closeReactionPreview}
