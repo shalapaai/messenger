@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessageReactionChanged, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent, type ChatUpdatedEvent, type UserProfileUpdatedEvent } from './signalrClient'
+import { signalR, type IncomingMessage, type MessageEdited, type MessageDeleted, type MessageReactionChanged, type PollVoteChangedEvent, type MessagesReadEvent, type TypingEvent, type UserOnlineEvent, type ChatUpdatedEvent, type UserProfileUpdatedEvent } from './signalrClient'
 import { useConnectionStore, type ConnectionStatus } from './connectionStore'
 
 export type { ConnectionStatus }
@@ -10,6 +10,7 @@ interface UseSignalROptions {
   onMessageEdited?: (event: MessageEdited) => void
   onMessageDeleted?: (event: MessageDeleted) => void
   onMessageReactionChanged?: (event: MessageReactionChanged) => void
+  onPollVoteChanged?: (event: PollVoteChangedEvent) => void
   onMessagesRead?: (event: MessagesReadEvent) => void
   onTyping?: (event: TypingEvent) => void
   onStoppedTyping?: (event: TypingEvent) => void
@@ -36,6 +37,7 @@ export function useSignalR(options: UseSignalROptions = {}) {
       signalR.onMessageEdited(event => optionsRef.current.onMessageEdited?.(event)),
       signalR.onMessageDeleted(event => optionsRef.current.onMessageDeleted?.(event)),
       signalR.onMessageReactionChanged(event => optionsRef.current.onMessageReactionChanged?.(event)),
+      signalR.onPollVoteChanged(event => optionsRef.current.onPollVoteChanged?.(event)),
       signalR.onMessagesRead(event => optionsRef.current.onMessagesRead?.(event)),
       signalR.onUserTyping(event => optionsRef.current.onTyping?.(event)),
       signalR.onUserStoppedTyping(event => optionsRef.current.onStoppedTyping?.(event)),

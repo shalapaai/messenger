@@ -10,4 +10,10 @@ internal sealed class ChatMembershipChecker(IChatRepository chatRepository) : IC
 
     public Task<bool> CanModerateAsync(Guid chatId, Guid userId, CancellationToken ct = default) =>
         chatRepository.IsModeratorAsync(ChatId.From(chatId), userId, ct);
+
+    public async Task<bool> IsGroupChatAsync(Guid chatId, CancellationToken ct = default)
+    {
+        var chat = await chatRepository.GetByIdAsync(ChatId.From(chatId), ct);
+        return chat is not null && chat.Type == ChatType.Group;
+    }
 }

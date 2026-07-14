@@ -18,7 +18,8 @@ import { MessageList } from './MessageList'
 import { FilePreviewBar } from './FilePreviewBar'
 import { ContextMenu, type ContextMenuState } from './ContextMenu'
 import { ChatSearchPanel } from './ChatSearchPanel'
-import { AttachIcon, ForwardIcon, TrashIcon, SearchIcon } from './icons'
+import { AttachIcon, ForwardIcon, TrashIcon, SearchIcon, PollIcon } from './icons'
+import { CreatePollModal } from './CreatePollModal'
 import { useAttachmentQueue } from './hooks/useAttachmentQueue'
 import { useMobileInputLayer } from './hooks/useMobileInputLayer'
 import { useMessageSelection } from './hooks/useMessageSelection'
@@ -61,6 +62,9 @@ interface ChatWindowProps {
   onDelete: (msg: Message) => void
   onEdit: (msg: Message, newText: string) => void
   onReact: (msg: Message, emoji: string | null) => void
+  onCreatePoll: (question: string, options: string[]) => Promise<void>
+  onVote: (msg: Message, optionId: string) => void
+  onRetractVote: (msg: Message) => void
   onBulkDelete: (msgs: Message[]) => void
   onForward: (msgs: Message[]) => void
   onTyping: () => void
@@ -79,7 +83,7 @@ export function ChatWindow({
   chatId, meta, messages, otherReadAt, meSender, typingChats, loadingHistory, historyLoaded,
   loadingInitial, loadError, onRetryLoad,
   messagesRef, topSentinelRef, bottomRef,
-  onSend, onSendFiles, onRetry, onDelete, onEdit, onReact, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
+  onSend, onSendFiles, onRetry, onDelete, onEdit, onReact, onCreatePoll, onVote, onRetractVote, onBulkDelete, onForward, onTyping, onBack, onHeaderClick, onAvatarClick,
   onForwardedUserClick, shouldAutoFocus, isModerator = false,
   jumpToMessageId, onJumpHandled, onRequestJump,
 }: ChatWindowProps) {
@@ -96,6 +100,9 @@ export function ChatWindow({
   const [reactionDetails, setReactionDetails] = useState<ReactionDetailsState | null>(null)
   const reactionPreviewCloseTimerRef = useRef<number | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false)
+  const attachMenuCloseTimerRef = useRef<number | null>(null)
+  const [createPollOpen, setCreatePollOpen] = useState(false)
 
   const attachments = useAttachmentQueue({ onSendFiles })
   const mobileInput = useMobileInputLayer()
@@ -299,6 +306,24 @@ export function ChatWindow({
       reactionPreviewCloseTimerRef.current = null
       setReactionDetails((current) => current?.mode === 'hover' ? null : current)
     }, 120)
+  }
+
+  // Небольшая задержка перед закрытием — иначе меню успевает пропасть в момент, когда курсор
+  // ещё находится между кнопкой и самим меню (тот же приём, что и в closeReactionPreview выше).
+  function openAttachMenu() {
+    if (attachMenuCloseTimerRef.current !== null) {
+      window.clearTimeout(attachMenuCloseTimerRef.current)
+      attachMenuCloseTimerRef.current = null
+    }
+    setAttachMenuOpen(true)
+  }
+
+  function closeAttachMenu() {
+    if (attachMenuCloseTimerRef.current !== null) window.clearTimeout(attachMenuCloseTimerRef.current)
+    attachMenuCloseTimerRef.current = window.setTimeout(() => {
+      attachMenuCloseTimerRef.current = null
+      setAttachMenuOpen(false)
+    }, 150)
   }
 
   function reactionForDisplay(reaction: MessageReaction): MessageReaction {
@@ -546,6 +571,8 @@ export function ChatWindow({
               onRetry={onRetry}
               onScrollToMessage={scrollToMessage}
               onReact={handleReactionSelect}
+              onVote={onVote}
+              onRetractVote={onRetractVote}
               onForwardedUserClick={onForwardedUserClick}
             />
 
@@ -612,15 +639,42 @@ export function ChatWindow({
             accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z,audio/*,video/*"
             onChange={attachments.handleFileSelect}
           />
-          <button
-            type="button"
-            className={`${s.emojiBtn} ${s.attachBtn}`}
-            onClick={() => attachments.fileInputRef.current?.click()}
-            aria-label={t('messenger.attachFile')}
-            title={t('messenger.attachFile')}
+          <div
+            className={s.attachMenuWrap}
+            onMouseEnter={() => { if (meta.group) openAttachMenu() }}
+            onMouseLeave={closeAttachMenu}
           >
-            <AttachIcon />
-          </button>
+            <button
+              type="button"
+              className={`${s.emojiBtn} ${s.attachBtn}`}
+              onClick={() => attachments.fileInputRef.current?.click()}
+              aria-label={t('messenger.attachFile')}
+              title={t('messenger.attachFile')}
+            >
+              <AttachIcon />
+            </button>
+
+            {meta.group && attachMenuOpen && (
+              <div className={s.attachMenu}>
+                <button
+                  type="button"
+                  className={s.attachMenuItem}
+                  onClick={() => { setAttachMenuOpen(false); attachments.fileInputRef.current?.click() }}
+                >
+                  <AttachIcon />
+                  <span>{t('poll.sendFileMenuItem')}</span>
+                </button>
+                <button
+                  type="button"
+                  className={s.attachMenuItem}
+                  onClick={() => { setAttachMenuOpen(false); setCreatePollOpen(true) }}
+                >
+                  <PollIcon />
+                  <span>{t('poll.createMenuItem')}</span>
+                </button>
+              </div>
+            )}
+          </div>
           <div className={s.messageInputShell}>
             <button
               type="button"
@@ -809,6 +863,16 @@ export function ChatWindow({
             </div>
           </div>
         </div>
+      )}
+
+      {createPollOpen && (
+        <CreatePollModal
+          onClose={() => setCreatePollOpen(false)}
+          onCreate={async (question, options) => {
+            await onCreatePoll(question, options)
+            setCreatePollOpen(false)
+          }}
+        />
       )}
     </div>
   )

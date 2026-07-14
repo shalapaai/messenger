@@ -25,6 +25,20 @@ public sealed record MessageReactionDto(
     string UserAvatarColor,
     string Emoji);
 
+public sealed record PollVoterDto(
+    Guid    UserId,
+    string  UserName,
+    string? UserAvatarUrl,
+    string  UserAvatarColor);
+
+public sealed record PollOptionDto(
+    Guid              Id,
+    string            Text,
+    List<PollVoterDto> Voters);
+
+public sealed record PollDto(
+    List<PollOptionDto> Options);
+
 public sealed record MessageDto(
     Guid      Id,
     Guid      ChatId,
@@ -46,4 +60,5 @@ public sealed record MessageDto(
     string?   SystemEventType,
     Guid?     TargetUserId,
     string?   TargetUserName,
-    List<MessageReactionDto> Reactions);
+    List<MessageReactionDto> Reactions,
+    PollDto?  Poll);

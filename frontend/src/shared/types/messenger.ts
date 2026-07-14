@@ -53,6 +53,23 @@ export interface MessageReaction {
   emoji: string
 }
 
+export interface PollVoter {
+  userId: string
+  userName: string
+  userAvatarUrl: string | null
+  userAvatarColor: string
+}
+
+export interface PollOption {
+  id: string
+  text: string
+  voters: PollVoter[]
+}
+
+export interface Poll {
+  options: PollOption[]
+}
+
 export interface Message {
   id: number
   messageId?: string
@@ -74,10 +91,11 @@ export interface Message {
   replyToMessageId?: string
   replyToSenderName?: string
   replyToContent?: string | null
-  kind?: 'Text' | 'System'
+  kind?: 'Text' | 'System' | 'Poll'
   systemEventType?: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved'
   targetUserId?: string
   targetUserName?: string
+  poll?: Poll
 }
 
 export type Sender = Omit<Message, 'id' | 'text' | 'time' | 'sentAt'>

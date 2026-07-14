@@ -20,6 +20,19 @@ export async function forwardMessages(targetChatId: string, sourceChatId: string
   await apiClient.post(`/chats/${targetChatId}/messages/forward`, { sourceChatId, messageIds })
 }
 
+export async function createPoll(chatId: string, question: string, options: string[]): Promise<string> {
+  const res = await apiClient.post<string>(`/chats/${chatId}/polls`, { question, options })
+  return res.data
+}
+
+export async function votePoll(chatId: string, messageId: string, optionId: string): Promise<void> {
+  await apiClient.put(`/chats/${chatId}/polls/${messageId}/vote`, { optionId })
+}
+
+export async function retractPollVote(chatId: string, messageId: string): Promise<void> {
+  await apiClient.delete(`/chats/${chatId}/polls/${messageId}/vote`)
+}
+
 export interface UploadedAttachment {
   fileUrl: string
   fileName: string

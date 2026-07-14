@@ -316,6 +316,24 @@
     "removeMemberTitle": "Remove member?",
     "leaveGroupTitle": "Leave group?"
   },
+  "poll": {
+    "createMenuItem": "Create poll",
+    "sendFileMenuItem": "Send file",
+    "createTitle": "New poll",
+    "questionLabel": "Question",
+    "questionPlaceholder": "Ask a question",
+    "optionPlaceholder": "Option {{number}}",
+    "addOption": "Add option",
+    "create": "Create poll",
+    "creating": "Creating…",
+    "createFailed": "Could not create the poll",
+    "minOptionsHint": "At least 2 options are required",
+    "votes_one": "{{count}} vote",
+    "votes_other": "{{count}} votes",
+    "noVotes": "No votes yet",
+    "retractVote": "Retract vote",
+    "voters": "Voted"
+  },
   "connection": {
     "connected": "✓ Connected",
     "reconnecting": "⟳ Reconnecting...",

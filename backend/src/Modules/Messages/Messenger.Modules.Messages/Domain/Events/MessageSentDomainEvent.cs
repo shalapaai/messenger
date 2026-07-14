@@ -15,7 +15,8 @@ public sealed record MessageSentDomainEvent(
     IReadOnlyList<MessageAttachment> Attachments,
     MessageKind Kind,
     SystemEventType? SystemEventType,
-    Guid? TargetUserId) : IDomainEvent
+    Guid? TargetUserId,
+    IReadOnlyList<PollOption> PollOptions) : IDomainEvent
 {
     public MessageSentDomainEvent(
         Guid messageId, Guid chatId, Guid senderId, string content,
@@ -23,8 +24,9 @@ public sealed record MessageSentDomainEvent(
         IReadOnlyList<MessageAttachment>? attachments = null,
         MessageKind kind = MessageKind.Text,
         SystemEventType? systemEventType = null,
-        Guid? targetUserId = null)
+        Guid? targetUserId = null,
+        IReadOnlyList<PollOption>? pollOptions = null)
         : this(Guid.NewGuid(), DateTime.UtcNow, messageId, chatId, senderId, content,
                forwardedFromMessageId, forwardedFromUserId, replyToMessageId,
-               attachments ?? [], kind, systemEventType, targetUserId) { }
+               attachments ?? [], kind, systemEventType, targetUserId, pollOptions ?? []) { }
 }

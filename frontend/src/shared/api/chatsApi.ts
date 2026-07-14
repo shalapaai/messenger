@@ -17,7 +17,10 @@ interface ChatMemberDto { userId: string; displayName: string; avatarUrl: string
 interface ChatDetailDto { id: string; type: 'direct' | 'group'; name: string | null; avatarUrl: string | null; createdAt: string; members: ChatMemberDto[] }
 interface AttachmentDto  { fileUrl: string; fileName: string; contentType: string; fileSizeBytes: number }
 interface MessageReactionDto { userId: string; userName: string; userAvatarUrl: string | null; userAvatarColor: string; emoji: string }
-interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; attachments: AttachmentDto[]; status: string; sentAt: string; editedAt: string | null; replyToMessageId: string | null; replyToSenderName: string | null; replyToContent: string | null; forwardedFromUserId: string | null; forwardedFromUserName: string | null; kind: 'Text' | 'System'; systemEventType: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved' | null; targetUserId: string | null; targetUserName: string | null; reactions: MessageReactionDto[] }
+interface PollVoterDto { userId: string; userName: string; userAvatarUrl: string | null; userAvatarColor: string }
+interface PollOptionDto { id: string; text: string; voters: PollVoterDto[] }
+interface PollDto { options: PollOptionDto[] }
+interface MessageDto     { id: string; chatId: string; senderId: string; senderName: string; senderAvatarUrl: string | null; senderAvatarColor: string; content: string; attachments: AttachmentDto[]; status: string; sentAt: string; editedAt: string | null; replyToMessageId: string | null; replyToSenderName: string | null; replyToContent: string | null; forwardedFromUserId: string | null; forwardedFromUserName: string | null; kind: 'Text' | 'System' | 'Poll'; systemEventType: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved' | null; targetUserId: string | null; targetUserName: string | null; reactions: MessageReactionDto[]; poll: PollDto | null }
 interface MessagesPageDto { items: MessageDto[]; nextCursor: string | null }
 interface MessageSearchResultDto { messageId: string; senderId: string; senderName: string; content: string; sentAt: string }
 
@@ -110,6 +113,7 @@ export async function fetchMessages(
       targetUserId:    dto.targetUserId ?? undefined,
       targetUserName:  dto.targetUserName ?? undefined,
       reactions:       dto.reactions ?? [],
+      poll:            dto.poll ?? undefined,
     }))
 
   return { messages, nextCursor: res.data.nextCursor }

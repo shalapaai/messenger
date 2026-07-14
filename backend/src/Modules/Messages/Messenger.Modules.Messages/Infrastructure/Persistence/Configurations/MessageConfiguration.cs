@@ -96,6 +96,39 @@ public sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
                 .HasDatabaseName("ix_message_reaction_user_id");
         });
 
+        builder.Navigation(m => m.PollOptions).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.OwnsMany(m => m.PollOptions, o =>
+        {
+            o.ToTable("poll_option");
+            o.WithOwner().HasForeignKey("message_id");
+
+            o.HasKey(x => x.Id);
+            o.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            o.Property(x => x.Text).HasColumnName("text").HasMaxLength(Message.MaxPollOptionLength).IsRequired();
+            o.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
+
+            o.HasIndex("message_id").HasDatabaseName("ix_poll_option_message_id");
+        });
+
+        builder.Navigation(m => m.PollVotes).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.OwnsMany(m => m.PollVotes, v =>
+        {
+            v.ToTable("poll_vote");
+            v.WithOwner().HasForeignKey("message_id");
+
+            v.HasKey(x => x.Id);
+            v.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            v.Property(x => x.OptionId).HasColumnName("option_id").IsRequired();
+            v.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            v.Property(x => x.VotedAt).HasColumnName("voted_at").IsRequired();
+
+            v.HasIndex("message_id", nameof(PollVote.UserId))
+                .IsUnique()
+                .HasDatabaseName("ux_poll_vote_message_id_user_id");
+
+            v.HasIndex("message_id").HasDatabaseName("ix_poll_vote_message_id");
+        });
+
         builder.HasIndex(m => new { m.ChatId, m.SentAt }).HasDatabaseName("ix_message_chat_id_sent_at");
         builder.HasIndex(m => new { m.ChatId, m.Sequence }).HasDatabaseName("ix_message_chat_id_sequence");
         builder.HasIndex(m => m.SenderId).HasDatabaseName("ix_message_sender_id");

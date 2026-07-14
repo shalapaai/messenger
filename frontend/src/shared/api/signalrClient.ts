@@ -13,6 +13,12 @@ export interface IncomingAttachment {
   fileSizeBytes: number
 }
 
+export interface IncomingPollOption {
+  id: string
+  text: string
+  voters: []
+}
+
 export interface IncomingMessage {
   messageId: string
   chatId: string
@@ -28,10 +34,11 @@ export interface IncomingMessage {
   replyToMessageId?: string | null
   replyToSenderName?: string | null
   replyToContent?: string | null
-  kind?: 'Text' | 'System'
+  kind?: 'Text' | 'System' | 'Poll'
   systemEventType?: 'MemberAdded' | 'MemberLeft' | 'MemberRemoved'
   targetUserId?: string | null
   targetUserName?: string | null
+  pollOptions?: IncomingPollOption[] | null
 }
 
 export interface MessageEdited {
@@ -54,6 +61,16 @@ export interface MessageReactionChanged {
   userAvatarUrl: string | null
   userAvatarColor: string
   emoji: string | null
+}
+
+export interface PollVoteChangedEvent {
+  messageId: string
+  chatId: string
+  userId: string
+  userName: string
+  userAvatarUrl: string | null
+  userAvatarColor: string
+  optionId: string | null
 }
 
 export interface MessagesReadEvent {
@@ -162,6 +179,11 @@ export class SignalRClient {
   onMessageReactionChanged(handler: (event: MessageReactionChanged) => void): () => void {
     this.connection.on('MessageReactionChanged', handler)
     return () => this.connection.off('MessageReactionChanged', handler)
+  }
+
+  onPollVoteChanged(handler: (event: PollVoteChangedEvent) => void): () => void {
+    this.connection.on('PollVoteChanged', handler)
+    return () => this.connection.off('PollVoteChanged', handler)
   }
 
   onMessagesRead(handler: (event: MessagesReadEvent) => void): () => void {

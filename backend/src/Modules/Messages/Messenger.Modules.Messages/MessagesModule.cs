@@ -42,11 +42,50 @@ public sealed class MessagesModule : IModuleInstaller
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<MessagesDbContext>();
         await db.Database.EnsureCreatedAsync(ct);
+
+        // EnsureCreatedAsync — no-op на уже существующей базе, поэтому таблицы для опросов
+        // (добавлены позже message/message_reaction) досоздаются тут же, как и message_reaction
+        // раньше — см. init.sql, тот же DDL для свежих баз.
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            CREATE TABLE IF NOT EXISTS messages.poll_option (
+                id         uuid PRIMARY KEY,
+                message_id uuid NOT NULL,
+                text       character varying(100) NOT NULL,
+                sort_order integer NOT NULL DEFAULT 0,
+                CONSTRAINT fk_poll_option_message_id
+                    FOREIGN KEY (message_id)
+                    REFERENCES messages.message (id)
+                    ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_poll_option_message_id
+                ON messages.poll_option (message_id);
+
+            CREATE TABLE IF NOT EXISTS messages.poll_vote (
+                id         uuid PRIMARY KEY,
+                message_id uuid NOT NULL,
+                option_id  uuid NOT NULL,
+                user_id    uuid NOT NULL,
+                voted_at   timestamp with time zone NOT NULL,
+                CONSTRAINT fk_poll_vote_message_id
+                    FOREIGN KEY (message_id)
+                    REFERENCES messages.message (id)
+                    ON DELETE CASCADE
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_poll_vote_message_id_user_id
+                ON messages.poll_vote (message_id, user_id);
+
+            CREATE INDEX IF NOT EXISTS ix_poll_vote_message_id
+                ON messages.poll_vote (message_id);
+            """,
+            ct);
     }
 }
 
 public static class MessagesModuleExtensions
 {
     public static IEndpointRouteBuilder MapMessagesModule(this IEndpointRouteBuilder app) =>
-        app.MapMessagesEndpoints();
+        app.MapMessagesEndpoints().MapPollsEndpoints();
 }

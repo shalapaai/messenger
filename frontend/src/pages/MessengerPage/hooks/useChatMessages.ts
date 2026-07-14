@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Message, Sender } from '../../../shared/types/messenger'
 import { fetchMessages, initials, nextMessageId } from '../../../shared/api/chatsApi'
-import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, setMessageReaction as setMessageReactionApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
+import { deleteMessage as deleteMessageApi, deleteMessages as deleteMessagesApi, editMessage as editMessageApi, setMessageReaction as setMessageReactionApi, votePoll as votePollApi, retractPollVote as retractPollVoteApi, uploadChatMessageFiles } from '../../../shared/api/messagesApi'
 import { getMyUserId } from '../../../shared/lib/auth/authTokens'
-import type { IncomingMessage, MessageDeleted, MessageEdited, MessageReactionChanged, UserProfileUpdatedEvent } from '../../../shared/api/signalrClient'
+import type { IncomingMessage, MessageDeleted, MessageEdited, MessageReactionChanged, PollVoteChangedEvent, UserProfileUpdatedEvent } from '../../../shared/api/signalrClient'
 import { formatMessageTime } from '../../../shared/lib/formatDateTime'
 
 type SendFn = (content: string, replyToMessageId?: string) => Promise<{ messageId: string }>
@@ -70,7 +70,11 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
   }, [id])
 
   const handleIncomingMessage = useCallback((msg: IncomingMessage) => {
-    if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId && msg.kind !== 'System') return
+    // Опрос отправляется через отдельный REST-эндпоинт (не через signalRSend), поэтому у него
+    // нет локального оптимистичного сообщения, которое нужно было бы не задублировать —
+    // в отличие от обычного текста, здесь именно live-событие и есть единственный способ
+    // добавить опрос в UI создателю.
+    if (msg.senderId === getMyUserId() && !msg.forwardedFromUserId && msg.kind !== 'System' && msg.kind !== 'Poll') return
 
     setChatMessages(prev => {
       const chatMsgs = prev[msg.chatId]
@@ -104,6 +108,9 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
           targetUserId:    msg.targetUserId ?? undefined,
           targetUserName:  msg.targetUserName ?? undefined,
           reactions:       [],
+          poll: msg.pollOptions
+            ? { options: msg.pollOptions.map(o => ({ id: o.id, text: o.text, voters: [] })) }
+            : undefined,
         }],
       }
     })
@@ -236,6 +243,49 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     await setMessageReactionApi(chatId, msg.messageId, emoji)
   }, [])
 
+  const handlePollVoteChanged = useCallback((event: PollVoteChangedEvent) => {
+    setChatMessages(prev => {
+      const chatMsgs = prev[event.chatId]
+      if (!chatMsgs) return prev
+
+      return {
+        ...prev,
+        [event.chatId]: chatMsgs.map(m => {
+          if (m.messageId !== event.messageId || !m.poll) return m
+
+          const options = m.poll.options.map(o => ({
+            ...o,
+            voters: o.voters.filter(v => v.userId !== event.userId),
+          }))
+
+          if (event.optionId) {
+            const target = options.find(o => o.id === event.optionId)
+            if (target) {
+              target.voters = [...target.voters, {
+                userId: event.userId,
+                userName: event.userName,
+                userAvatarUrl: event.userAvatarUrl,
+                userAvatarColor: event.userAvatarColor,
+              }]
+            }
+          }
+
+          return { ...m, poll: { options } }
+        }),
+      }
+    })
+  }, [])
+
+  const votePoll = useCallback(async (chatId: string, msg: Message, optionId: string) => {
+    if (!msg.messageId) return
+    await votePollApi(chatId, msg.messageId, optionId)
+  }, [])
+
+  const retractPollVote = useCallback(async (chatId: string, msg: Message) => {
+    if (!msg.messageId) return
+    await retractPollVoteApi(chatId, msg.messageId)
+  }, [])
+
   const editMessage = useCallback(async (chatId: string, msg: Message, newText: string) => {
     if (!msg.messageId) return
     await editMessageApi(chatId, msg.messageId, newText)
@@ -365,6 +415,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     handleEditedMessage,
     handleUserProfileUpdated,
     handleReactionChanged,
+    handlePollVoteChanged,
     loadMoreHistory,
     loadingHistory,
     historyLoaded: id ? !!historyLoaded[id] : false,
@@ -376,5 +427,7 @@ export function useChatMessages(id: string | undefined, opts: UseChatMessagesOpt
     deleteMessages,
     editMessage,
     setMessageReaction,
+    votePoll,
+    retractPollVote,
   }
 }

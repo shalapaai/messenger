@@ -5,6 +5,7 @@ import { MessageAttachments } from './MessageAttachment'
 import { CheckIcon } from './icons'
 import { dateKey, formatDateLabel } from '../../shared/lib/formatDateTime'
 import { linkifyText } from '../../shared/lib/linkify'
+import { PollMessage } from './PollMessage'
 import type { ChatMeta, Message, Sender } from '../../shared/types/messenger'
 import s from './ChatWindow.module.css'
 
@@ -126,12 +127,14 @@ interface MessageListProps {
   onRetry: (msg: Message) => void
   onScrollToMessage: (msgId: string) => void
   onReact: (msg: Message, emoji: string) => void
+  onVote: (msg: Message, optionId: string) => void
+  onRetractVote: (msg: Message) => void
   onForwardedUserClick?: (userId: string, name: string) => void
 }
 
 export const MessageList = memo(function MessageList({
   messages, meta, meSender, otherReadAt, selectMode, selectedIds, highlightedMsgId,
-  onToggleSelect, onAvatarClick, onContextMenu, onRetry, onScrollToMessage, onReact, onForwardedUserClick,
+  onToggleSelect, onAvatarClick, onContextMenu, onRetry, onScrollToMessage, onReact, onVote, onRetractVote, onForwardedUserClick,
 }: MessageListProps) {
   const { t } = useTranslation()
   const [reactionsPerRow, setReactionsPerRow] = useState(getReactionsPerRow)
@@ -265,7 +268,17 @@ export const MessageList = memo(function MessageList({
                     {item.msg.attachments && item.msg.attachments.length > 0 && (
                       <MessageAttachments attachments={item.msg.attachments} />
                     )}
-                    {linkifyText(item.msg.text)}
+                    {item.msg.kind === 'Poll' && item.msg.poll ? (
+                      <PollMessage
+                        question={item.msg.text}
+                        poll={item.msg.poll}
+                        meSender={meSender}
+                        onVote={optionId => onVote(item.msg, optionId)}
+                        onRetractVote={() => onRetractVote(item.msg)}
+                      />
+                    ) : (
+                      linkifyText(item.msg.text)
+                    )}
                   </div>
 
                   {reactionGroups.length > 0 && (

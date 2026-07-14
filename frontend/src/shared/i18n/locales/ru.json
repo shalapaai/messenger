@@ -326,6 +326,26 @@
     "removeMemberTitle": "Удалить участника?",
     "leaveGroupTitle": "Выйти из группы?"
   },
+  "poll": {
+    "createMenuItem": "Создать опрос",
+    "sendFileMenuItem": "Отправить файл",
+    "createTitle": "Новый опрос",
+    "questionLabel": "Вопрос",
+    "questionPlaceholder": "Задайте вопрос",
+    "optionPlaceholder": "Вариант {{number}}",
+    "addOption": "Добавить вариант",
+    "create": "Создать опрос",
+    "creating": "Создаём…",
+    "createFailed": "Не удалось создать опрос",
+    "minOptionsHint": "Нужно минимум 2 варианта",
+    "votes_one": "{{count}} голос",
+    "votes_few": "{{count}} голоса",
+    "votes_many": "{{count}} голосов",
+    "votes_other": "{{count}} голоса",
+    "noVotes": "Нет голосов",
+    "retractVote": "Отменить голос",
+    "voters": "Проголосовали"
+  },
   "connection": {
     "connected": "✓ Подключено",
     "reconnecting": "⟳ Переподключение...",

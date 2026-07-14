@@ -75,6 +75,12 @@ public sealed class MessageSentEventHandler(
             systemEventType    = notification.SystemEventType?.ToString(),
             targetUserId       = notification.TargetUserId,
             targetUserName     = targetUser?.DisplayName,
+            pollOptions        = notification.PollOptions.Count == 0
+                ? null
+                : notification.PollOptions
+                    .OrderBy(o => o.SortOrder)
+                    .Select(o => new { id = o.Id, text = o.Text, voters = Array.Empty<object>() })
+                    .ToList(),
         };
 
         await ChatFallback.BroadcastToMembersAsync(

@@ -36,6 +36,7 @@ public sealed class GetMessagesQueryHandler(
             .Concat(replySources.Select(m => m.SenderId))
             .Concat(items.Where(m => m.TargetUserId.HasValue).Select(m => m.TargetUserId!.Value))
             .Concat(items.SelectMany(m => m.Reactions.Select(r => r.UserId)))
+            .Concat(items.SelectMany(m => m.PollVotes.Select(v => v.UserId)))
             .Distinct()
             .ToList();
         var summariesResult = await usersModule.GetSummariesByAuthUserIdsAsync(userIds, ct);
@@ -100,7 +101,29 @@ public sealed class GetMessagesQueryHandler(
                                 reactionUser?.AvatarColor ?? "#2C5BF0",
                                 r.Emoji);
                         })
-                        .ToList());
+                        .ToList(),
+                    m.Kind == MessageKind.Poll
+                        ? new PollDto(
+                            m.PollOptions
+                                .OrderBy(o => o.SortOrder)
+                                .Select(o => new PollOptionDto(
+                                    o.Id,
+                                    o.Text,
+                                    m.PollVotes
+                                        .Where(v => v.OptionId == o.Id)
+                                        .OrderBy(v => v.VotedAt)
+                                        .Select(v =>
+                                        {
+                                            summaries.TryGetValue(v.UserId, out var voter);
+                                            return new PollVoterDto(
+                                                v.UserId,
+                                                voter?.DisplayName ?? "Пользователь",
+                                                voter?.AvatarUrl,
+                                                voter?.AvatarColor ?? "#2C5BF0");
+                                        })
+                                        .ToList()))
+                                .ToList())
+                        : null);
             })
             .ToList();
 

@@ -8,9 +8,15 @@ public sealed class Message : AggregateRoot<MessageId>
 {
     public const int MaxAttachmentsPerMessage = 10;
     public const int MaxReactionLength = 16;
+    public const int MinPollOptions = 2;
+    public const int MaxPollOptions = 10;
+    public const int MaxPollQuestionLength = 300;
+    public const int MaxPollOptionLength = 100;
 
     private readonly List<MessageAttachment> _attachments = [];
     private readonly List<MessageReaction> _reactions = [];
+    private readonly List<PollOption> _pollOptions = [];
+    private readonly List<PollVote> _pollVotes = [];
 
     private Message() { } // EF Core
 
@@ -32,6 +38,8 @@ public sealed class Message : AggregateRoot<MessageId>
     public string Content { get; private set; } = string.Empty;
     public IReadOnlyList<MessageAttachment> Attachments => _attachments;
     public IReadOnlyList<MessageReaction> Reactions => _reactions;
+    public IReadOnlyList<PollOption> PollOptions => _pollOptions;
+    public IReadOnlyList<PollVote> PollVotes => _pollVotes;
     public MessageStatus Status { get; private set; }
     public DateTime SentAt { get; private set; }
     public DateTime? EditedAt { get; private set; }
@@ -108,6 +116,57 @@ public sealed class Message : AggregateRoot<MessageId>
             message.Id.Value, chatId, actorUserId, message.Content,
             kind: MessageKind.System, systemEventType: eventType, targetUserId: targetUserId));
         return message;
+    }
+
+    public static Result<Message> CreatePoll(Guid chatId, Guid senderId, string question, IReadOnlyList<string> options)
+    {
+        if (string.IsNullOrWhiteSpace(question))
+            return Result.Failure<Message>(Error.Validation("Question", "Poll question cannot be empty"));
+
+        if (question.Length > MaxPollQuestionLength)
+            return Result.Failure<Message>(Error.Validation("Question", $"Poll question exceeds {MaxPollQuestionLength} characters"));
+
+        var trimmedOptions = options.Select(o => o.Trim()).Where(o => o.Length > 0).ToList();
+
+        if (trimmedOptions.Count < MinPollOptions)
+            return Result.Failure<Message>(Error.Validation("Options", $"A poll needs at least {MinPollOptions} options"));
+
+        if (trimmedOptions.Count > MaxPollOptions)
+            return Result.Failure<Message>(Error.Validation("Options", $"A poll cannot have more than {MaxPollOptions} options"));
+
+        if (trimmedOptions.Any(o => o.Length > MaxPollOptionLength))
+            return Result.Failure<Message>(Error.Validation("Options", $"Poll option exceeds {MaxPollOptionLength} characters"));
+
+        var message = new Message(MessageId.New(), chatId, senderId, question.Trim(), null) { Kind = MessageKind.Poll };
+        message._pollOptions.AddRange(trimmedOptions.Select((text, i) => PollOption.Create(text, i)));
+        message.RaiseDomainEvent(new MessageSentDomainEvent(
+            message.Id.Value, chatId, senderId, message.Content,
+            kind: MessageKind.Poll, pollOptions: message._pollOptions));
+        return Result.Success(message);
+    }
+
+    public Result SetPollVote(Guid userId, Guid? optionId)
+    {
+        if (Kind != MessageKind.Poll)
+            return Result.Failure(new Error("Message.NotAPoll", "This message is not a poll"));
+
+        if (Status == MessageStatus.Deleted)
+            return Result.Failure(new Error("Message.Deleted", "Cannot vote on a deleted poll"));
+
+        var existing = _pollVotes.FirstOrDefault(v => v.UserId == userId);
+        if (existing is not null)
+            _pollVotes.Remove(existing);
+
+        if (optionId is { } oid)
+        {
+            if (_pollOptions.All(o => o.Id != oid))
+                return Result.Failure(Error.Validation("OptionId", "Option does not belong to this poll"));
+
+            _pollVotes.Add(PollVote.Create(oid, userId));
+        }
+
+        RaiseDomainEvent(new PollVoteChangedDomainEvent(Id.Value, ChatId, userId, optionId));
+        return Result.Success();
     }
 
     public Result Edit(Guid requesterId, string newContent)

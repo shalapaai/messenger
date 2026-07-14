@@ -188,6 +188,36 @@ CREATE INDEX IF NOT EXISTS ix_message_reaction_message_id
 CREATE INDEX IF NOT EXISTS ix_message_reaction_user_id
     ON messages.message_reaction (user_id);
 
+CREATE TABLE IF NOT EXISTS messages.poll_option (
+    id         UUID         PRIMARY KEY,
+    message_id UUID         NOT NULL,
+    text       VARCHAR(100) NOT NULL,
+    sort_order INT          NOT NULL DEFAULT 0,
+
+    CONSTRAINT fk_poll_option_message_id
+        FOREIGN KEY (message_id) REFERENCES messages.message (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS ix_poll_option_message_id
+    ON messages.poll_option (message_id);
+
+CREATE TABLE IF NOT EXISTS messages.poll_vote (
+    id         UUID        PRIMARY KEY,
+    message_id UUID        NOT NULL,
+    option_id  UUID        NOT NULL,
+    user_id    UUID        NOT NULL,
+    voted_at   TIMESTAMPTZ NOT NULL,
+
+    CONSTRAINT fk_poll_vote_message_id
+        FOREIGN KEY (message_id) REFERENCES messages.message (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_poll_vote_message_id_user_id
+    ON messages.poll_vote (message_id, user_id);
+
+CREATE INDEX IF NOT EXISTS ix_poll_vote_message_id
+    ON messages.poll_vote (message_id);
+
 CREATE TABLE IF NOT EXISTS files.file_upload (
     id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     file_key      VARCHAR(512) NOT NULL,

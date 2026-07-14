@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import type { Filter, Message } from '../../shared/types/messenger'
 import { colorFromId, initials as getInitials, createDirectChat, deleteChat, leaveGroupChat, sendMessageRest, markChatRead, createGroupChat, addChatMember, updateChat, uploadChatAvatar, setMemberRole } from '../../shared/api/chatsApi'
-import { forwardMessages as forwardMessagesApi } from '../../shared/api/messagesApi'
+import { forwardMessages as forwardMessagesApi, createPoll as createPollApi } from '../../shared/api/messagesApi'
 import { useUserProfile } from '../../shared/context/useUserProfile'
 import { useSignalR } from '../../shared/api/useSignalR'
 import { useChatsStore } from '../../shared/api/chatsStore'
@@ -108,8 +108,10 @@ export function MessengerPage() {
   const {
     messages, loadingInitial, loadError, retryLoadInitial,
     handleIncomingMessage, handleDeletedMessage, handleEditedMessage, handleUserProfileUpdated, handleReactionChanged,
+    handlePollVoteChanged,
     loadMoreHistory, loadingHistory, historyLoaded,
     send, sendFiles, retry, deleteMessage, removeLocalMessage, deleteMessages, editMessage, setMessageReaction,
+    votePoll, retractPollVote,
   } = useChatMessages(id, {
     onAppend: (smooth) => scroll.scrollToBottomNow(smooth),
     onIncomingRead: (chatId) => markChatRead(chatId).catch(() => loadChats()),
@@ -160,6 +162,7 @@ export function MessengerPage() {
     onMessageDeleted: handleDeletedMessage,
     onMessageEdited: handleEditedMessage,
     onMessageReactionChanged: handleReactionChanged,
+    onPollVoteChanged: handlePollVoteChanged,
     onMessagesRead: (event) => handleMessagesRead(event.chatId, event.readerId, event.readAt),
     onTyping: typingIndicator.handleUserTyping,
     onStoppedTyping: typingIndicator.handleUserStoppedTyping,
@@ -234,6 +237,11 @@ export function MessengerPage() {
 
     if (!id) return
     await sendFiles(id, files, caption, meSender, onUploadProgress)
+  }
+
+  async function handleCreatePoll(question: string, options: string[]) {
+    if (!id) return
+    await createPollApi(id, question, options)
   }
 
   function handleRetrySend(msg: Parameters<typeof retry>[1]) {
@@ -481,6 +489,9 @@ export function MessengerPage() {
               onDelete={handleDeleteMessage}
               onEdit={handleEditMessage}
               onReact={(msg, emoji) => { if (id) void setMessageReaction(id, msg, emoji) }}
+              onCreatePoll={handleCreatePoll}
+              onVote={(msg, optionId) => { if (id) void votePoll(id, msg, optionId) }}
+              onRetractVote={(msg) => { if (id) void retractPollVote(id, msg) }}
               onBulkDelete={handleBulkDeleteMessages}
               onForward={msgs => { if (id) setForwardState({ sourceChatId: id, messages: msgs }) }}
               onTyping={typingIndicator.handleOwnTyping}
