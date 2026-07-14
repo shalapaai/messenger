@@ -163,9 +163,11 @@ Realtime → IMessagesModule:
                                          "в ответ на" в ReceiveMessage, см. Messages "Ответ на сообщение"
 
 Realtime ← Messages (через MediatR INotification):
-  - MessageSentDomainEvent            — новое сообщение → WebSocket рассылка
+  - MessageSentDomainEvent            — новое сообщение (в т.ч. опрос) → WebSocket рассылка
   - MessageEditedDomainEvent          — редактирование → WebSocket рассылка
   - MessageDeletedDomainEvent         — удаление → WebSocket рассылка
+  - MessageReactionChangedDomainEvent — реакция поставлена/снята → WebSocket рассылка
+  - PollVoteChangedDomainEvent        — голос в опросе поставлен/изменён/отменён → WebSocket рассылка
 
 Realtime ← Chats (через MediatR INotification):
   - ChatReadDomainEvent               — чат отмечен прочитанным → WebSocket рассылка MessagesRead
@@ -184,9 +186,13 @@ Auth → Users (вне кода, по соглашению):
 ```
 IChatMembershipChecker (Shared.Kernel, реализация — Chats):
   - IsMemberAsync(chatId, userId) — лёгкая EXISTS-проверка по (chat_id, user_id)
+  - IsGroupChatAsync(chatId)      — тип чата (group/direct); нужен CreatePollCommandHandler,
+                                    чтобы запретить создание опроса вне группы, не имея
+                                    прямой ссылки на модуль Chats (см. ниже, тот же принцип,
+                                    что и у IsMemberAsync)
   - Используют: Messages (SendMessage/GetMessages/UploadAndSendMessage/DeleteMessage — 403 если
                 не участник; ForwardMessages — проверяет членство сразу в двух чатах, исходном
-                и целевом),
+                и целевом; CreatePoll — дополнительно проверяет IsGroupChatAsync),
                 Realtime (JoinChat/StartTyping/StopTyping — HubException если не участник),
                 Files (DownloadFile для ChatAttachment — 401/403)
 
@@ -308,6 +314,32 @@ POST /api/chats/{chatId}/messages/upload
   → 201 { messageId, content, attachments: [...], sentAt }
   → 400 если файлов не передано
   → 422 если тип не в белом списке, файл больше 25 МБ или вложений больше 10
+```
+
+### Найти сообщение в чате
+
+```
+GET /api/chats/{chatId}/messages/search?q=поход
+  → [{ messageId, senderId, senderName, content, sentAt }, ...]
+  → поиск по словам (не по подстроке) — "поход" находит "походы", но не "выход"
+  → переход к найденному может потребовать дозагрузки истории на фронтенде,
+    если сообщение ещё не среди подгруженных страниц
+```
+
+### Создать опрос и проголосовать
+
+```
+POST /api/chats/{chatId}/polls  { question, options: ["За", "Против"] }
+  → 201, сырой messageId в теле
+  → 403 если чат не групповой (личные чаты — без опросов, независимо от UI)
+
+PUT /api/chats/{chatId}/polls/{messageId}/vote  { optionId }
+  → 204, остальным участникам (и другим сессиям самого голосующего) рассылается
+    PollVoteChanged по WebSocket
+  → повторный вызов с другим optionId меняет голос — один голос на пользователя
+
+DELETE /api/chats/{chatId}/polls/{messageId}/vote
+  → 204, голос снят
 ```
 
 ### Создать групповой чат

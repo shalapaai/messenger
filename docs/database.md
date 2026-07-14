@@ -9,7 +9,7 @@ messenger (database)
 ├── auth      — user, refresh_token
 ├── users     — user_profile
 ├── chats     — chats, members
-├── messages  — message, message_attachment
+├── messages  — message, message_attachment, message_reaction, poll_option, poll_vote
 └── files     — file_upload
 ```
 
@@ -25,6 +25,8 @@ messenger (database)
 - все таблицы, индексы, constraints (см. ниже)
 
 Каждый модуль при старте API вызывает `EnsureCreatedAsync()` — это создаёт таблицы, только если БД физически пуста. Поскольку Postgres создаёт саму БД сам при первом старте контейнера (`POSTGRES_DB`), а `init.sql` уже успевает создать таблицы до этого вызова, `EnsureCreatedAsync` с точки зрения EF Core видит "база уже существует" и молча ничего не делает. **Настоящий источник схемы — `docker/init.sql`.** Если добавляешь колонку в C#-модель — обязательно продублируй в `init.sql` руками, иначе на первом же запросе к новой колонке будет `column ... does not exist`.
+
+**Новая таблица в уже работающей (не пустой) базе** — отдельный случай: `init.sql` выполнится только на **новой** базе, а `EnsureCreatedAsync` на уже существующей ничего не досоздаёт (см. выше), так что таблица, добавленная в модель уже после первого деплоя, никогда не появится в проде сама по себе. Поэтому `MessagesModule.MigrateAsync` (единственный модуль, где это понадобилось на практике — `message_reaction`, затем `poll_option`/`poll_vote`) после `EnsureCreatedAsync` **дополнительно** выполняет `CREATE TABLE IF NOT EXISTS` тем же DDL, что и в `init.sql` — эта часть безопасно перевыполняется на каждом старте API (идемпотентна за счёт `IF NOT EXISTS`) и досоздаёт таблицу на уже работающей базе при следующем деплое. Добавляя новую таблицу к существующему модулю — дублируй DDL и в `init.sql` (для новых баз), и в `MigrateAsync` (для уже существующих), не только в одном месте.
 
 Применить изменения в dev-окружении — пересоздать volume:
 ```bash
@@ -139,6 +141,39 @@ docker compose down && docker volume rm messenger_postgres_data && docker compos
 | `sort_order` | int not null default 0 | Порядок выбора файлов пользователем |
 
 Индекс: `ix_message_attachment_message_id`. Одно сообщение может нести несколько вложений (см. [modules/messages.md](modules/messages.md)).
+
+### `messages.message_reaction`
+| Колонка | Тип | |
+|---|---|---|
+| `id` | uuid PK | |
+| `message_id` | uuid not null | FK → `messages.message`, `ON DELETE CASCADE` |
+| `user_id` | uuid not null | |
+| `emoji` | varchar(16) not null | |
+| `created_at` | timestamptz not null | |
+| `updated_at` | timestamptz not null | |
+
+Индексы: `ux_message_reaction_message_id_user_id` (unique — одна реакция на пользователя на сообщение), `ix_message_reaction_message_id`, `ix_message_reaction_user_id`.
+
+### `messages.poll_option`
+| Колонка | Тип | |
+|---|---|---|
+| `id` | uuid PK | |
+| `message_id` | uuid not null | FK → `messages.message`, `ON DELETE CASCADE`. Владеющее сообщение — с `message_type = 'Poll'` |
+| `text` | varchar(100) not null | Текст варианта ответа |
+| `sort_order` | int not null default 0 | Порядок вариантов, заданный при создании опроса |
+
+Индекс: `ix_poll_option_message_id`.
+
+### `messages.poll_vote`
+| Колонка | Тип | |
+|---|---|---|
+| `id` | uuid PK | |
+| `message_id` | uuid not null | FK → `messages.message`, `ON DELETE CASCADE` |
+| `option_id` | uuid not null | За какой вариант — **не** FK на `poll_option` (слабая ссылка, как и `reply_to_message_id`; сверяется на уровне домена, см. [modules/messages.md](modules/messages.md#опросы)) |
+| `user_id` | uuid not null | Кто проголосовал |
+| `voted_at` | timestamptz not null | |
+
+Индексы: `ux_poll_vote_message_id_user_id` (unique — один голос на пользователя на опрос), `ix_poll_vote_message_id`. Подробнее про модель голосования (смена/отмена голоса, видимость голосующих) — [modules/messages.md#опросы](modules/messages.md#опросы).
 
 ## Схема: files
 

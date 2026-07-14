@@ -15,9 +15,11 @@ WebSocket URL: ws://host/hubs/messenger
 
 | Событие | Данные | Когда |
 |---|---|---|
-| `ReceiveMessage` | messageId, chatId, senderId, senderName, senderAvatarUrl, content, sentAt, forwardedFromUserId, forwardedFromUserName, replyToMessageId, replyToSenderName, replyToContent | Новое сообщение в чате (обычное, пересланное или ответ — форвард/reply-поля `null`, если неприменимо) |
+| `ReceiveMessage` | messageId, chatId, senderId, senderName, senderAvatarUrl, content, sentAt, forwardedFromUserId, forwardedFromUserName, replyToMessageId, replyToSenderName, replyToContent, kind, pollOptions | Новое сообщение в чате (обычное, пересланное, ответ или опрос — неприменимые поля `null`). Для опроса `kind = "Poll"`, `content` — текст вопроса, `pollOptions` — варианты ответа (только что созданный опрос ещё не может иметь голосов) |
 | `MessageEdited` | messageId, chatId, newContent, editedAt | Сообщение отредактировано |
 | `MessageDeleted` | messageId, chatId | Сообщение удалено |
+| `MessageReactionChanged` | messageId, chatId, userId, userName, userAvatarUrl, userAvatarColor, emoji | Реакция поставлена/снята (`emoji: null` — снята) |
+| `PollVoteChanged` | messageId, chatId, userId, userName, userAvatarUrl, userAvatarColor, optionId | Голос в опросе поставлен/изменён/отменён (`optionId: null` — отменён). Уходит всем участникам чата, включая другие соединения/вкладки самого голосующего — фронтенд не обновляет свой голос оптимистично, а ждёт этого же события (см. [Messages — Опросы](messages.md#опросы)) |
 | `MessagesRead` | chatId, readerId, readAt | Участник прочитал чат до момента `readAt` (см. [Chats — Прочитано](chats.md#прочитано-read-receipts-реальное-время)) |
 | `UserTyping` | userId, chatId | Пользователь начал печатать |
 | `UserStoppedTyping` | userId, chatId | Пользователь перестал печатать |
